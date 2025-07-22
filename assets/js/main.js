@@ -1,6 +1,3 @@
-/* ==================================================================
-   ARQUIVO JAVASCRIPT PRINCIPAL - play.u LIVE ENTERTAINMENT
-   ================================================================== */
 
 /* ==================== MODO CLARO / ESCURO ==================== */
 const themeToggle = document.getElementById('theme-toggle');
@@ -27,7 +24,6 @@ if (themeToggle) {
 // Aplica o tema salvo ao carregar qualquer página
 const savedTheme = localStorage.getItem('theme') || 'dark';
 applyTheme(savedTheme);
-
 
 /* ==================== BOTÃO 'VOLTAR AO TOPO' ==================== */
 const backToTopButton = document.getElementById('back-to-top');

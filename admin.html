@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-br" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Administração</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="icon" href="assets/images/logo.png" type="image/png">
+</head>
+<body class="admin-page-body">
+
+    <header class="admin-header">
+        <h1>Painel de Administração - play.u</h1>
+        <a href="index.html" class="admin-view-site-btn">Ver Site</a>
+    </header>
+
+    <main class="container">
+        <div class="admin-panel">
+            <div class="admin-panel-header">
+                <h2>Gerenciar Jogos</h2>
+                <button id="add-new-game-btn" class="submit-btn">Adicionar Novo Jogo</button>
+            </div>
+            <div id="game-list-container">
+                </div>
+        </div>
+    </main>
+
+    <dialog id="game-form-modal">
+        <h3 id="modal-title">Adicionar Novo Jogo</h3>
+        <form id="game-form">
+            <input type="hidden" id="game-id"> <div class="form-group">
+                <label for="name">Nome do Jogo</label>
+                <input type="text" id="name" required>
+            </div>
+        <div class="form-group">
+            <label>Imagem de Capa</label>
+            <label for="coverImageUpload" class="upload-label">
+            <ion-icon name="cloud-upload-outline"></ion-icon>
+            <span>Enviar do Computador</span>
+            </label>
+            <input type="file" id="coverImageUpload" accept="image/png, image/jpeg, image/webp" style="display: none;">
+            <p class="form-hint">Limite de 2MB. Formatos: JPG, PNG, WEBP.</p>
+            <p id="upload-error" class="error-message" style="display: none;"></p>
+            <label for="coverImageUrl" class="form-label-or">Ou cole um link externo</label>
+            <input type="text" id="coverImageUrl" placeholder="https://exemplo.com/imagem.jpg">
+            <img id="image-preview" src="" alt="Pré-visualização da imagem" style="display: none;">    
+            <input type="hidden" id="coverImage">
+        </div>
+            <div class="form-group">
+                <label for="fullDescription">Descrição Completa</label>
+                <textarea id="fullDescription" rows="4" required></textarea>
+            </div>
+            <div class="modal-actions">
+                <button type="button" id="cancel-btn">Cancelar</button>
+                <button type="submit" class="submit-btn">Salvar</button>
+            </div>
+        </form>
+    </dialog>
+
+    <script src="assets/js/gamedata.js"></script>
+    <script src="assets/js/admin.js"></script>
+    <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
+</body>
+</html>

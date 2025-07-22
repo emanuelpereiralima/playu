@@ -39,7 +39,38 @@
             <p id="game-description"></p>
             <div id="game-gallery" class="gallery-grid"></div>
 
+<div class="booking-section">
+    <div class="calendar-container">
+        <h2 class="section-title" data-lang-key="calendarTitle">Calendário de Agendamento</h2>
+        <div class="calendar-header">
+            <button id="prev-month-btn" class="month-nav-btn">&lt;</button>
+            <h3 id="month-year-header"></h3>
+            <button id="next-month-btn" class="month-nav-btn">&gt;</button>
+        </div>
+        <div class="calendar-weekdays">
+            <div data-lang-key="daySun">Dom</div>
+            <div data-lang-key="dayMon">Seg</div>
+            <div data-lang-key="dayTue">Ter</div>
+            <div data-lang-key="dayWed">Qua</div>
+            <div data-lang-key="dayThu">Qui</div>
+            <div data-lang-key="dayFri">Sex</div>
+            <div data-lang-key="daySat">Sáb</div>
+        </div>
+        <div class="calendar-grid" id="calendar-grid">
             </div>
+    </div>
+    <div class="booking-details">
+        <h2 class="section-title" data-lang-key="bookingDetailsTitle">Detalhes do Agendamento</h2>
+        <p><strong><span data-lang-key="duration">Duração da Sessão:</span></strong> <span id="session-duration"></span></p>
+        <p class="instruction" id="instruction-text" data-lang-key="selectDay">Selecione um dia disponível no calendário.</p>
+        <div class="time-slots-container" id="time-slots-container">
+            </div>
+        <div class="confirmation-section" id="confirmation-section" style="display: none;">
+            <p id="selection-summary"></p>
+            <button id="confirm-booking-btn" class="submit-btn" data-lang-key="confirmBookingBtn">Confirmar Agendamento</button>
+        </div>
+    </div>
+</div>
 
         <div class="container" id="game-not-found" style="display: none; text-align: center;">
             <h1 data-lang-key="gameNotFound">Jogo não encontrado!</h1>
@@ -55,5 +86,6 @@
     
     <script src="assets/js/gamedata.js"></script> 
     <script src="assets/js/translations.js"></script>
-    <script src="assets/js/main.js"></script> <script src="assets/js/game-page.js"></script> </body>
+    <script src="assets/js/main.js"></script> 
+    <script src="assets/js/game-page.js"></script> </body>
 </html>

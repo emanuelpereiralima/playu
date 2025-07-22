@@ -184,6 +184,7 @@ img {
 .carousel-viewport {
     width: 100%;
     overflow-x: auto; /* Permite a rolagem */
+    overflow-y: hidden;
     scroll-snap-type: x mandatory; /* Efeito de "ímã" ao rolar */
     scroll-behavior: smooth; /* Rolagem suave para os botões */
     -ms-overflow-style: none;  /* Esconde scrollbar no IE e Edge */
@@ -629,6 +630,318 @@ img {
     width: 100%;
     border-radius: 10px;
     box-shadow: 0 5px 20px rgba(0,0,0,0.25);
+}
+
+/* ==================== SEÇÃO DE AGENDAMENTO (PÁGINA DO JOGO) ==================== */
+.section-title {
+    color: var(--secondary-color);
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.booking-section {
+    margin-top: 4rem;
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 3rem;
+}
+
+/* Calendário */
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+#month-year-header {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.month-nav-btn {
+    background: none;
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.5rem;
+    transition: background-color 0.3s, color 0.3s;
+}
+.month-nav-btn:hover {
+    background-color: var(--secondary-color);
+    color: white;
+}
+
+.calendar-weekdays, .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.5rem;
+    text-align: center;
+}
+
+.calendar-weekdays {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.calendar-day {
+    padding: 0.8rem 0;
+    border-radius: 8px;
+    color: var(--text-color);
+    opacity: 0.4;
+}
+
+.calendar-day.available {
+    opacity: 1;
+    font-weight: 600;
+    background-color: rgba(233, 69, 96, 0.1);
+    border: 1px solid var(--secondary-color);
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.calendar-day.available:hover {
+    background-color: rgba(233, 69, 96, 0.3);
+}
+
+.calendar-day.selected {
+    background-color: var(--secondary-color);
+    color: white;
+    font-weight: 700;
+}
+
+/* Detalhes do Agendamento */
+.booking-details .instruction {
+    font-style: italic;
+    opacity: 0.7;
+    margin-bottom: 1rem;
+}
+
+.time-slots-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 1rem;
+}
+
+.time-slot-btn {
+    padding: 0.8rem;
+    border: 1px solid var(--border-color);
+    background-color: var(--card-bg-color);
+    color: var(--text-color);
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s, color 0.3s;
+}
+.time-slot-btn:hover {
+    border-color: var(--secondary-color);
+}
+.time-slot-btn.selected {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+    color: white;
+    font-weight: 600;
+}
+
+.confirmation-section {
+    margin-top: 2rem;
+    padding: 1rem;
+    border-radius: 8px;
+    background-color: var(--card-bg-color);
+    border: 1px solid var(--secondary-color);
+}
+
+/* Responsividade */
+@media screen and (max-width: 992px) {
+    .booking-section {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ==================== PÁGINA DE LOGIN ==================== */
+.login-page-body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.login-container {
+    background-color: var(--card-bg-color);
+    padding: 3rem;
+    border-radius: 10px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+}
+
+.login-logo {
+    max-width: 150px;
+    margin-bottom: 1.5rem;
+}
+
+.login-container h1 {
+    margin-bottom: 2rem;
+    color: var(--secondary-color);
+}
+
+.login-container .form-group label {
+    text-align: left;
+}
+
+.error-message {
+    color: var(--secondary-color);
+    margin-bottom: 1rem;
+    font-weight: 500;
+}
+
+/* ==================== PÁGINA DE ADMIN ==================== */
+.admin-page-body {
+    padding-top: 80px; /* Espaço para o header fixo */
+}
+
+.admin-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 80px;
+    background-color: var(--primary-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 2rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    z-index: 100;
+}
+
+.admin-view-site-btn {
+    background-color: var(--secondary-color);
+    padding: 0.6rem 1.2rem;
+    border-radius: 5px;
+    color: white;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.admin-panel {
+    background-color: var(--card-bg-color);
+    padding: 2rem;
+    border-radius: 8px;
+    margin-top: 2rem;
+}
+
+.admin-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.game-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-radius: 5px;
+    transition: background-color 0.2s;
+}
+
+.game-list-item:nth-child(odd) {
+    background-color: rgba(0,0,0,0.2);
+}
+
+.item-actions button {
+    margin-left: 1rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 5px;
+    cursor: pointer;
+    border: 1px solid var(--border-color);
+    background: none;
+    color: var(--text-color);
+}
+.item-actions .edit-btn:hover {
+    background-color: #3b82f6; /* Azul */
+    border-color: #3b82f6;
+}
+.item-actions .remove-btn:hover {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+}
+
+/* Estilo do Modal (dialog) */
+dialog {
+    background-color: var(--card-bg-color);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 2rem;
+    width: 100%;
+    max-width: 600px;
+    box-shadow: 0 0 50px rgba(0,0,0,0.5);
+}
+dialog::backdrop {
+    background-color: rgba(0,0,0,0.6);
+    backdrop-filter: blur(3px);
+}
+.modal-actions {
+    margin-top: 2rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+}
+.modal-actions button {
+    padding: 0.6rem 1.2rem;
+}
+#cancel-btn {
+    background: none;
+    border: 1px solid var(--text-color);
+    color: var(--text-color);
+}
+
+/* ==================== ESTILOS DO FORMULÁRIO DE ADMIN ==================== */
+.upload-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.8rem 1.2rem;
+    border: 1px dashed var(--border-color);
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+.upload-label:hover {
+    background-color: rgba(255,255,255,0.05);
+}
+.upload-label ion-icon {
+    font-size: 1.2rem;
+}
+
+.form-hint {
+    font-size: 0.8rem;
+    opacity: 0.6;
+    margin: 0.5rem 0 1rem 0;
+}
+
+.form-label-or {
+    display: block;
+    margin-top: 1.5rem;
+    font-weight: 500;
+}
+
+#image-preview {
+    max-width: 200px;
+    margin-top: 1rem;
+    border-radius: 5px;
+    border: 2px solid var(--border-color);
 }
 
 /* Deixa o layout responsivo em telas menores */

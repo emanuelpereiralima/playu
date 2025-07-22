@@ -10,7 +10,16 @@ const GAMES_DATA = [
             "assets/images/cover-ecos.png",
             "https://via.placeholder.com/1280x720/E94560/FFFFFF?text=Cena+2",
             "https://via.placeholder.com/1280x720/E94560/FFFFFF?text=Cena+3",
-        ]
+        ],
+        sessionDuration: "90 minutos",
+        availability: {
+            // Formato "ANO-MÊS-DIA": ["HORA1", "HORA2", ...]
+            "2025-08-15": ["14:00", "16:00", "18:00", "20:00"],
+            "2025-08-16": ["15:00", "17:00", "19:00"],
+            "2025-08-17": ["14:00", "16:00", "18:00"],
+            "2025-08-22": ["18:00", "20:00"],
+            "2025-08-23": ["15:00", "17:00", "19:00", "21:00"]
+        },
     },
     {
         id: "galinheiro-eletrico",
@@ -22,7 +31,16 @@ const GAMES_DATA = [
         galleryImages: [
             "https://via.placeholder.com/1280x720/1A1A2E/FFFFFF?text=Cena+1",
             "https://via.placeholder.com/1280x720/1A1A2E/FFFFFF?text=Cena+2",
-        ]
+        ],
+        sessionDuration: "90 minutos",
+        availability: {
+            // Formato "ANO-MÊS-DIA": ["HORA1", "HORA2", ...]
+            "2025-08-15": ["14:00", "16:00", "18:00", "20:00"],
+            "2025-08-16": ["15:00", "17:00", "19:00"],
+            "2025-08-17": ["14:00", "16:00", "18:00"],
+            "2025-08-22": ["18:00", "20:00"],
+            "2025-08-23": ["15:00", "17:00", "19:00", "21:00"]
+        },
     },
     // PARA ADICIONAR UM NOVO JOGO, BASTA COPIAR E COLAR UM BLOCO DESTES E ALTERAR AS INFORMAÇÕES
 ];
