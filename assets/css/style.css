@@ -1,0 +1,643 @@
+/* ==================== FONTES E VARIÁVEIS ==================== */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+:root {
+    /* Paleta de Cores (Modo Escuro Padrão) */
+    --primary-color: #1A1A2E;
+    --secondary-color: #E94560;
+    --bg-color: #161625;
+    --card-bg-color: #1A1A2E;
+    --header-bg-color: #1A1A2E; /* Cor escura para o header */
+    --text-color: #FFFFFF;
+    --text-color-alternate: #FFFFFF;
+    --border-color: #E94560;
+    --header-shadow: none; /* Sem sombra no modo escuro */
+
+    /* Tipografia */
+    --body-font: 'Poppins', sans-serif;
+    --h1-font-size: 2.25rem;
+    --h2-font-size: 1.5rem;
+    --normal-font-size: 1rem;
+}
+
+/* Ativa o modo claro trocando as variáveis */
+html[data-theme='light'] {
+    --primary-color: #1A1A2E;
+    --secondary-color: #E94560;
+    --bg-color: #F0F0F0;
+    --card-bg-color: #FFFFFF;
+    --header-bg-color: #FFFFFF; /* Cor branca para o header no modo claro */
+    --text-color: #1A1A2E; /* Texto escuro para o modo claro */
+    --border-color: #dddddd; /* Borda mais sutil no modo claro */
+    --header-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Sombra para o header no modo claro */
+    --text-color-alternate: #FFFFFF;
+
+}
+
+
+/* ==================== BASE ==================== */
+* {
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: var(--body-font);
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background-color 0.3s, color 0.3s;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+ul {
+    list-style: none;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+.container {
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0 1rem;
+}
+
+/* ==================== HEADER / NAV ==================== */
+.header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background-color: var(--header-bg-color); /* << MUDANÇA AQUI */
+    z-index: 1000;
+    transition: background-color 0.3s;
+    border-bottom: 1px solid var(--border-color); /* Borda mais sutil */
+    box-shadow: var(--header-shadow); /* << MUDANÇA AQUI */
+}
+
+.nav {
+    height: 6rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.nav__logo img {
+    width: 150px; /* Ajuste o tamanho da sua logo */
+    transition: transform 0.3s;
+}
+
+.nav__logo:hover img {
+    transform: scale(1.1);
+}
+
+.nav__links {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+}
+
+.nav__link {
+    font-weight: 600;
+    position: relative;
+    padding-bottom: 0.5rem;
+}
+/* Efeito de sublinhado no link ativo/hover */
+.nav__link::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background-color: var(--secondary-color);
+    transition: width 0.3s;
+}
+.nav__link:hover::after {
+    width: 100%;
+}
+
+.nav__right-group {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+}
+
+.nav__controls {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.control-btn {
+    background: none;
+    border: none;
+    color: var(--text-color);
+    cursor: pointer;
+    font-family: var(--body-font);
+    font-weight: 500;
+}
+
+#login-btn {
+    background-color: var(--secondary-color);
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    color: white;
+    transition: background-color 0.3s;
+}
+#login-btn:hover {
+    background-color: #d8304d;
+}
+
+.theme-switcher ion-icon {
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+/* ==================== HOME CAROUSEL (Layout Atualizado) ==================== */
+.home-carousel {
+    padding-top: 8rem;
+    padding-bottom: 4rem;
+    text-align: center;
+    position: relative;
+}
+
+.home-carousel h1 {
+    font-size: var(--h1-font-size);
+    margin-bottom: 2rem;
+    color: var(--secondary-color);
+}
+
+/* A 'janela' do carrossel - agora com overflow para rolagem */
+.carousel-viewport {
+    width: 100%;
+    overflow-x: auto; /* Permite a rolagem */
+    scroll-snap-type: x mandatory; /* Efeito de "ímã" ao rolar */
+    scroll-behavior: smooth; /* Rolagem suave para os botões */
+    -ms-overflow-style: none;  /* Esconde scrollbar no IE e Edge */
+    scrollbar-width: none;  /* Esconde scrollbar no Firefox */
+    cursor: grab;
+}
+/* Esconde scrollbar no Chrome, Safari e Opera */
+.carousel-viewport::-webkit-scrollbar {
+    display: none;
+}
+/* Muda o cursor quando o usuário está arrastando */
+.carousel-viewport.grabbing {
+    cursor: grabbing;
+}
+
+
+/* O container que segura os slides */
+.carousel-container {
+    display: flex; /* Coloca os slides em linha */
+    align-items: center; /* Alinha os slides verticalmente */
+    /* Removemos a transição de 'transform' pois agora usamos 'scroll' */
+}
+
+/* Cada slide individual */
+.carousel-slide {
+    position: relative;
+    /* ALTERAÇÃO: O slide agora ocupa 65% da tela, mostrando os vizinhos */
+    flex: 0 0 65%; 
+    margin: 0 1rem;
+    border-radius: 10px;
+    overflow: hidden;
+    transition: transform 0.4s ease-in-out;
+    scroll-snap-align: center; /* Centraliza o slide ao parar de rolar */
+}
+
+/* O slide ativo fica um pouco maior para dar destaque */
+.carousel-slide.active {
+    transform: scale(1.05);
+}
+
+.carousel-slide img {
+    width: 100%;
+    display: block;
+    aspect-ratio: 16/9;
+    object-fit: cover;
+    pointer-events: none; /* Impede que a imagem interfira no arrastar */
+}
+
+.slide-info {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+    padding: 2rem 1rem 1rem;
+    color: white;
+}
+
+/* NOVO VISUAL: Botões de navegação */
+.carousel-nav {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 80%; /* Aumenta a largura para os botões ficarem mais próximos das bordas do slide ativo */
+    display: flex;
+    justify-content: space-between;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+.nav-btn {
+    background-color: rgba(255, 255, 255, 0.2); /* Fundo semi-transparente */
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: var(--text-color);
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.5rem;
+    transition: background-color 0.3s, transform 0.3s;
+    pointer-events: all;
+    backdrop-filter: blur(5px); /* Efeito de vidro fosco */
+    -webkit-backdrop-filter: blur(5px);
+}
+
+.nav-btn:hover {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+    transform: scale(1.1);
+}
+
+/* ==================== BACK TO TOP BUTTON ==================== */
+.back-to-top {
+    position: fixed;
+    right: 1.5rem;
+    bottom: -30%; /* Começa escondido */
+    background-color: var(--secondary-color);
+    padding: 0.5rem;
+    border-radius: 50%;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.5rem;
+    color: white;
+    transition: bottom 0.4s, transform 0.3s;
+    z-index: 500;
+}
+
+.back-to-top:hover {
+    transform: translateY(-4px);
+}
+
+.show-scroll {
+    bottom: 2rem; /* Mostra o botão */
+}
+
+
+/* ==================== RESPONSIVIDADE ==================== */
+@media screen and (max-width: 992px) {
+    .nav__links {
+        display: none; /* Em telas menores, esconderíamos os links e criaríamos um menu hambúrguer */
+    }
+    .nav {
+        height: 5rem;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .nav__logo img {
+        width: 120px;
+    }
+    .nav__right-group {
+        gap: 1rem;
+    }
+    .carousel-slide {
+        flex-basis: 90%;
+    }
+}
+
+/* ==================== ESTILOS GERAIS DE PÁGINA ==================== */
+.main-content {
+    padding-top: 8rem; /* Espaço para navbar. Aumente se necessário. */
+    padding-bottom: 4rem;
+}
+
+.page-title {
+    font-size: var(--h1-font-size);
+    color: var(--secondary-color);
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.page-subtitle {
+    text-align: center;
+    max-width: 600px;
+    margin: 0 auto 3rem auto;
+    color: var(--text-color);
+    opacity: 0.8;
+}
+
+/* ==================== PÁGINA DE JOGOS ==================== */
+.games-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 2rem;
+}
+
+.game-card {
+    background-color: var(--card-bg-color);
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.game-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 10px 25px rgba(233, 69, 96, 0.4);
+}
+
+.game-card__image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.game-card__overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 20%, transparent 60%);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 1.5rem;
+    color: white;
+    transition: opacity 0.3s ease;
+}
+
+.game-card:hover .game-card__overlay {
+    opacity: 0; /* Esconde o overlay no hover para mostrar o vídeo */
+}
+
+.game-card__title {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.game-card__cta {
+    font-weight: 600;
+    color: var(--secondary-color);
+}
+
+.video-preview {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: none; /* Começa escondido */
+    z-index: 5;
+}
+
+/* ==================== PÁGINA SOBRE ==================== */
+.about-section {
+    max-width: 800px;
+    margin: 2rem auto;
+}
+.about-section h2 {
+    color: var(--secondary-color);
+    margin-bottom: 1rem;
+    border-left: 4px solid var(--secondary-color);
+    padding-left: 1rem;
+}
+
+.team-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+    text-align: center;
+}
+
+.team-member__photo {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--secondary-color);
+    margin-bottom: 1rem;
+}
+
+/* ==================== PÁGINA FAQ ==================== */
+.faq-container {
+    max-width: 1100px; /* Aumenta a largura máxima para comportar a grade */
+    margin: 3rem auto;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* Cria 2 colunas de tamanho igual */
+    gap: 1.5rem; /* Espaçamento entre as perguntas */
+    align-items: start;
+}
+
+.faq-item {
+    background-color: var(--card-bg-color);
+    border-radius: 8px;
+    margin-bottom: 0; /* Remove a margem inferior pois o 'gap' já faz o espaçamento */
+    border: 1px solid var(--border-color);
+}
+
+.faq-question {
+    padding: 1.5rem;
+    font-weight: 600;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.faq-question::-webkit-details-marker { display: none; }
+
+.faq-question::after {
+    content: '+';
+    font-size: 1.5rem;
+    transition: transform 0.3s;
+}
+
+.faq-item[open] > .faq-question::after {
+    transform: rotate(45deg);
+}
+
+.faq-answer {
+    padding: 0 1.5rem 1.5rem 1.5rem;
+    opacity: 0.8;
+    line-height: 1.6;
+}
+
+/* Responsividade para a grade do FAQ */
+@media screen and (max-width: 768px) {
+    .faq-container {
+        grid-template-columns: 1fr; /* Volta a ter 1 coluna em telas menores */
+    }
+}
+
+/* ==================== PÁGINA CONTATO ==================== */
+.contact-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 3rem;
+    margin-top: 3rem;
+}
+
+.contact-form h2, .contact-info h2 {
+    color: var(--secondary-color);
+    margin-bottom: 1.5rem;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+    color: var(--text-color-alternate);
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.form-group input, .form-group textarea {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    border-radius: 5px;
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: var(--body-font);
+}
+
+.submit-btn {
+    background-color: var(--secondary-color);
+    color: white;
+    padding: 0.8rem 2rem;
+    border: none;
+    border-radius: 5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.submit-btn:hover {
+    background-color: #d8304d;
+}
+
+.contact-info ul {
+    list-style: none;
+    margin-top: 1.5rem;
+}
+
+.contact-info li {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+    gap: 1rem;
+    color: var(--text-color-alternate);
+}
+
+.contact-info ion-icon {
+    font-size: 1.5rem;
+    color: var(--secondary-color);
+}
+
+.social-links {
+    margin-top: 2rem;
+    display: flex;
+    gap: 1.5rem;
+}
+
+.social-links a ion-icon {
+    font-size: 2rem;
+    transition: color 0.3s, transform 0.3s;
+}
+
+.social-links a:hover ion-icon {
+    color: white;
+    transform: scale(1.2);
+}
+
+/* RESPONSIVIDADE PARA CONTATO */
+@media screen and (max-width: 992px) {
+    .contact-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Estilo para alternar cor de fundo das seções */
+.alternate-bg {
+    background-color: var(--primary-color);
+}
+
+/* Estilo para a galeria na página de jogo */
+.gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.gallery-grid img {
+    width: 100%;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* ==================== PÁGINA SOBRE (Layout) ==================== */
+.about-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 3rem;
+    align-items: center;
+    margin-top: 3rem;
+}
+
+.about-text h2 {
+    color: var(--text-color-alternate);
+    margin-bottom: 1.5rem;
+    font-size: var(--h2-font-size);
+}
+
+.about-text p {
+    color: var(--text-color-alternate);
+    line-height: 1.7;
+}
+
+.about-image img {
+    width: 100%;
+    border-radius: 10px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.25);
+}
+
+/* Deixa o layout responsivo em telas menores */
+@media screen and (max-width: 992px) {
+    .about-grid {
+        grid-template-columns: 1fr; /* Coluna única em telas menores */
+    }
+    .about-image {
+        /* Inverte a ordem em telas pequenas, mostrando a imagem primeiro */
+        order: -1; 
+    }
+}
