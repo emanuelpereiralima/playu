@@ -2,6 +2,9 @@ const GAMES_DATA = [
     {
         id: "ecos",
         name: "ECOS",
+        ownerId: "host1",
+        status: "approved",
+        isPaused: false,
         shortDescription: "Explore ruínas antigas e desvende segredos arcanos.",
         fullDescription: "Em Aventura Mística, você é um explorador corajoso em busca da Relíquia Perdida. Navegue por masmorras perigosas, resolva quebra-cabeças complexos e enfrente guardiões ancestrais. Cada decisão molda seu caminho nesta jornada épica.",
         coverImage: "assets/images/cover-ecos.png",
@@ -24,6 +27,9 @@ const GAMES_DATA = [
     {
         id: "galinheiro-eletrico",
         name: "Galinheiro Elétrico",
+        ownerId: "host2",
+        status: "approved",
+        isPaused: false,
         shortDescription: "Corra pelas neon-lit streets de uma metrópole futurista.",
         fullDescription: "No ano de 2242, corporações controlam o mundo. Como um Cyber Runner, sua missão é hackear sistemas, roubar dados e sobreviver em um mundo de alta tecnologia e perigo constante. Personalize seu personagem com implantes cibernéticos e domine as ruas.",
         coverImage: "assets/images/cover-galinheiro.jpeg",

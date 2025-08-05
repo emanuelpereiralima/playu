@@ -10,30 +10,35 @@
 <body>
 
     <header id="header" class="header">
-        <nav class="nav container">
-            <ul class="nav__links left">
-                <li><a href="index.html#home" class="nav__link" data-lang-key="home">Início</a></li>
-                <li><a href="index.html#jogos" class="nav__link" data-lang-key="games">Jogos</a></li>
-                <li><a href="index.html#sobre" class="nav__link" data-lang-key="about">Sobre</a></li>
+    <nav class="nav container">
+        <ul class="nav__links left">
+            <li><a href="index.html#home" class="nav__link" data-lang-key="home">Início</a></li>
+            <li><a href="index.html#jogos" class="nav__link" data-lang-key="games">Jogos</a></li>
+            <li><a href="index.html#sobre" class="nav__link" data-lang-key="about">Sobre</a></li>
+        </ul>
+        <a href="index.html#home" class="nav__logo"><img src="assets/images/logo.png" alt="play.u Logo"></a>
+        <div class="nav__right-group">
+            <ul class="nav__links right">
+                <li><a href="index.html#faq" class="nav__link" data-lang-key="faq">FAQ</a></li>
+                <li><a href="index.html#contato" class="nav__link" data-lang-key="contact">Contato</a></li>
             </ul>
-            <a href="index.html#home" class="nav__logo"><img src="assets/images/logo.png" alt="play.u Logo"></a>
-            <div class="nav__right-group">
-                <ul class="nav__links right">
-                    <li><a href="index.html#faq" class="nav__link" data-lang-key="faq">FAQ</a></li>
-                    <li><a href="index.html#contato" class="nav__link" data-lang-key="contact">Contato</a></li>
-                </ul>
-                <div class="nav__controls">
-                    <button class="control-btn" id="login-btn" data-lang-key="login">Login</button>
-                    <div class="language-switcher">
-                        <button class="control-btn" id="lang-pt">PT</button> | <button class="control-btn" id="lang-en">EN</button>
-                    </div>
-                    <div class="theme-switcher"><ion-icon name="sunny-outline" id="theme-toggle"></ion-icon></div>
+            <div class="nav__controls">
+                <a href="login.html" class="control-btn" id="login-btn" data-lang-key="login">Login</a>
+                <div class="language-switcher">
+                    <button class="control-btn" id="lang-pt">PT</button> | <button class="control-btn" id="lang-en">EN</button>
                 </div>
+                <div class="theme-switcher"><ion-icon name="sunny-outline" id="theme-toggle"></ion-icon></div>
             </div>
-        </nav>
-    </header>
+        </div>
+    </nav>
+</header>
 
     <main class="main-content">
+        <main class="main-content">
+        <div id="paused-message" class="container paused-notice" style="display: none;">
+        <h3><ion-icon name="pause-circle-outline"></ion-icon> Jogo Pausado</h3>
+        <p>Este jogo está temporariamente indisponível para novos agendamentos. Por favor, volte mais tarde.</p>
+        </div>
         <div class="container" id="game-details-container">
             <h1 id="game-title"></h1>
             <p id="game-description"></p>
@@ -84,7 +89,9 @@
     <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
     
-    <script src="assets/js/gamedata.js"></script> 
+    <script src="assets/js/gamedata.js"></script>
+    <script src="assets/js/userdata.js"></script>
+    <script src="assets/js/data-manager.js"></script>
     <script src="assets/js/translations.js"></script>
     <script src="assets/js/main.js"></script> 
     <script src="assets/js/game-page.js"></script> </body>

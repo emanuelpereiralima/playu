@@ -19,15 +19,29 @@
                 <label for="username">Usuário</label>
                 <input type="text" id="username" required>
             </div>
+            
             <div class="form-group">
                 <label for="password">Senha</label>
-                <input type="password" id="password" required>
+                <div class="password-wrapper">
+                    <input type="password" id="password" required>
+                    <ion-icon name="eye-off-outline" id="toggle-password"></ion-icon>
+                </div>
             </div>
+
+            <div class="form-extra-links">
+                <a href="#" id="forgot-password-link">Esqueci minha senha</a>
+            </div>
+            
             <p id="error-message" class="error-message" style="display: none;">Usuário ou senha inválidos.</p>
             <button type="submit" class="submit-btn">Entrar</button>
         </form>
     </div>
 
+    <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
+    <script src="assets/js/gamedata.js"></script>
+    <script src="assets/js/userdata.js"></script>
+    <script src="assets/js/data-manager.js"></script>
     <script src="assets/js/login.js"></script>
 </body>
 </html>

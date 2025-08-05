@@ -1,67 +1,23 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // --- LÓGICA DOS BOTÕES DO HEADER ---
-    const showProfileBtn = document.getElementById('show-profile-btn');
-    const profilePanel = document.querySelector('.profile-panel');
-    const logoutBtn = document.getElementById('logout-btn');
-
-    if (showProfileBtn && profilePanel) {
-        showProfileBtn.addEventListener('click', () => {
-            profilePanel.classList.toggle('hidden');
-        });
-    }
-
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', () => {
-            sessionStorage.removeItem('loggedInUser');
-            window.location.href = 'login.html';
-        });
-    }
-
-    // --- LÓGICA DE GERENCIAMENTO DE JOGOS ---
-    const gameListContainer = document.getElementById('game-list-container');
-    const addNewGameBtn = document.getElementById('add-new-game-btn');
-    const gameFormModal = document.getElementById('game-form-modal');
-    const gameForm = document.getElementById('game-form');
-    const cancelBtn = document.getElementById('cancel-btn');
-    const modalTitle = document.getElementById('modal-title');
-    const gameIdInput = document.getElementById('game-id');
-
-    function getGamesFromStorage() {
-        const storedGames = localStorage.getItem('games');
-        if (storedGames) return JSON.parse(storedGames);
-        const defaultGames = typeof DEFAULT_GAMES_DATA !== 'undefined' ? DEFAULT_GAMES_DATA : [];
-        localStorage.setItem('games', JSON.stringify(defaultGames));
-        return defaultGames;
-    }
-
-    function saveGamesToStorage(gamesToSave) {
-        localStorage.setItem('games', JSON.stringify(gamesToSave));
-    }
-
-    function getBookingsFromStorage() {
-        return JSON.parse(localStorage.getItem('bookings') || '[]');
-    }
-
-    function saveBookingsToStorage(bookings) {
-        localStorage.setItem('bookings', JSON.stringify(bookings));
-    }
+    // ... (lógica de verificação de sessão e seleção de elementos) ...
 
     function renderGameList() {
         gameListContainer.innerHTML = '';
-        const games = getGamesFromStorage();
-        const bookings = getBookingsFromStorage();
+        let allGames = getAllGamesFromStorage();
+        const allBookings = getBookingsFromStorage();
+        const hostGames = allGames.filter(game => game.ownerId === loggedInUser.username);
 
-        if (!games || games.length === 0) {
-            gameListContainer.innerHTML = '<p>Nenhum jogo encontrado.</p>';
+        if (hostGames.length === 0) {
+            gameListContainer.innerHTML = '<p>Você ainda não possui jogos.</p>';
             return;
         }
 
-        games.forEach(game => {
+        hostGames.forEach(game => {
             const gameElement = document.createElement('details');
             gameElement.className = 'game-list-item';
 
             const today = new Date().setHours(0, 0, 0, 0);
-            const bookingsForGame = bookings
+            const bookingsForGame = allBookings
                 .filter(b => b.gameId === game.id && new Date(b.date) >= today)
                 .sort((a, b) => new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`));
 
@@ -80,23 +36,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 `).join('');
             }
-            
+
             const statusClass = game.status === 'pending' ? 'status-pending' : 'status-approved';
             let mainActionButtons = `
                 <button class="schedule-btn" data-id="${game.id}">Agendar</button>
                 <button class="edit-btn" data-id="${game.id}">Editar Jogo</button>
                 <button class="remove-btn" data-id="${game.id}">Remover Jogo</button>
             `;
-            if (game.status === 'pending') {
-                mainActionButtons = `<button class="approve-btn" data-id="${game.id}">Aprovar</button>` + mainActionButtons;
-            }
 
             gameElement.innerHTML = `
                 <summary>
                     <div>
                         <span>${game.name}</span>
                         <span class="status-badge ${statusClass}">${game.status}</span>
-                        <span class="owner-badge">Dono: ${game.ownerId}</span>
                     </div>
                     <div class="item-actions">${mainActionButtons}</div>
                 </summary>
@@ -114,7 +66,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function addEventListenersToButtons() {
         document.querySelectorAll('.edit-btn').forEach(button => button.addEventListener('click', handleEditGame));
         document.querySelectorAll('.remove-btn').forEach(button => button.addEventListener('click', handleRemoveGame));
-        document.querySelectorAll('.approve-btn').forEach(button => button.addEventListener('click', handleApproveGame));
         document.querySelectorAll('.schedule-btn').forEach(button => {
             button.addEventListener('click', (event) => {
                 const gameId = event.target.dataset.id;
@@ -127,39 +78,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function handleStartSession(event) {
         event.stopPropagation();
-        const bookingId = event.target.dataset.bookingId;
+        const bookingId = event.target.dataset.id;
         window.location.href = `sala.html?bookingId=${bookingId}`;
-    }
-
-    function handleCancelSession(event) {
-        event.stopPropagation();
-        const bookingId = event.target.dataset.bookingId;
-        let allBookings = getBookingsFromStorage();
-        const bookingToCancel = allBookings.find(b => b.bookingId === bookingId);
-
-        if (bookingToCancel && confirm('Tem certeza que deseja cancelar esta sessão?')) {
-            const updatedBookings = allBookings.filter(b => b.bookingId !== bookingId);
-            saveBookingsToStorage(updatedBookings);
-
-            let allGames = getGamesFromStorage();
-            const gameIndex = allGames.findIndex(g => g.id === bookingToCancel.gameId);
-            if(gameIndex > -1) {
-                if (!allGames[gameIndex].availability[bookingToCancel.date]) {
-                    allGames[gameIndex].availability[bookingToCancel.date] = [];
-                }
-                allGames[gameIndex].availability[bookingToCancel.date].push(bookingToCancel.time);
-                allGames[gameIndex].availability[bookingToCancel.date].sort();
-                saveGamesToStorage(allGames);
-            }
-            renderGameList();
-        }
     }
 
     function handleEditGame(event) {
         const gameId = event.target.dataset.id;
-        const games = getGamesFromStorage();
-        const game = games.find(g => g.id === gameId);
-
+        const allGames = getAllGamesFromStorage();
+        const game = allGames.find(g => g.id === gameId);
+        
         if (!game) return;
 
         modalTitle.textContent = 'Editar Jogo';
@@ -174,24 +101,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function handleRemoveGame(event) {
         const gameId = event.target.dataset.id;
-        let games = getGamesFromStorage();
-        const gameToRemove = games.find(g => g.id === gameId);
+        let allGames = getAllGamesFromStorage();
+        const gameToRemove = allGames.find(g => g.id === gameId);
 
         if (gameToRemove && confirm(`Tem certeza que deseja remover o jogo "${gameToRemove.name}"?`)) {
-            const updatedGames = games.filter(g => g.id !== gameId);
-            saveGamesToStorage(updatedGames);
-            renderGameList();
-        }
-    }
-    
-    function handleApproveGame(event) {
-        const gameId = event.target.dataset.id;
-        let games = getGamesFromStorage();
-        const gameIndex = games.findIndex(g => g.id === gameId);
-        
-        if (gameIndex > -1) {
-            games[gameIndex].status = 'approved';
-            saveGamesToStorage(games);
+            const updatedGames = allGames.filter(g => g.id !== gameId);
+            saveAllGamesToStorage(updatedGames);
             renderGameList();
         }
     }
@@ -207,41 +122,55 @@ document.addEventListener('DOMContentLoaded', () => {
 
     gameForm.addEventListener('submit', (event) => {
         event.preventDefault();
-        
-        let allGames = getGamesFromStorage();
-        const editingId = gameIdInput.value;
+        console.log("Formulário enviado.");
 
-        const formData = {
-            name: document.getElementById('name').value,
+        const nameValue = document.getElementById('name').value;
+        const editingId = gameIdInput.value;
+        
+        // Sempre leia a versão mais recente dos jogos do storage antes de modificar.
+        let allGames = getAllGamesFromStorage(); 
+
+        const gameDataPayload = {
+            name: nameValue,
             fullDescription: document.getElementById('fullDescription').value,
-            isPaused: document.getElementById('isPaused').checked
         };
 
         if (editingId) {
+            console.log(`Modo Edição para o jogo ID: ${editingId}`);
             const gameIndex = allGames.findIndex(g => g.id === editingId);
             if (gameIndex > -1) {
-                allGames[gameIndex] = { ...allGames[gameIndex], ...formData };
+                allGames[gameIndex] = { ...allGames[gameIndex], ...gameDataPayload };
             }
         } else {
+            console.log("Modo Adição.");
             const newGame = {
-                id: formData.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, ''),
-                ownerId: 'admin',
-                status: 'approved',
-                shortDescription: (formData.fullDescription || '').substring(0, 50) + '...',
-                coverImage: "https://via.placeholder.com/500x700/cccccc/FFFFFF?text=Novo+Jogo",
+                id: nameValue.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, ''),
+                ownerId: loggedInUser.username,
+                status: 'pending',
+                shortDescription: (gameDataPayload.fullDescription || '').substring(0, 50) + '...',
+                coverImage: "https://via.placeholder.com/500x700/cccccc/FFFFFF?text=Pendente",
                 videoPreview: "",
                 galleryImages: [],
                 sessionDuration: "60 minutos",
                 availability: {},
-                ...formData
+                ...gameDataPayload
             };
+            
+            console.log("Novo jogo a ser adicionado:", newGame);
+            // Adiciona o novo jogo ao array de todos os jogos.
             allGames.push(newGame);
         }
 
-        saveGamesToStorage(allGames);
+        saveAllGamesToStorage(allGames);
         renderGameList();
         gameFormModal.close();
     });
+    
+    document.getElementById('logout-btn').addEventListener('click', () => {
+        sessionStorage.removeItem('loggedInUser');
+        window.location.href = 'login.html';
+    });
 
+    // Inicia a renderização da lista ao carregar a página.
     renderGameList();
 });

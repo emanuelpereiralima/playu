@@ -907,6 +907,46 @@ dialog::backdrop {
     color: var(--text-color);
 }
 
+/* ==================== PAINEL DE PERFIL (ADMIN/HOST) ==================== */
+.profile-panel {
+    margin-top: 2rem;
+}
+
+.form-divider {
+    border: none;
+    border-top: 1px solid var(--border-color);
+    margin: 2rem 0;
+    opacity: 0.5;
+}
+
+#profile-message {
+    margin-bottom: 1rem;
+    font-weight: 500;
+    padding: 0.8rem;
+    border-radius: 5px;
+}
+
+#profile-message.success {
+    color: #10b981; /* Verde */
+    background-color: rgba(16, 185, 129, 0.1);
+}
+
+#profile-message.error {
+    color: var(--secondary-color);
+    background-color: rgba(233, 69, 96, 0.1);
+}
+
+/* Classe utilitária para esconder elementos */
+.hidden {
+    display: none; /* !important para garantir que vai sobrepor outros displays */
+}
+
+/* Ajuste no header do admin para espaçar os botões */
+.admin-header-actions {
+    display: flex;
+    gap: 1rem;
+}
+
 /* ==================== ESTILOS DO FORMULÁRIO DE ADMIN ==================== */
 .upload-label {
     display: inline-flex;
@@ -942,6 +982,336 @@ dialog::backdrop {
     margin-top: 1rem;
     border-radius: 5px;
     border: 2px solid var(--border-color);
+}
+
+.status-badge {
+    padding: 0.2rem 0.5rem;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-left: 1rem;
+    color: white;
+}
+.status-pending { background-color: #f59e0b; }
+.status-approved { background-color: #10b981; }
+.owner-badge { margin-left: 1rem; font-size: 0.8rem; opacity: 0.6; }
+.approve-btn { background-color: #10b981 !important; border-color: #10b981 !important; }
+
+/* ==================== MELHORIAS NA PÁGINA DE LOGIN ==================== */
+.password-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.password-wrapper input {
+    width: 100%;
+    padding-right: 2.5rem; /* Adiciona espaço para o ícone não sobrepor o texto */
+}
+
+.password-wrapper ion-icon {
+    position: absolute;
+    top: 50%;
+    right: 1rem;
+    transform: translateY(-50%);
+    cursor: pointer;
+    font-size: 1.2rem;
+    color: var(--text-color);
+    opacity: 0.7;
+}
+
+.form-extra-links {
+    text-align: right;
+    margin-top: -1rem; /* Puxa o link para mais perto do campo de senha */
+    margin-bottom: 1.5rem;
+}
+
+.form-extra-links a {
+    font-size: 0.9rem;
+    color: var(--text-color);
+    opacity: 0.8;
+    text-decoration: underline;
+    transition: opacity 0.3s;
+}
+
+.form-extra-links a:hover {
+    opacity: 1;
+}
+
+/* Estilos para o Interruptor (Toggle Switch) */
+.form-toggle-group {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: rgba(0,0,0,0.2);
+    padding: 1rem;
+    border-radius: 8px;
+    margin-top: 1.5rem;
+}
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px;
+}
+.switch input { 
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #555;
+    transition: .4s;
+}
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+}
+input:checked + .slider {
+    background-color: var(--secondary-color);
+}
+input:checked + .slider:before {
+    transform: translateX(26px);
+}
+.slider.round {
+    border-radius: 34px;
+}
+.slider.round:before {
+    border-radius: 50%;
+}
+
+.paused-notice {
+    text-align: center;
+    padding: 3rem 1rem;
+    background-color: var(--card-bg-color);
+    border: 2px dashed var(--secondary-color);
+    border-radius: 10px;
+    margin-top: 8rem; /* Espaço para o header */
+}
+.paused-notice h3 {
+    color: var(--secondary-color);
+    font-size: var(--h2-font-size);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+.paused-notice ion-icon {
+    font-size: 2rem;
+}
+
+.game-card--paused {
+    filter: grayscale(80%);
+    pointer-events: none; /* Opcional: impede o clique no card pausado */
+}
+.paused-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 6; /* Acima do vídeo e do overlay padrão */
+    color: white;
+    font-size: 1.5rem;
+    font-weight: 700;
+    pointer-events: all; /* Garante que o link ainda funcione se pointer-events não for none no pai */
+}
+
+/* ==================== MODAL DE AGENDAMENTO (PAINÉIS) ==================== */
+#availability-modal {
+    max-width: 900px;
+    width: 100%;
+}
+
+.availability-editor {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+}
+
+.time-editor h3 {
+    margin-bottom: 1rem;
+}
+#selected-date-header {
+    color: var(--secondary-color);
+}
+
+#time-slots-list {
+    min-height: 200px;
+    background-color: rgba(0,0,0,0.2);
+    border-radius: 5px;
+    padding: 0.5rem;
+    margin-bottom: 1rem;
+}
+.time-slot-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--card-bg-color);
+    padding: 0.5rem 0.8rem;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+}
+.remove-time-btn {
+    background: none;
+    border: none;
+    color: var(--secondary-color);
+    cursor: pointer;
+    font-size: 1.2rem;
+}
+.add-time-form {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+}
+.add-time-form input[type="time"] {
+    background-color: var(--bg-color);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    border-radius: 5px;
+    padding: 0.5rem;
+}
+.small-btn {
+    padding: 0.5rem 1rem !important;
+}
+
+#availability-message {
+    text-align: center;
+    margin-top: 1rem;
+    padding: 0.5rem;
+    border-radius: 5px;
+}
+
+/* ==================== PÁGINA DA SALA DE JOGO ==================== */
+.game-room-body {
+    overflow: hidden; /* Impede a rolagem da página inteira */
+    background-color: #000;
+}
+.access-message {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    height: 100vh;
+    text-align: center;
+}
+.game-room-container {
+    display: grid;
+    grid-template-columns: 1fr auto; /* Coluna principal e uma lateral para as dicas/ferramentas */
+    height: 100vh;
+}
+.main-content-area {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+.timer-display {
+    position: absolute;
+    top: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0,0,0,0.5);
+    color: white;
+    padding: 0.5rem 2rem;
+    border-radius: 20px;
+    font-size: 2rem;
+    font-weight: 700;
+    z-index: 10;
+    border: 2px solid white;
+}
+.timer-display.extra-time {
+    border-color: var(--secondary-color);
+    color: var(--secondary-color);
+}
+.video-feed-container {
+    flex-grow: 1;
+    background-color: #111;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+#host-video-feed {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.player-controls {
+    background-color: #1a1a1a;
+    padding: 1rem;
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+}
+.player-controls button {
+    background: #333;
+    border: none;
+    color: white;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+/* Painel de Dicas */
+.hints-panel {
+    background-color: #1a1a1a;
+    transition: width 0.3s;
+    width: 300px;
+}
+.hints-panel.collapsed {
+    width: 60px;
+}
+#hints-toggle-btn {
+    width: 100%;
+    background: var(--secondary-color);
+    border: none;
+    color: white;
+    padding: 1rem;
+    font-size: 1rem;
+    cursor: pointer;
+}
+.hints-content {
+    padding: 1rem;
+}
+.hints-panel.collapsed .hints-content {
+    display: none;
+}
+.hint-item { margin-bottom: 1rem; }
+.hint-buy-btn { width: 100%; padding: 0.8rem; cursor: pointer; }
+.hint-text { background: #333; padding: 0.8rem; border-radius: 5px; margin-top: 0.5rem; }
+.hint-buy-btn:disabled { cursor: not-allowed; opacity: 0.5; }
+
+/* Visão do Host */
+.host-tools-panel {
+    width: 350px;
+    background-color: #1a1a1a;
+    padding: 1rem;
+    overflow-y: auto;
+}
+.tool-section { margin-bottom: 1.5rem; }
+.tool-section h4 { color: var(--secondary-color); margin-bottom: 0.5rem; }
+#hints-editor-form textarea { width: 100%; margin-bottom: 0.5rem; }
+
+/* Marcação de dias que já têm horários */
+.calendar-day.has-schedule {
+    background-color: rgba(26, 26, 46, 0.5);
+    box-shadow: inset 0 0 0 2px var(--secondary-color);
 }
 
 /* Deixa o layout responsivo em telas menores */
