@@ -10,28 +10,29 @@
 <body>
 
     <header id="header" class="header">
-        <nav class="nav container">
-            <ul class="nav__links left">
-                <li><a href="#home" class="nav__link" data-lang-key="home">Início</a></li>
-                <li><a href="#jogos" class="nav__link" data-lang-key="games">Jogos</a></li>
-                <li><a href="#sobre" class="nav__link" data-lang-key="about">Sobre</a></li>
+    <nav class="nav container">
+        <ul class="nav__links left">
             </ul>
-            <a href="#home" class="nav__logo"><img src="assets/images/logo.png" alt="play.u Logo"></a>
-            <div class="nav__right-group">
-                <ul class="nav__links right">
-                    <li><a href="#faq" class="nav__link" data-lang-key="faq">FAQ</a></li>
-                    <li><a href="#contato" class="nav__link" data-lang-key="contact">Contato</a></li>
+        <a href="index.html#home" class="nav__logo"><img src="assets/images/logo.png" alt="play.u Logo"></a>
+        <div class="nav__right-group">
+            <ul class="nav__links right">
                 </ul>
-                <div class="nav__controls">
-                    <a href="login.html" class="control-btn" id="login-btn" data-lang-key="login">Login</a>
-                    <div class="language-switcher">
-                        <button class="control-btn" id="lang-pt">PT</button> | <button class="control-btn" id="lang-en">EN</button>
-                    </div>
-                    <div class="theme-switcher"><ion-icon name="sunny-outline" id="theme-toggle"></ion-icon></div>
+            <div class="nav__controls">
+                <button class="control-btn header-shortcut-btn" id="header-join-player-btn">
+                    <ion-icon name="game-controller-outline"></ion-icon> <span>Entrar como Jogador</span>
+                </button>
+                <button class="control-btn header-shortcut-btn" id="header-join-host-btn">
+                    <ion-icon name="easel-outline"></ion-icon> <span>Entrar como Host</span>
+                </button>
+                <a href="login.html" class="control-btn" id="login-btn" data-lang-key="login">Login</a>
+                <div class="language-switcher">
+                    <button class="control-btn" id="lang-pt">PT</button> | <button class="control-btn" id="lang-en">EN</button>
                 </div>
+                <div class="theme-switcher"><ion-icon name="sunny-outline" id="theme-toggle"></ion-icon></div>
             </div>
-        </nav>
-    </header>
+        </div>
+    </nav>
+</header>
 
     <main>
         <section id="home" class="home-carousel">

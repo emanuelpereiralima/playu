@@ -125,11 +125,13 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.start-session-btn').forEach(button => button.addEventListener('click', handleStartSession)); // <-- LINHA CORRIGIDA
     }
 
-    function handleStartSession(event) {
-        event.stopPropagation();
-        const bookingId = event.target.dataset.bookingId;
-        window.location.href = `sala.html?bookingId=${bookingId}`;
-    }
+// Em admin.js e host-panel.js
+
+function handleStartSession(event) {
+    event.stopPropagation();
+    const bookingId = event.target.dataset.bookingId;
+    window.location.href = `sala.html?bookingId=${bookingId}`;
+}
 
     function handleCancelSession(event) {
         event.stopPropagation();

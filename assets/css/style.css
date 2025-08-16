@@ -1198,10 +1198,84 @@ input:checked + .slider:before {
 }
 
 /* ==================== PÁGINA DA SALA DE JOGO ==================== */
-.game-room-body {
-    overflow: hidden; /* Impede a rolagem da página inteira */
+.player-controls .exit-btn {
+    background-color: var(--secondary-color);
+    width: auto;
+    padding: 0 1rem;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.player-controls .control-btn-toggled { background-color: var(--secondary-color); }
+.player-controls button.active { background-color: #333; }
+
+/* Câmera do Jogador */
+.my-camera-preview {
+    position: absolute;
+    bottom: 95px;
+    right: 1rem;
+    z-index: 5;
+    width: 200px;
+    height: 150px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
     background-color: #000;
 }
+#player-video-preview {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Ferramentas do Host */
+.tool-section h4 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.styler-group {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+.media-previews {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+.media-thumb {
+    width: 100%;
+    height: 60px;
+    object-fit: cover;
+    cursor: pointer;
+    border-radius: 4px;
+    border: 2px solid transparent;
+}
+.media-thumb:hover {
+    border-color: var(--secondary-color);
+}
+.media-display-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+}
+.media-display-overlay img, .media-display-overlay video {
+    max-width: 100%;
+    max-height: 100%;
+    border: 3px solid white;
+}
+
 .access-message {
     display: flex;
     justify-content: center;
@@ -1211,10 +1285,62 @@ input:checked + .slider:before {
     text-align: center;
 }
 .game-room-container {
-    display: grid;
-    grid-template-columns: 1fr auto; /* Coluna principal e uma lateral para as dicas/ferramentas */
+    display: block;
+    position: relative;
     height: 100vh;
+    width: 100vw;
 }
+.video-feed-container.fullscreen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+}
+
+.host-tools-wrapper {
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 100vh;
+    z-index: 15;
+    transition: transform 0.4s ease-in-out;
+    transform: translateX(0);
+}
+.host-tools-wrapper.collapsed {
+    transform: translateX(350px);
+}
+
+
+.tools-toggle-btn {
+    position: absolute;
+    top: 15px;
+    left: -50px;
+    width: 50px;
+    height: 50px;
+    background-color: var(--secondary-color);
+    color: white;
+    border: none;
+    border-radius: 8px 0 0 8px;
+    font-size: 1.8rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.host-tools-panel {
+    width: 350px;
+    height: 100%;
+    background-color: rgba(26, 26, 46, 0.9); 
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    padding: 1rem;
+    overflow-y: auto;
+    border-left: 1px solid var(--border-color);
+}
+
 .main-content-area {
     display: flex;
     flex-direction: column;
@@ -1239,11 +1365,12 @@ input:checked + .slider:before {
     color: var(--secondary-color);
 }
 .video-feed-container {
-    flex-grow: 1;
-    background-color: #111;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
 }
 #host-video-feed {
     width: 100%;
@@ -1256,6 +1383,9 @@ input:checked + .slider:before {
     display: flex;
     justify-content: center;
     gap: 1rem;
+    position: relative;
+    z-index: 1;
+    margin-top: auto;
 }
 .player-controls button {
     background: #333;
@@ -1266,6 +1396,28 @@ input:checked + .slider:before {
     border-radius: 50%;
     font-size: 1.5rem;
     cursor: pointer;
+}
+
+
+/* Estilos para os botões de atalho no Header */
+.header-shortcut-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    border: 1px solid var(--border-color) !important; /* !important para sobrepor .control-btn */
+    transition: background-color 0.3s;
+}
+
+.header-shortcut-btn ion-icon {
+    font-size: 1.2rem;
+}
+
+.header-shortcut-btn:hover {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color) !important;
+    color: white;
 }
 
 /* Painel de Dicas */

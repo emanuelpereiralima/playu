@@ -2,7 +2,7 @@ const GAMES_DATA = [
     {
         id: "ecos",
         name: "ECOS",
-        ownerId: "host1",
+        ownerId: "admin",
         status: "approved",
         isPaused: false,
         shortDescription: "Explore ruínas antigas e desvende segredos arcanos.",
@@ -27,7 +27,7 @@ const GAMES_DATA = [
     {
         id: "galinheiro-eletrico",
         name: "Galinheiro Elétrico",
-        ownerId: "host2",
+        ownerId: "admin",
         status: "approved",
         isPaused: false,
         shortDescription: "Corra pelas neon-lit streets de uma metrópole futurista.",
