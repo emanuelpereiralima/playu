@@ -205,7 +205,6 @@ img {
 .carousel-container {
     display: flex; /* Coloca os slides em linha */
     align-items: center; /* Alinha os slides verticalmente */
-    /* Removemos a transição de 'transform' pois agora usamos 'scroll' */
 }
 
 /* Cada slide individual */

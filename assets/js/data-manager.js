@@ -12,7 +12,7 @@ function getGames() {
     }
     
     // Este código é executado se não houver dados ou se eles estiverem corrompidos.
-    const defaultGames = typeof GAMES_DATA !== 'undefined' ? GAMES_DATA : [];
+    const defaultGames = typeof DEFAULT_GAMES_DATA !== 'undefined' ? DEFAULT_GAMES_DATA : [];
     localStorage.setItem('games', JSON.stringify(defaultGames));
     return defaultGames;
 }

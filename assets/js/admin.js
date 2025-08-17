@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // --- LÓGICA DOS BOTÕES DO HEADER ---
+    // Lógica dos botões do Header
     const showProfileBtn = document.getElementById('show-profile-btn');
     const profilePanel = document.querySelector('.profile-panel');
     const logoutBtn = document.getElementById('logout-btn');
@@ -9,7 +9,6 @@ document.addEventListener('DOMContentLoaded', () => {
             profilePanel.classList.toggle('hidden');
         });
     }
-
     if (logoutBtn) {
         logoutBtn.addEventListener('click', () => {
             sessionStorage.removeItem('loggedInUser');
@@ -17,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- LÓGICA DE GERENCIAMENTO DE JOGOS ---
+    // Lógica de Gerenciamento de Jogos
     const gameListContainer = document.getElementById('game-list-container');
     const addNewGameBtn = document.getElementById('add-new-game-btn');
     const gameFormModal = document.getElementById('game-form-modal');
@@ -26,60 +25,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalTitle = document.getElementById('modal-title');
     const gameIdInput = document.getElementById('game-id');
 
-    function getGamesFromStorage() {
-        const storedGames = localStorage.getItem('games');
-        if (storedGames) return JSON.parse(storedGames);
-        const defaultGames = typeof DEFAULT_GAMES_DATA !== 'undefined' ? DEFAULT_GAMES_DATA : [];
-        localStorage.setItem('games', JSON.stringify(defaultGames));
-        return defaultGames;
-    }
-
-    function saveGamesToStorage(gamesToSave) {
-        localStorage.setItem('games', JSON.stringify(gamesToSave));
-    }
-
-    function getBookingsFromStorage() {
-        return JSON.parse(localStorage.getItem('bookings') || '[]');
-    }
-
-    function saveBookingsToStorage(bookings) {
-        localStorage.setItem('bookings', JSON.stringify(bookings));
-    }
-
     function renderGameList() {
+        if (!gameListContainer) return;
         gameListContainer.innerHTML = '';
-        const games = getGamesFromStorage();
-        const bookings = getBookingsFromStorage();
+        const games = getGames();
 
         if (!games || games.length === 0) {
-            gameListContainer.innerHTML = '<p>Nenhum jogo encontrado.</p>';
+            gameListContainer.innerHTML = '<p>Nenhum jogo encontrado. Adicione um para começar.</p>';
             return;
         }
 
         games.forEach(game => {
             const gameElement = document.createElement('details');
             gameElement.className = 'game-list-item';
-
-            const today = new Date().setHours(0, 0, 0, 0);
-            const bookingsForGame = bookings
-                .filter(b => b.gameId === game.id && new Date(b.date) >= today)
-                .sort((a, b) => new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`));
-
-            let sessionsHTML = '<p>Nenhuma sessão agendada.</p>';
-            if (bookingsForGame.length > 0) {
-                sessionsHTML = bookingsForGame.map(b => `
-                    <div class="session-item">
-                        <div class="session-details">
-                            📅 <strong>${new Intl.DateTimeFormat('pt-BR').format(new Date(b.date))}</strong> às 
-                            <strong>${b.time}</strong> (Reservado por: ${b.bookedBy})
-                        </div>
-                        <div class="session-actions">
-                            <button class="remove-btn cancel-session-btn" data-booking-id="${b.bookingId}">Cancelar</button>
-                            <button class="approve-btn start-session-btn" data-booking-id="${b.bookingId}">Entrar na Sala</button>
-                        </div>
-                    </div>
-                `).join('');
-            }
             
             const statusClass = game.status === 'pending' ? 'status-pending' : 'status-approved';
             let mainActionButtons = `
@@ -95,78 +53,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 <summary>
                     <div>
                         <span>${game.name}</span>
-                        <span class="status-badge ${statusClass}">${game.status}</span>
-                        <span class="owner-badge">Dono: ${game.ownerId}</span>
+                        <span class="status-badge ${statusClass}">${game.status || 'N/A'}</span>
+                        <span class="owner-badge">Dono: ${game.ownerId || 'N/A'}</span>
                     </div>
                     <div class="item-actions">${mainActionButtons}</div>
                 </summary>
-                <div class="session-list">
-                    <h4>Sessões Agendadas:</h4>
-                    ${sessionsHTML}
-                </div>
-            `;
+                `;
             gameListContainer.appendChild(gameElement);
         });
-
         addEventListenersToButtons();
     }
 
     function addEventListenersToButtons() {
-        document.querySelectorAll('.edit-btn').forEach(button => button.addEventListener('click', handleEditGame));
-        document.querySelectorAll('.remove-btn').forEach(button => button.addEventListener('click', handleRemoveGame));
-        document.querySelectorAll('.approve-btn').forEach(button => button.addEventListener('click', handleApproveGame));
-        document.querySelectorAll('.schedule-btn').forEach(button => {
-            button.addEventListener('click', (event) => {
-                const gameId = event.target.dataset.id;
-                if (window.openAvailabilityModal) window.openAvailabilityModal(gameId); 
-            });
-        });
-        document.querySelectorAll('.cancel-session-btn').forEach(button => button.addEventListener('click', handleCancelSession));
-        document.querySelectorAll('.start-session-btn').forEach(button => button.addEventListener('click', handleStartSession)); // <-- LINHA CORRIGIDA
-    }
-
-// Em admin.js e host-panel.js
-
-function handleStartSession(event) {
-    event.stopPropagation();
-    const bookingId = event.target.dataset.bookingId;
-    window.location.href = `sala.html?bookingId=${bookingId}`;
-}
-
-    function handleCancelSession(event) {
-        event.stopPropagation();
-        const bookingId = event.target.dataset.bookingId;
-        let allBookings = getBookingsFromStorage();
-        const bookingToCancel = allBookings.find(b => b.bookingId === bookingId);
-
-        if (bookingToCancel && confirm('Tem certeza que deseja cancelar esta sessão?')) {
-            const updatedBookings = allBookings.filter(b => b.bookingId !== bookingId);
-            saveBookingsToStorage(updatedBookings);
-
-            let allGames = getGamesFromStorage();
-            const gameIndex = allGames.findIndex(g => g.id === bookingToCancel.gameId);
-            if(gameIndex > -1) {
-                if (!allGames[gameIndex].availability[bookingToCancel.date]) {
-                    allGames[gameIndex].availability[bookingToCancel.date] = [];
-                }
-                allGames[gameIndex].availability[bookingToCancel.date].push(bookingToCancel.time);
-                allGames[gameIndex].availability[bookingToCancel.date].sort();
-                saveGamesToStorage(allGames);
-            }
-            renderGameList();
-        }
+        document.querySelectorAll('.edit-btn').forEach(b => b.addEventListener('click', handleEditGame));
+        document.querySelectorAll('.remove-btn').forEach(b => b.addEventListener('click', handleRemoveGame));
+        document.querySelectorAll('.approve-btn').forEach(b => b.addEventListener('click', handleApproveGame));
+        document.querySelectorAll('.schedule-btn').forEach(b => b.addEventListener('click', (e) => {
+            if (window.openAvailabilityModal) window.openAvailabilityModal(e.target.dataset.id);
+        }));
     }
 
     function handleEditGame(event) {
         const gameId = event.target.dataset.id;
-        const games = getGamesFromStorage();
-        const game = games.find(g => g.id === gameId);
-
+        const game = getGames().find(g => g.id === gameId);
         if (!game) return;
-
         modalTitle.textContent = 'Editar Jogo';
         gameForm.reset();
-        
         gameIdInput.value = game.id;
         document.getElementById('name').value = game.name;
         document.getElementById('fullDescription').value = game.fullDescription;
@@ -176,24 +88,21 @@ function handleStartSession(event) {
 
     function handleRemoveGame(event) {
         const gameId = event.target.dataset.id;
-        let games = getGamesFromStorage();
+        let games = getGames();
         const gameToRemove = games.find(g => g.id === gameId);
-
-        if (gameToRemove && confirm(`Tem certeza que deseja remover o jogo "${gameToRemove.name}"?`)) {
-            const updatedGames = games.filter(g => g.id !== gameId);
-            saveGamesToStorage(updatedGames);
+        if (gameToRemove && confirm(`Remover "${gameToRemove.name}"?`)) {
+            saveGames(games.filter(g => g.id !== gameId));
             renderGameList();
         }
     }
-    
+
     function handleApproveGame(event) {
         const gameId = event.target.dataset.id;
-        let games = getGamesFromStorage();
+        let games = getGames();
         const gameIndex = games.findIndex(g => g.id === gameId);
-        
         if (gameIndex > -1) {
             games[gameIndex].status = 'approved';
-            saveGamesToStorage(games);
+            saveGames(games);
             renderGameList();
         }
     }
@@ -209,16 +118,13 @@ function handleStartSession(event) {
 
     gameForm.addEventListener('submit', (event) => {
         event.preventDefault();
-        
-        let allGames = getGamesFromStorage();
+        let allGames = getGames();
         const editingId = gameIdInput.value;
-
         const formData = {
             name: document.getElementById('name').value,
             fullDescription: document.getElementById('fullDescription').value,
             isPaused: document.getElementById('isPaused').checked
         };
-
         if (editingId) {
             const gameIndex = allGames.findIndex(g => g.id === editingId);
             if (gameIndex > -1) {
@@ -239,8 +145,7 @@ function handleStartSession(event) {
             };
             allGames.push(newGame);
         }
-
-        saveGamesToStorage(allGames);
+        saveGames(allGames);
         renderGameList();
         gameFormModal.close();
     });

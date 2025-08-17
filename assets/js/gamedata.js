@@ -1,4 +1,4 @@
-const GAMES_DATA = [
+const DEFAULT_GAMES_DATA = [
     {
         id: "ecos",
         name: "ECOS",
