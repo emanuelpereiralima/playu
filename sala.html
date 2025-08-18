@@ -11,64 +11,36 @@
 
     <div id="access-message-container" class="access-message" style="display: none;"></div>
 
-<div id="host-view" class="game-room-container hidden">
-    
-    <div class="video-feed-container fullscreen">
-        <video id="host-own-video-feed" autoplay playsinline muted></video>
-    </div>
-
-    <div id="host-timer-display" class="timer-display">21:00</div>
-    <div class="player-controls">
-        <button id="host-mic-btn" class="control-btn-toggled"><ion-icon name="mic-off-outline"></ion-icon></button>
-        <button id="host-cam-btn" class="control-btn-toggled"><ion-icon name="videocam-off-outline"></ion-icon></button>
-        <button id="start-timer-btn">Iniciar Timer</button>
-        <button id="host-exit-btn" class="exit-btn"><ion-icon name="exit-outline"></ion-icon> Sair</button>
-    </div>
-    
-    <div id="host-media-display-overlay" class="media-display-overlay hidden"></div>
-    
-    <div id="host-tools-wrapper" class="host-tools-wrapper collapsed">
-        <button id="host-tools-toggle-btn" class="tools-toggle-btn">
-            <ion-icon name="build-outline"></ion-icon>
-        </button>
-        <div class="host-tools-panel">
-            <h3>Ferramentas do Host</h3>
-            <div class="tool-section">
-                <h4><ion-icon name="help-buoy-outline"></ion-icon> Editar Dicas</h4>
-                <form id="hints-editor-form">
-                    <textarea id="hint1-input" rows="2" placeholder="Texto da Dica 1"></textarea>
-                    <textarea id="hint2-input" rows="2" placeholder="Texto da Dica 2"></textarea>
-                    <textarea id="hint3-input" rows="2" placeholder="Texto da Dica 3"></textarea>
-                    <button type="submit">Salvar Dicas</button>
-                </form>
-            </div>
-            <div class="tool-section">
-                <h4><ion-icon name="timer-outline"></ion-icon> Estilo do Timer</h4>
-                <div class="styler-group">
-                    <label for="timer-color-input">Cor</label>
-                    <input type="color" id="timer-color-input" value="#FFFFFF">
-                </div>
-                <div class="styler-group">
-                    <label for="timer-font-select">Fonte</label>
-                    <select id="timer-font-select">
-                        <option value="'Poppins', sans-serif">Padrão (Poppins)</option>
-                        <option value="'Courier New', Courier, monospace">Monospace</option>
-                        <option value="'Times New Roman', Times, serif">Serif</option>
-                    </select>
+    <div id="player-view" class="game-room-container hidden">
+        <div class="main-content-area">
+            <div id="timer-display" class="timer-display">21:00</div>
+            <div id="media-display-overlay" class="media-display-overlay hidden"></div>
+            <div class="video-feed-container">
+                <video id="host-video-feed" autoplay playsinline muted></video>
+                <div class="my-camera-preview">
+                    <video id="player-video-preview" autoplay playsinline muted></video>
                 </div>
             </div>
-             <div class="tool-section">
-                <h4><ion-icon name="images-outline"></ion-icon> Mídia do Jogo</h4>
-                <input type="file" id="media-upload" multiple accept="image/*,video/*">
-                <div id="media-previews" class="media-previews"></div>
+            <div class="player-controls">
+                <button id="player-mic-btn" class="control-btn-toggled" disabled><ion-icon name="mic-off-outline"></ion-icon></button>
+                <button id="player-cam-btn" class="control-btn-toggled" disabled><ion-icon name="videocam-off-outline"></ion-icon></button>
+                <button id="player-exit-btn" class="exit-btn"><ion-icon name="exit-outline"></ion-icon> Sair</button>
+            </div>
+        </div>
+        <div id="hints-panel" class="hints-panel collapsed">
+            <button id="hints-toggle-btn"><ion-icon name="help-circle-outline"></ion-icon> DICAS</button>
+            <div class="hints-content">
+                <div class="hint-item"><button class="hint-buy-btn" data-hint="1">Comprar Dica 1 <span>(-1:00)</span></button><p class="hint-text hidden"></p></div>
+                <div class="hint-item"><button class="hint-buy-btn" data-hint="2">Comprar Dica 2 <span>(-1:00)</span></button><p class="hint-text hidden"></p></div>
+                <div class="hint-item"><button class="hint-buy-btn" data-hint="3">Comprar Dica 3 <span>(-1:00)</span></button><p class="hint-text hidden"></p></div>
             </div>
         </div>
     </div>
-
-</div>
-
-    <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
-    <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
-    <script src="assets/js/sala.js"></script>
-</body>
+    
+    <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js" defer></script>
+    <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js" defer></script>
+    <script src="assets/js/gamedata.js" defer></script>
+    <script src="assets/js/userdata.js" defer></script>
+    <script src="assets/js/data-manager.js" defer></script>
+    <script src="assets/js/sala.js" defer></script> </body>
 </html>

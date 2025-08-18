@@ -210,6 +210,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         const testGame = allGames[0]; // Pega o primeiro jogo da lista para o teste
+         const page = viewMode === 'host' ? 'sala-host.html' : 'sala.html';
+        window.location.href = `${page}?bookingId=${testBooking.bookingId}`;
 
         // Cria uma data e hora para o momento atual
         const now = new Date();
@@ -229,11 +231,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Salva o agendamento temporário para que a página da sala possa encontrá-lo
         const allBookings = getBookings();
         allBookings.push(testBooking);
-        saveBookings(allBookings);
-
-        // Redireciona para a sala com o modo de visão correto
-        window.location.href = `sala.html?bookingId=${testBooking.bookingId}&view=${viewMode}`;
-    }
+        saveBookings(allBookings);    }
 
     if (joinPlayerBtn) {
         joinPlayerBtn.addEventListener('click', () => {

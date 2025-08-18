@@ -1196,85 +1196,11 @@ input:checked + .slider:before {
     border-radius: 5px;
 }
 
-/* ==================== PÁGINA DA SALA DE JOGO ==================== */
-.player-controls .exit-btn {
-    background-color: var(--secondary-color);
-    width: auto;
-    padding: 0 1rem;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-.player-controls .control-btn-toggled { background-color: var(--secondary-color); }
-.player-controls button.active { background-color: #333; }
-
-/* Câmera do Jogador */
-.my-camera-preview {
-    position: absolute;
-    bottom: 95px;
-    right: 1rem;
-    z-index: 5;
-    width: 200px;
-    height: 150px;
-    border: 2px solid var(--border-color);
-    border-radius: 8px;
+/* ==================== PÁGINA DA SALA DE JOGO (LAYOUT CORRIGIDO E UNIFICADO) ==================== */
+.game-room-body {
     overflow: hidden;
     background-color: #000;
 }
-#player-video-preview {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-/* Ferramentas do Host */
-.tool-section h4 {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-.styler-group {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.5rem;
-}
-.media-previews {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0.5rem;
-    margin-top: 1rem;
-}
-.media-thumb {
-    width: 100%;
-    height: 60px;
-    object-fit: cover;
-    cursor: pointer;
-    border-radius: 4px;
-    border: 2px solid transparent;
-}
-.media-thumb:hover {
-    border-color: var(--secondary-color);
-}
-.media-display-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0,0,0,0.8);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 2rem;
-}
-.media-display-overlay img, .media-display-overlay video {
-    max-width: 100%;
-    max-height: 100%;
-    border: 3px solid white;
-}
-
 .access-message {
     display: flex;
     justify-content: center;
@@ -1284,66 +1210,16 @@ input:checked + .slider:before {
     text-align: center;
 }
 .game-room-container {
-    display: block;
-    position: relative;
+    display: grid;
+    grid-template-columns: 1fr auto; /* Layout de 2 colunas: conteúdo | sidebar */
     height: 100vh;
-    width: 100vw;
 }
-.video-feed-container.fullscreen {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 0;
-}
-
-.host-tools-wrapper {
-    position: absolute;
-    top: 0;
-    right: 0;
-    height: 100vh;
-    z-index: 15;
-    transition: transform 0.4s ease-in-out;
-    transform: translateX(0);
-}
-.host-tools-wrapper.collapsed {
-    transform: translateX(350px);
-}
-
-
-.tools-toggle-btn {
-    position: absolute;
-    top: 15px;
-    left: -50px;
-    width: 50px;
-    height: 50px;
-    background-color: var(--secondary-color);
-    color: white;
-    border: none;
-    border-radius: 8px 0 0 8px;
-    font-size: 1.8rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.host-tools-panel {
-    width: 350px;
-    height: 100%;
-    background-color: rgba(26, 26, 46, 0.9); 
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    padding: 1rem;
-    overflow-y: auto;
-    border-left: 1px solid var(--border-color);
-}
-
 .main-content-area {
     display: flex;
     flex-direction: column;
     position: relative;
+    background-color: #000;
+    overflow: hidden; /* Garante que nada vaze */
 }
 .timer-display {
     position: absolute;
@@ -1364,37 +1240,158 @@ input:checked + .slider:before {
     color: var(--secondary-color);
 }
 .video-feed-container {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 0;
+    flex-grow: 1; /* Ocupa todo o espaço vertical disponível */
+    background-color: #111;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
-#host-video-feed {
+#host-video-feed, #host-own-video-feed {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
 .player-controls {
-    background-color: #1a1a1a;
     padding: 1rem;
     display: flex;
     justify-content: center;
+    align-items: center;
     gap: 1rem;
-    position: relative;
-    z-index: 1;
-    margin-top: auto;
+    background-color: #1a1a1a;
+    z-index: 10;
 }
 .player-controls button {
     background: #333;
     border: none;
     color: white;
-    width: 50px;
+    min-width: 50px;
     height: 50px;
-    border-radius: 50%;
+    border-radius: 25px;
     font-size: 1.5rem;
     cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0 1rem;
+}
+.player-controls .exit-btn { background-color: var(--secondary-color); gap: 0.5rem; }
+.player-controls .control-btn-toggled { background-color: var(--secondary-color); }
+.player-controls button.active { background-color: #333; }
+.my-camera-preview {
+    position: absolute;
+    bottom: 1rem;
+    right: 1rem;
+    width: 200px;
+    height: 150px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: #000;
+    z-index: 5;
+}
+#player-video-preview { width: 100%; height: 100%; object-fit: cover; }
+.media-display-overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(0,0,0,0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+}
+.media-display-overlay img, .media-display-overlay video { max-width: 100%; max-height: 100%; }
+
+/* PAINÉIS LATERAIS RECOLHÍVEIS (Dicas e Ferramentas do Host) */
+.hints-panel, .host-tools-wrapper {
+    position: relative;
+    transition: width 0.4s ease-in-out;
+    width: 350px; /* Largura padrão para ambos */
+}
+.hints-panel.collapsed, .host-tools-wrapper.collapsed {
+    width: 60px; /* Largura quando recolhido */
+}
+.hints-panel .hints-content, .host-tools-wrapper .host-tools-panel {
+    width: 350px;
+    height: 100%;
+    background-color: #1a1a1a;
+    padding: 1rem;
+    overflow-y: auto;
+    position: absolute;
+    top: 0;
+    left: 0;
+    transition: opacity 0.3s;
+}
+.hints-panel.collapsed .hints-content, .host-tools-wrapper.collapsed .host-tools-panel {
+    opacity: 0;
+    pointer-events: none;
+}
+#hints-toggle-btn, .tools-toggle-btn {
+    width: 100%;
+    height: 60px;
+    background: var(--secondary-color);
+    border: none;
+    color: white;
+    padding: 1rem;
+    font-size: 1.5rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.hints-panel.collapsed #hints-toggle-btn {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    height: auto;
+    padding: 1rem 0;
+}
+.tools-toggle-btn {
+    position: absolute;
+    top: 15px;
+    left: -50px;
+    width: 50px;
+    height: 50px;
+    border-radius: 8px 0 0 8px;
+}
+.host-tools-wrapper.collapsed .tools-toggle-btn {
+    left: 10px; /* Botão aparece dentro da área recolhida */
+    border-radius: 50%;
+}
+
+/* Ferramentas do Host */
+.tool-section { margin-bottom: 1.5rem; }
+.tool-section h4 { display: flex; align-items: center; gap: 0.5rem; color: var(--secondary-color); margin-bottom: 0.5rem; }
+.styler-group { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+.media-previews { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-top: 1rem; }
+.media-thumb { width: 100%; height: 60px; object-fit: cover; cursor: pointer; border-radius: 4px; border: 2px solid transparent; }
+.media-thumb:hover { border-color: var(--secondary-color); }
+
+/* ==================== CORREÇÃO DE CAMADAS (Z-INDEX) NA SALA ==================== */
+
+/* Garante que a área de conteúdo principal seja o contexto de empilhamento */
+.main-content-area {
+    position: relative;
+}
+
+/* Camada 0: O vídeo fica no fundo */
+.video-feed-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1; /* Camada de fundo */
+}
+
+/* Camada 10: Timer e Controles ficam na frente do vídeo */
+.timer-display {
+    position: absolute;
+    z-index: 10;
+}
+.player-controls {
+    position: relative; 
+    z-index: 10;
+    margin-top: auto; /* Empurra os controles para o fundo */
 }
 
 
