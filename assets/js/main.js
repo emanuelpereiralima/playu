@@ -204,37 +204,33 @@ document.addEventListener('DOMContentLoaded', () => {
     const joinHostBtn = document.getElementById('header-join-host-btn');
 
     function createTestSessionAndJoin(viewMode) {
-    const allGames = getGames();
-    if (!allGames || allGames.length === 0) {
-        alert('Nenhum jogo disponível para criar uma sala de teste.');
-        return;
+        const allGames = getGames();
+        if (!allGames || allGames.length === 0) {
+            alert('Nenhum jogo disponível para criar uma sala de teste.');
+            return;
+        }
+        const testGame = allGames[0];
+
+        const now = new Date();
+        const dateStr = now.toISOString().split('T')[0];
+        const timeStr = now.toTimeString().substring(0, 5);
+
+        const testBooking = {
+            bookingId: `test_${Date.now()}`,
+            gameId: testGame.id,
+            gameName: testGame.name,
+            date: dateStr,
+            time: timeStr,
+            bookedBy: 'TestUser'
+        };
+
+        const allBookings = getBookings();
+        allBookings.push(testBooking);
+        saveBookings(allBookings);
+
+        const page = viewMode === 'host' ? 'sala-host.html' : 'sala.html';
+        window.location.href = `${page}?bookingId=${testBooking.bookingId}`;
     }
-    const testGame = allGames[0]; // Pega o primeiro jogo da lista para o teste
-
-    // Cria uma data e hora para o momento atual
-    const now = new Date();
-    const dateStr = now.toISOString().split('T')[0]; // Formato "YYYY-MM-DD"
-    const timeStr = now.toTimeString().substring(0, 5); // Formato "HH:MM"
-
-    // A variável é CRIADA aqui, antes de ser usada
-    const testBooking = {
-        bookingId: `test_${Date.now()}`, // ID único de teste
-        gameId: testGame.id,
-        gameName: testGame.name,
-        date: dateStr,
-        time: timeStr,
-        bookedBy: 'TestUser'
-    };
-
-    // Salva o agendamento temporário para que a página da sala possa encontrá-lo
-    const allBookings = getBookings();
-    allBookings.push(testBooking);
-    saveBookings(allBookings);
-
-    // Redireciona para a sala com o modo de visão correto
-    // A variável é USADA aqui, depois de já ter sido criada.
-    window.location.href = `sala.html?bookingId=${testBooking.bookingId}&view=${viewMode}`;
-}
 
     if (joinPlayerBtn) {
         joinPlayerBtn.addEventListener('click', () => {
