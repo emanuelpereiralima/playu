@@ -15,9 +15,20 @@ document.addEventListener('DOMContentLoaded', () => {
     let extraTime = 7 * 60;
     let isExtraTime = false;
 
-    // --- CONTROLE DE ACESSO ESTRITO PARA O HOST ---
+    /* --- CONTROLE DE ACESSO ESTRITO PARA O HOST ---
     const loggedInUser = JSON.parse(sessionStorage.getItem('loggedInUser'));
     const accessMsgContainer = document.getElementById('access-message-container');
+
+    if (!session || !gameForSession) {
+        accessMsgContainer.innerHTML = '<h1>Sessão Inválida</h1><p>O agendamento ou o jogo correspondente não foi encontrado.</p>';
+        accessMsgContainer.style.display = 'flex';
+        return;
+    }
+    if (!loggedInUser || (loggedInUser.role !== 'admin' && loggedInUser.username !== gameForSession.ownerId)) {
+        accessMsgContainer.innerHTML = '<h1>Acesso Negado</h1><p>Você não tem permissão para acessar esta sala como host.</p><a href="login.html" class="submit-btn" style="text-decoration:none; margin-top:1rem;">Fazer Login</a>';
+        accessMsgContainer.style.display = 'flex';
+        return;
+    }*/
     
     // Se o acesso for permitido, o resto do script roda
     initHostView();
@@ -79,6 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
             timerElements.forEach(el => {
                 if(el) {
                     el.style.color = styleData.color || 'white';
+                    el.style.borderColor = styleData.color || 'white';
                     el.style.fontFamily = styleData.font || "'Poppins', sans-serif";
                 }
             });
@@ -224,26 +236,51 @@ document.addEventListener('DOMContentLoaded', () => {
         if(timerColorInput) timerColorInput.addEventListener('input', saveTimerStyle);
         if(timerFontSelect) timerFontSelect.addEventListener('change', saveTimerStyle);
 
-        const mediaUpload = document.getElementById('media-upload');
-        const mediaPreviews = document.getElementById('media-previews');
-        const mediaOverlay = document.getElementById('host-media-display-overlay');
+       const mediaUploadInput = document.getElementById('media-upload');
+const mediaPreviews = document.getElementById('media-previews');
+const mediaOverlay = document.getElementById('host-media-display-overlay');
+const mediaDropZone = document.getElementById('media-drop-zone');
 
-        if(mediaUpload) {
-            mediaUpload.addEventListener('change', (event) => {
-                if(mediaPreviews) mediaPreviews.innerHTML = '';
-                for (const file of event.target.files) {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        const thumb = document.createElement(file.type.startsWith('image') ? 'img' : 'video');
-                        thumb.src = e.target.result;
-                        thumb.className = 'media-thumb';
-                        thumb.onclick = () => showMediaInOverlay(e.target.result, file.type);
-                        if(mediaPreviews) mediaPreviews.appendChild(thumb);
-                    };
-                    reader.readAsDataURL(file);
-                }
-            });
-        }
+// Função centralizada para processar os arquivos
+function handleMediaFiles(files) {
+    if(mediaPreviews) mediaPreviews.innerHTML = '';
+    for (const file of files) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const thumb = document.createElement(file.type.startsWith('image') ? 'img' : 'video');
+            thumb.src = e.target.result;
+            thumb.className = 'media-thumb';
+            thumb.onclick = () => showMediaInOverlay(e.target.result, file.type);
+            if(mediaPreviews) mediaPreviews.appendChild(thumb);
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+// Evento para o input de clique
+if(mediaUploadInput) {
+    mediaUploadInput.addEventListener('change', (event) => {
+        handleMediaFiles(event.target.files);
+    });
+}
+
+// Eventos de Drag and Drop
+if(mediaDropZone) {
+    mediaDropZone.addEventListener('dragover', (event) => {
+        event.preventDefault(); // Essencial para permitir o drop
+        mediaDropZone.classList.add('drag-over');
+    });
+
+    mediaDropZone.addEventListener('dragleave', () => {
+        mediaDropZone.classList.remove('drag-over');
+    });
+
+    mediaDropZone.addEventListener('drop', (event) => {
+        event.preventDefault(); // Essencial para impedir que o navegador abra o arquivo
+        mediaDropZone.classList.remove('drag-over');
+        handleMediaFiles(event.dataTransfer.files);
+    });
+}
         
         function showMediaInOverlay(src, type) {
             if(!mediaOverlay) return;

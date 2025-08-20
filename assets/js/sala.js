@@ -2,11 +2,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- DADOS E ESTADO INICIAL ---
     const urlParams = new URLSearchParams(window.location.search);
     const bookingId = urlParams.get('bookingId');
-    
+    const allGames = getGames();
     const bookings = getBookings();
     const session = bookings.find(b => b.bookingId === bookingId);
+    const gameForSession = session ? allGames.find(g => g.id === session.gameId) : null;
     const sessionDataKey = `session_${bookingId}`;
-    
     let userMediaStream = null;
     let timerInterval = null;
     let mainTime = 21 * 60;
@@ -33,10 +33,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const micBtn = document.getElementById(`${prefix}-mic-btn`);
         const camBtn = document.getElementById(`${prefix}-cam-btn`);
         if (!micBtn || !camBtn) return;
-        
         micBtn.disabled = !enable;
         camBtn.disabled = !enable;
-
         if (enable) {
             micBtn.classList.remove('control-btn-toggled');
             camBtn.classList.remove('control-btn-toggled');
@@ -45,7 +43,6 @@ document.addEventListener('DOMContentLoaded', () => {
             micBtn.querySelector('ion-icon').setAttribute('name', 'mic-outline');
             camBtn.querySelector('ion-icon').setAttribute('name', 'videocam-outline');
         }
-
         micBtn.onclick = () => {
             if (!userMediaStream) return;
             const audioTrack = userMediaStream.getAudioTracks()[0];
@@ -64,26 +61,18 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
     
-    // --- CONTROLE DE ACESSO DO JOGADOR ---
+    // --- CONTROLE DE ACESSO ---
     function checkAccess() {
         const accessMsgContainer = document.getElementById('access-message-container');
-        if (!session) {
-            accessMsgContainer.innerHTML = '<h1>Sessão Inválida</h1><p>O agendamento não foi encontrado.</p>';
+        if (!session || !gameForSession) {
+            accessMsgContainer.innerHTML = '<h1>Sessão Inválida</h1><p>O agendamento ou o jogo correspondente não foi encontrado.</p>';
             accessMsgContainer.style.display = 'flex';
             return;
         }
-
-        const sessionStartTime = new Date(`${session.date}T${session.time}`);
-        const sessionEndTime = new Date(sessionStartTime.getTime() + (mainTime + extraTime) * 1000);
-        const deletionTime = new Date(sessionEndTime.getTime() + 60 * 60 * 1000);
-        const now = new Date();
-
-        if (now > deletionTime) {
-            accessMsgContainer.innerHTML = '<h1>Sessão Expirada</h1><p>Esta sessão de jogo já foi encerrada.</p>';
-            accessMsgContainer.style.display = 'flex';
-        } else if (now < new Date(sessionStartTime.getTime() - 5 * 60 * 1000)) {
-            accessMsgContainer.innerHTML = `<h1>Acesso Negado</h1><p>A sala estará disponível 5 minutos antes do horário marcado.<br>Horário: ${session.date} às ${session.time}</p>`;
-            accessMsgContainer.style.display = 'flex';
+        const loggedInUser = JSON.parse(sessionStorage.getItem('loggedInUser'));
+        if (loggedInUser && (loggedInUser.role === 'admin' || loggedInUser.username === gameForSession.ownerId)) {
+            // Se um host tentar acessar a sala de jogador, redireciona para a sala de host
+            window.location.href = `sala-host.html?bookingId=${bookingId}`;
         } else {
             initPlayerView();
         }
@@ -106,6 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
             timerElements.forEach(el => {
                 if(el) {
                     el.style.color = styleData.color || 'white';
+                    el.style.borderColor = styleData.color || 'white';
                     el.style.fontFamily = styleData.font || "'Poppins', sans-serif";
                 }
             });
@@ -125,13 +115,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (timerInterval) return;
         let sessionData = JSON.parse(localStorage.getItem(sessionDataKey) || '{}');
         if (!sessionData.startTime) return;
-
         const elapsedSeconds = Math.floor((Date.now() - sessionData.startTime) / 1000);
         const totalDuration = (21 * 60) + (7 * 60);
-
         if (elapsedSeconds >= totalDuration) {
-            mainTime = 0; 
-            extraTime = 0;
+            mainTime = 0; extraTime = 0;
         } else {
             const remainingTotalSeconds = totalDuration - elapsedSeconds;
             if (remainingTotalSeconds > (7 * 60)) {
@@ -144,7 +131,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 extraTime = remainingTotalSeconds;
             }
         }
-        
         timerInterval = setInterval(() => {
             let currentTime;
             if (!isExtraTime) {
@@ -168,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 1000);
     }
     
-    // --- INICIALIZAÇÃO DA VISÃO DO JOGADOR ---
+    // --- VISÃO DO JOGADOR ---
     function initPlayerView() {
         document.getElementById('player-view').classList.remove('hidden');
         document.getElementById('player-exit-btn').onclick = () => window.location.href = 'index.html';
@@ -188,7 +174,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const hintsToggleBtn = document.getElementById('hints-toggle-btn');
         const hintsPanel = document.getElementById('hints-panel');
-        if(hintsToggleBtn) hintsToggleBtn.addEventListener('click', () => hintsPanel.classList.toggle('collapsed'));
+        if(hintsToggleBtn && hintsPanel) {
+            hintsToggleBtn.addEventListener('click', () => {
+                hintsPanel.classList.toggle('collapsed');
+            });
+        }
         
         const hints = sessionData.hints || {};
         
@@ -208,6 +198,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- INICIALIZAÇÃO GERAL ---
+    // --- INICIALIZAÇÃO ---
     checkAccess();
 });

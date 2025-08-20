@@ -25,7 +25,6 @@
                 <button id="host-exit-btn" class="exit-btn"><ion-icon name="exit-outline"></ion-icon> Sair</button>
             </div>
         </div>
-        
         <div id="host-tools-wrapper" class="host-tools-wrapper collapsed">
             <button id="host-tools-toggle-btn" class="tools-toggle-btn"><ion-icon name="build-outline"></ion-icon></button>
             <div class="host-tools-panel">
@@ -41,14 +40,30 @@
                 </div>
                 <div class="tool-section">
                     <h4><ion-icon name="timer-outline"></ion-icon> Estilo do Timer</h4>
-                    <div class="styler-group"><label for="timer-color-input">Cor</label><input type="color" id="timer-color-input" value="#FFFFFF"></div>
-                    <div class="styler-group"><label for="timer-font-select">Fonte</label><select id="timer-font-select"><option value="'Poppins', sans-serif">Padrão</option><option value="'Courier New', monospace">Monospace</option><option value="'Times New Roman', serif">Serif</option></select></div>
+                    <div class="styler-group"><label for="timer-color-input">Cor (Texto e Borda)</label><input type="color" id="timer-color-input" value="#FFFFFF"></div>
+                    <div class="styler-group">
+                        <label for="timer-font-select">Fonte</label>
+                        <select id="timer-font-select">
+                            <option value="'Poppins', sans-serif">Padrão (Poppins)</option>
+                            <option value="'Orbitron', sans-serif">Sci-Fi (Orbitron)</option>
+                            <option value="'MedievalSharp', cursive">Medieval</option>
+                            <option value="'Press Start 2P', cursive">Pixel (Retrô)</option>
+                            <option value="'Courier New', Courier, monospace">Monospace</option>
+                            <option value="'Times New Roman', Times, serif">Serif</option>
+                        </select>
+                    </div>
                 </div>
-                 <div class="tool-section">
-                    <h4><ion-icon name="images-outline"></ion-icon> Mídia do Jogo</h4>
-                    <input type="file" id="media-upload" multiple accept="image/*,video/*">
-                    <div id="media-previews" class="media-previews"></div>
+                <div class="tool-section drop-zone-wrapper"> <h4><ion-icon name="images-outline"></ion-icon> Mídia do Jogo</h4>
+                <div id="media-drop-zone" class="drop-zone">
+                    <p>Arraste e solte arquivos aqui, ou</p>
+                    <label for="media-upload" class="upload-label small-label">
+                        <ion-icon name="cloud-upload-outline"></ion-icon>
+                        <span>Selecione os arquivos</span>
+                    </label>
+                    <input type="file" id="media-upload" multiple accept="image/*,video/*" style="display: none;">
                 </div>
+                <div id="media-previews" class="media-previews"></div>
+            </div>
             </div>
         </div>
     </div>

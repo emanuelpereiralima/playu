@@ -9,6 +9,12 @@
 </head>
 <body class="game-room-body">
 
+    <body class="game-room-body">
+
+    <div id="orientation-lock-overlay" class="orientation-lock-overlay">
+        <ion-icon name="phone-landscape-outline"></ion-icon>
+        <p>Por favor, vire o seu dispositivo para a posição horizontal para uma melhor experiência.</p>
+    </div>
     <div id="access-message-container" class="access-message" style="display: none;"></div>
 
     <div id="player-view" class="game-room-container hidden">
@@ -28,13 +34,25 @@
             </div>
         </div>
         <div id="hints-panel" class="hints-panel collapsed">
-            <button id="hints-toggle-btn"><ion-icon name="help-circle-outline"></ion-icon> DICAS</button>
-            <div class="hints-content">
-                <div class="hint-item"><button class="hint-buy-btn" data-hint="1">Comprar Dica 1 <span>(-1:00)</span></button><p class="hint-text hidden"></p></div>
-                <div class="hint-item"><button class="hint-buy-btn" data-hint="2">Comprar Dica 2 <span>(-1:00)</span></button><p class="hint-text hidden"></p></div>
-                <div class="hint-item"><button class="hint-buy-btn" data-hint="3">Comprar Dica 3 <span>(-1:00)</span></button><p class="hint-text hidden"></p></div>
-            </div>
+    <button id="hints-toggle-btn">
+        <ion-icon name="help-circle-outline"></ion-icon> DICAS
+    </button>
+    <div class="hints-content">
+        <h3>Dicas Disponíveis</h3>
+        <div class="hint-item">
+            <button class="hint-buy-btn" data-hint="1">Comprar Dica 1 <span>(-1:00)</span></button>
+            <p class="hint-text hidden"></p>
         </div>
+        <div class="hint-item">
+            <button class="hint-buy-btn" data-hint="2">Comprar Dica 2 <span>(-1:00)</span></button>
+            <p class="hint-text hidden"></p>
+        </div>
+        <div class="hint-item">
+            <button class="hint-buy-btn" data-hint="3">Comprar Dica 3 <span>(-1:00)</span></button>
+            <p class="hint-text hidden"></p>
+        </div>
+        </div>
+    </div>
     </div>
     
     <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js" defer></script>

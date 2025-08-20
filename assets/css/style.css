@@ -1,5 +1,8 @@
 /* ==================== FONTES E VARIÁVEIS ==================== */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
 :root {
     /* Paleta de Cores (Modo Escuro Padrão) */
@@ -1280,7 +1283,7 @@ input:checked + .slider:before {
 .player-controls button.active { background-color: #333; }
 .my-camera-preview {
     position: absolute;
-    bottom: 1rem;
+    bottom: 10%;
     right: 1rem;
     width: 200px;
     height: 150px;
@@ -1460,6 +1463,53 @@ input:checked + .slider:before {
 .calendar-day.has-schedule {
     background-color: rgba(26, 26, 46, 0.5);
     box-shadow: inset 0 0 0 2px var(--secondary-color);
+}
+
+/* ==================== AVISO DE ORIENTAÇÃO DE TELA ==================== */
+.orientation-lock-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--bg-color);
+    z-index: 9999; /* Fica na frente de tudo */
+    display: none; /* Escondido por padrão */
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 2rem;
+}
+
+.orientation-lock-overlay ion-icon {
+    font-size: 5rem;
+    margin-bottom: 1rem;
+    color: var(--secondary-color);
+    animation: rotate-phone 1.5s ease-in-out infinite;
+}
+
+.orientation-lock-overlay p {
+    font-size: 1.2rem;
+    font-weight: 500;
+}
+
+@keyframes rotate-phone {
+    0% { transform: rotate(0deg); }
+    50% { transform: rotate(90deg); }
+    100% { transform: rotate(90deg); }
+}
+
+/* A MÁGICA ACONTECE AQUI: Regra para telas pequenas na vertical */
+@media screen and (max-width: 800px) and (orientation: portrait) {
+    /* Mostra o aviso */
+    .game-room-body .orientation-lock-overlay {
+        display: flex;
+    }
+    /* Esconde o conteúdo da sala */
+    .game-room-body .game-room-container {
+        display: none;
+    }
 }
 
 /* Deixa o layout responsivo em telas menores */
