@@ -155,11 +155,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- INICIALIZAÇÃO DA VISÃO DO HOST ---
     function initHostView() {
         document.getElementById('host-view').classList.remove('hidden');
-        document.getElementById('host-exit-btn').onclick = () => {
-             window.location.href = loggedInUser.role === 'admin' ? 'admin.html' : 'host-panel.html';
-        }
-        
-        startUserMedia('host-own-video-feed');
+        document.getElementById('host-exit-btn').onclick = () => window.location.href = 'index.html';
+
 
         const hostToolsWrapper = document.getElementById('host-tools-wrapper');
         const hostToolsToggleBtn = document.getElementById('host-tools-toggle-btn');
