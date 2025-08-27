@@ -15,11 +15,11 @@ document.addEventListener('DOMContentLoaded', () => {
     let extraTime = 7 * 60;
     let isExtraTime = false;
 
-    /* --- CONTROLE DE ACESSO ESTRITO PARA O HOST ---
+    // --- CONTROLE DE ACESSO ESTRITO PARA O HOST ---
     const loggedInUser = JSON.parse(sessionStorage.getItem('loggedInUser'));
     const accessMsgContainer = document.getElementById('access-message-container');
 
-    if (!session || !gameForSession) {
+    /*(if (!session || !gameForSession) {
         accessMsgContainer.innerHTML = '<h1>Sessão Inválida</h1><p>O agendamento ou o jogo correspondente não foi encontrado.</p>';
         accessMsgContainer.style.display = 'flex';
         return;
@@ -30,10 +30,51 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }*/
     
-    // Se o acesso for permitido, o resto do script roda
     initHostView();
 
-    // --- LÓGICA DE MÍDIA (CÂMERA E MICROFONE) ---
+    // --- LÓGICA DE SINCRONIZAÇÃO (RECEBE A ESCOLHA DO JOGADOR) ---
+    window.addEventListener('storage', (event) => {
+        if (event.key === sessionDataKey) {
+            const newData = JSON.parse(event.newValue || '{}');
+            const feedbackEl = document.getElementById('player-choice-feedback');
+            if (feedbackEl && newData.playerChoice) {
+                feedbackEl.textContent = `Jogador escolheu: "${newData.playerChoice}"`;
+                // Esconde o overlay do host quando o jogador escolhe
+                const decisionOverlay = document.getElementById('player-decision-overlay');
+                if (decisionOverlay) {
+                    decisionOverlay.classList.add('hidden');
+                }
+            }
+        }
+    });
+    
+    // --- NOVA FUNÇÃO PARA RENDERIZAR A DECISÃO NA TELA DO HOST ---
+    function renderLiveDecision(sessionData) {
+        const decisionOverlay = document.getElementById('player-decision-overlay');
+        const decisionTitle = document.getElementById('decision-title');
+        const optionsContainer = document.getElementById('decision-options-container');
+        
+        const decisionId = sessionData.liveDecision;
+        const allDecisions = sessionData.decisions || [];
+        const activeDecision = allDecisions.find(d => d.id === decisionId);
+
+        if (activeDecision) {
+            decisionTitle.textContent = activeDecision.title;
+            optionsContainer.innerHTML = '';
+            activeDecision.options.forEach(optionText => {
+                const button = document.createElement('button');
+                button.className = 'submit-btn';
+                button.textContent = optionText;
+                button.disabled = true; // Botões são desabilitados para o host
+                optionsContainer.appendChild(button);
+            });
+            decisionOverlay.classList.remove('hidden');
+        } else {
+            decisionOverlay.classList.add('hidden');
+        }
+    }
+
+    // --- FUNÇÕES GLOBAIS DA SALA ---
     async function startUserMedia(videoElementId) {
         try {
             userMediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
@@ -97,7 +138,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- LÓGICA DO TIMER ---
     function updateTimerDisplay(timeInSeconds, elementId) {
         const element = document.getElementById(elementId);
         if (!element) return;
@@ -155,8 +195,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- INICIALIZAÇÃO DA VISÃO DO HOST ---
     function initHostView() {
         document.getElementById('host-view').classList.remove('hidden');
-        document.getElementById('host-exit-btn').onclick = () => window.location.href = 'index.html';
+                document.getElementById('host-exit-btn').onclick = () => window.location.href = 'index.html';
 
+        const closeDecisionBtn = document.getElementById('host-close-decision-btn');
+        if(closeDecisionBtn) {
+            closeDecisionBtn.onclick = () => { 
+                document.getElementById('player-decision-overlay').classList.add('hidden');
+            };
+        }
+        
+        startUserMedia('host-own-video-feed');
 
         const hostToolsWrapper = document.getElementById('host-tools-wrapper');
         const hostToolsToggleBtn = document.getElementById('host-tools-toggle-btn');
@@ -233,51 +281,47 @@ document.addEventListener('DOMContentLoaded', () => {
         if(timerColorInput) timerColorInput.addEventListener('input', saveTimerStyle);
         if(timerFontSelect) timerFontSelect.addEventListener('change', saveTimerStyle);
 
-       const mediaUploadInput = document.getElementById('media-upload');
-const mediaPreviews = document.getElementById('media-previews');
-const mediaOverlay = document.getElementById('host-media-display-overlay');
-const mediaDropZone = document.getElementById('media-drop-zone');
+        const mediaUpload = document.getElementById('media-upload');
+        const mediaPreviews = document.getElementById('media-previews');
+        const mediaOverlay = document.getElementById('host-media-display-overlay');
 
-// Função centralizada para processar os arquivos
-function handleMediaFiles(files) {
-    if(mediaPreviews) mediaPreviews.innerHTML = '';
-    for (const file of files) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const thumb = document.createElement(file.type.startsWith('image') ? 'img' : 'video');
-            thumb.src = e.target.result;
-            thumb.className = 'media-thumb';
-            thumb.onclick = () => showMediaInOverlay(e.target.result, file.type);
-            if(mediaPreviews) mediaPreviews.appendChild(thumb);
-        };
-        reader.readAsDataURL(file);
-    }
-}
+        if(mediaUpload) {
+            const mediaDropZone = document.getElementById('media-drop-zone');
+            
+            function handleMediaFiles(files) {
+                if(mediaPreviews) mediaPreviews.innerHTML = '';
+                for (const file of files) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const thumb = document.createElement(file.type.startsWith('image') ? 'img' : 'video');
+                        thumb.src = e.target.result;
+                        thumb.className = 'media-thumb';
+                        thumb.onclick = () => showMediaInOverlay(e.target.result, file.type);
+                        if(mediaPreviews) mediaPreviews.appendChild(thumb);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
 
-// Evento para o input de clique
-if(mediaUploadInput) {
-    mediaUploadInput.addEventListener('change', (event) => {
-        handleMediaFiles(event.target.files);
-    });
-}
+            mediaUpload.addEventListener('change', (event) => {
+                handleMediaFiles(event.target.files);
+            });
 
-// Eventos de Drag and Drop
-if(mediaDropZone) {
-    mediaDropZone.addEventListener('dragover', (event) => {
-        event.preventDefault(); // Essencial para permitir o drop
-        mediaDropZone.classList.add('drag-over');
-    });
-
-    mediaDropZone.addEventListener('dragleave', () => {
-        mediaDropZone.classList.remove('drag-over');
-    });
-
-    mediaDropZone.addEventListener('drop', (event) => {
-        event.preventDefault(); // Essencial para impedir que o navegador abra o arquivo
-        mediaDropZone.classList.remove('drag-over');
-        handleMediaFiles(event.dataTransfer.files);
-    });
-}
+            if(mediaDropZone) {
+                mediaDropZone.addEventListener('dragover', (event) => {
+                    event.preventDefault();
+                    mediaDropZone.classList.add('drag-over');
+                });
+                mediaDropZone.addEventListener('dragleave', () => {
+                    mediaDropZone.classList.remove('drag-over');
+                });
+                mediaDropZone.addEventListener('drop', (event) => {
+                    event.preventDefault();
+                    mediaDropZone.classList.remove('drag-over');
+                    handleMediaFiles(event.dataTransfer.files);
+                });
+            }
+        }
         
         function showMediaInOverlay(src, type) {
             if(!mediaOverlay) return;
@@ -296,5 +340,66 @@ if(mediaDropZone) {
                 mediaOverlay.innerHTML = '';
             };
         }
+
+        const decisionForm = document.getElementById('decision-creator-form');
+        const decisionTitleInput = document.getElementById('decision-title-input');
+        const optionsContainer = document.getElementById('decision-options-inputs');
+        const addOptionBtn = document.getElementById('add-option-btn');
+        const savedDecisionsList = document.getElementById('saved-decisions-list');
+        const playerChoiceFeedback = document.getElementById('player-choice-feedback');
+        
+        if (!sessionData.decisions) sessionData.decisions = [];
+
+        function renderSavedDecisions() {
+            if(!savedDecisionsList) return;
+            savedDecisionsList.innerHTML = '';
+            sessionData.decisions.forEach(decision => {
+                const item = document.createElement('div');
+                item.className = 'saved-decision-item';
+                item.innerHTML = `<span>${decision.title}</span><button class="submit-btn small-btn" data-id="${decision.id}">Enviar</button>`;
+                savedDecisionsList.appendChild(item);
+            });
+            savedDecisionsList.querySelectorAll('button').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const decisionId = btn.dataset.id;
+                    let currentSessionData = JSON.parse(localStorage.getItem(sessionDataKey) || '{}');
+                    if(!currentSessionData.decisions) currentSessionData.decisions = [];
+                    currentSessionData.liveDecision = decisionId;
+                    currentSessionData.playerChoice = null;
+                    localStorage.setItem(sessionDataKey, JSON.stringify(currentSessionData));
+                    if(playerChoiceFeedback) playerChoiceFeedback.textContent = 'Aguardando jogador...';
+                    renderLiveDecision(currentSessionData); // MOSTRA O OVERLAY PARA O HOST
+                });
+            });
+        }
+
+        if (addOptionBtn) {
+            addOptionBtn.addEventListener('click', () => {
+                const newInput = document.createElement('input');
+                newInput.type = 'text';
+                newInput.className = 'decision-option-input';
+                newInput.placeholder = `Opção ${optionsContainer.children.length + 1}`;
+                newInput.required = true;
+                optionsContainer.appendChild(newInput);
+            });
+        }
+
+        if (decisionForm) {
+            decisionForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const options = Array.from(optionsContainer.querySelectorAll('input')).map(input => input.value);
+                const newDecision = {
+                    id: `dec_${Date.now()}`,
+                    title: decisionTitleInput.value,
+                    options: options
+                };
+                sessionData.decisions.push(newDecision);
+                localStorage.setItem(sessionDataKey, JSON.stringify(sessionData));
+                renderSavedDecisions();
+                decisionForm.reset();
+                optionsContainer.innerHTML = '<input type="text" class="decision-option-input" placeholder="Opção 1" required><input type="text" class="decision-option-input" placeholder="Opção 2" required>';
+            });
+        }
+        renderSavedDecisions();
     }
 });

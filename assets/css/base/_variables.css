@@ -1,0 +1,34 @@
+/* Contém todas as fontes e variáveis de cor para os temas */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+:root {
+    /* Paleta de Cores (Modo Escuro Padrão) */
+    --primary-color: #1A1A2E;
+    --secondary-color: #E94560;
+    --bg-color: #161625;
+    --alternate-bg-color: #1A1A2E;
+    --card-bg-color: #1A1A2E;
+    --header-bg-color: #1A1A2E;
+    --text-color: #FFFFFF;
+    --border-color: #E94560;
+    --header-shadow: none;
+
+    /* Tipografia */
+    --body-font: 'Poppins', sans-serif;
+    --h1-font-size: 2.25rem;
+    --h2-font-size: 1.5rem;
+    --normal-font-size: 1rem;
+}
+
+html[data-theme='light'] {
+    --bg-color: #F0F0F0;
+    --alternate-bg-color: #FFFFFF;
+    --card-bg-color: #FFFFFF;
+    --header-bg-color: #FFFFFF;
+    --text-color: #1A1A2E;
+    --border-color: #dddddd;
+    --header-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}

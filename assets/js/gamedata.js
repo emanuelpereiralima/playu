@@ -35,6 +35,7 @@ const DEFAULT_GAMES_DATA = [
         coverImage: "assets/images/cover-galinheiro.jpeg",
         videoPreview: "assets/videos/preview-game2.mp4",
         galleryImages: [
+            "assets/images/cover-galinheiro.jpeg",
             "https://via.placeholder.com/1280x720/1A1A2E/FFFFFF?text=Cena+1",
             "https://via.placeholder.com/1280x720/1A1A2E/FFFFFF?text=Cena+2",
         ],

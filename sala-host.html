@@ -9,14 +9,30 @@
 </head>
 <body class="game-room-body">
 
+    <div id="orientation-lock-overlay" class="orientation-lock-overlay">
+        <ion-icon name="phone-landscape-outline"></ion-icon>
+        <p>Por favor, vire o seu dispositivo para a posição horizontal para uma melhor experiência.</p>
+    </div>
     <div id="access-message-container" class="access-message" style="display: none;"></div>
 
     <div id="host-view" class="game-room-container hidden">
+
+        <div id="player-decision-overlay" class="player-decision-overlay hidden">
+        <div class="decision-box">
+            <h2 id="decision-title"></h2>
+            <div id="decision-options-container">
+                </div>
+            <button id="host-close-decision-btn" class="submit-btn small-btn" style="margin-top: 1.5rem; background-color: #555;">Fechar Visualização</button>
+        </div>
+        </div>
         <div class="main-content-area">
             <div id="host-timer-display" class="timer-display">21:00</div>
             <div id="host-media-display-overlay" class="media-display-overlay hidden"></div>
             <div class="video-feed-container">
                 <video id="host-own-video-feed" autoplay playsinline muted></video>
+                <div class="my-camera-preview">
+                    <video id="player-video-preview" autoplay playsinline muted></video>
+                </div>
             </div>
             <div class="player-controls">
                 <button id="host-mic-btn" class="control-btn-toggled" disabled><ion-icon name="mic-off-outline"></ion-icon></button>
@@ -35,7 +51,7 @@
                         <textarea id="hint1-input" rows="2" placeholder="Texto da Dica 1"></textarea>
                         <textarea id="hint2-input" rows="2" placeholder="Texto da Dica 2"></textarea>
                         <textarea id="hint3-input" rows="2" placeholder="Texto da Dica 3"></textarea>
-                        <button type="submit">Salvar Dicas</button>
+                        <button type="submit" class="submit-btn">Salvar Dicas</button>
                     </form>
                 </div>
                 <div class="tool-section">
@@ -64,6 +80,33 @@
                 </div>
                 <div id="media-previews" class="media-previews"></div>
             </div>
+            <div class="tool-section">
+    <h4><ion-icon name="git-branch-outline"></ion-icon> Criador de Decisões</h4>
+    <form id="decision-creator-form">
+        <div class="form-group">
+            <label>Título da Decisão (a pergunta)</label>
+            <input type="text" id="decision-title-input" placeholder="Ex: Qual porta você escolhe?" required>
+        </div>
+        <div class="form-group">
+            <label>Opções de Botão</label>
+            <div id="decision-options-inputs">
+                <input type="text" class="decision-option-input" placeholder="Opção 1" required>
+                <input type="text" class="decision-option-input" placeholder="Opção 2" required>
+            </div>
+            <button type="button" id="add-option-btn" class="small-btn">Adicionar Opção</button>
+        </div>
+        <button type="submit" class="submit-btn">Salvar Decisão</button>
+            </form>
+            <hr class="form-divider">
+            <h4>Decisões Salvas</h4>
+            <div id="saved-decisions-list">
+                </div>
+            <hr class="form-divider">
+            <h4>Escolha do Jogador:</h4>
+            <div id="player-choice-feedback" class="player-choice-feedback">
+                Aguardando...
+            </div>
+            </div>
             </div>
         </div>
     </div>
@@ -74,5 +117,6 @@
     <script src="assets/js/userdata.js" defer></script>
     <script src="assets/js/data-manager.js" defer></script>
     <script src="assets/js/sala-host.js" defer></script>
+    <link rel="stylesheet" href="assets/css/style.css">
 </body>
 </html>
