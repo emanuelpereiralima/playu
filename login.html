@@ -6,6 +6,18 @@
     <title>Login - Painel Administrativo</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="icon" href="assets/images/logo.png" type="image/png">
+    <script src="assets/js/version.js"></script>
+    <script>
+    function loadAsset(path) {
+        const version = typeof SITE_VERSION !== 'undefined' ? SITE_VERSION : new Date().getTime();
+        const extension = path.split('.').pop();
+        if (extension === 'css') {
+            document.write(`<link rel="stylesheet" href="${path}?v=${version}">`);
+        } else if (extension === 'js') {
+            document.write(`<script src="${path}?v=${version}" defer><\/script>`);
+        }
+    }
+    </script>
 </head>
 <body class="login-page-body">
 
@@ -36,12 +48,11 @@
             <button type="submit" class="submit-btn">Entrar</button>
         </form>
     </div>
-
-    <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
-    <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
-    <script src="assets/js/gamedata.js"></script>
-    <script src="assets/js/userdata.js"></script>
-    <script src="assets/js/data-manager.js"></script>
-    <script src="assets/js/login.js"></script>
+<script>
+    loadAsset('assets/css/style.css');
+    loadAsset('https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js');
+    loadAsset('assets/js/userdata.js');
+    loadAsset('assets/js/login.js');
+</script>
 </body>
 </html>

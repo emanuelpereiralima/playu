@@ -6,6 +6,18 @@
     <title>Sala do Host - play.u</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="icon" href="assets/images/logo.png" type="image/png">
+    <script src="assets/js/version.js"></script>
+    <script>
+    function loadAsset(path) {
+        const version = typeof SITE_VERSION !== 'undefined' ? SITE_VERSION : new Date().getTime();
+        const extension = path.split('.').pop();
+        if (extension === 'css') {
+            document.write(`<link rel="stylesheet" href="${path}?v=${version}">`);
+        } else if (extension === 'js') {
+            document.write(`<script src="${path}?v=${version}" defer><\/script>`);
+        }
+    }
+    </script>
 </head>
 <body class="game-room-body">
 
@@ -110,13 +122,14 @@
             </div>
         </div>
     </div>
-
-    <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js" defer></script>
-    <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js" defer></script>
-    <script src="assets/js/gamedata.js" defer></script>
-    <script src="assets/js/userdata.js" defer></script>
-    <script src="assets/js/data-manager.js" defer></script>
-    <script src="assets/js/sala-host.js" defer></script>
-    <link rel="stylesheet" href="assets/css/style.css">
+    <script>
+    loadAsset('assets/css/style.css');
+    loadAsset('https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js');
+    loadAsset('https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js');
+    loadAsset('assets/js/gamedata.js');
+    loadAsset('assets/js/userdata.js');
+    loadAsset('assets/js/data-manager.js');
+    loadAsset('assets/js/sala-host.js');
+</script>
 </body>
 </html>
