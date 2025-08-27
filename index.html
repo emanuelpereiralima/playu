@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="pt-br" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>play.u Live Entertainment</title>
+    <link rel="stylesheet" href="assets/css/style.ecc54681.css">
+    <link rel="icon" href="assets/images/logo.png" type="image/png">
+    <script src="assets/js/version.ecc54681.js"></script>
+<script>
+    function loadAsset(path) {
+        const version = typeof SITE_VERSION !== 'undefined' ? SITE_VERSION : new Date().getTime();
+        const extension = path.split('.').pop();
+        if (extension === 'css') {
+            document.write(`<link rel="stylesheet" href="${path}?v=${version}">`);
+        } else if (extension === 'js') {
+            document.write(`<script src="${path}?v=${version}" defer><\/script>`);
+        }
+    }
+</script>
+</head>
+<body>
+
+    <header id="header" class="header">
+    <nav class="nav container">
+        <ul class="nav__links left">
+            </ul>
+        <a href="index.html#home" class="nav__logo"><img src="assets/images/logo.png" alt="play.u Logo"></a>
+        <div class="nav__right-group">
+            <ul class="nav__links right">
+                </ul>
+            <div class="nav__controls">
+                <button class="control-btn header-shortcut-btn" id="header-join-player-btn">
+                    <ion-icon name="game-controller-outline"></ion-icon> <span>Entrar como Jogador</span>
+                </button>
+                <button class="control-btn header-shortcut-btn" id="header-join-host-btn">
+                    <ion-icon name="easel-outline"></ion-icon> <span>Entrar como Host</span>
+                </button>
+                <a href="login.html" class="control-btn" id="login-btn" data-lang-key="login">Login</a>
+                <div class="language-switcher">
+                    <button class="control-btn" id="lang-pt">PT</button> | <button class="control-btn" id="lang-en">EN</button>
+                </div>
+                <div class="theme-switcher"><ion-icon name="sunny-outline" id="theme-toggle"></ion-icon></div>
+            </div>
+        </div>
+    </nav>
+</header>
+
+    <main>
+        <section id="home" class="home-carousel">
+            <h1 data-lang-key="featuredGames">Jogos em Destaque</h1>
+            <div class="carousel-viewport">
+                <div class="carousel-container">
+                    </div>
+            </div>
+            <div class="carousel-nav">
+                <button id="prev-btn" class="nav-btn"><ion-icon name="arrow-back-outline"></ion-icon></button>
+                <button id="next-btn" class="nav-btn"><ion-icon name="arrow-forward-outline"></ion-icon></button>
+            </div>
+        </section>
+
+        <section id="sobre" class="main-content alternate-bg">
+     <div class="container">
+        <h1 class="page-title" data-lang-key="aboutUs">Sobre a PlayU</h1>
+        
+        <div class="about-grid">
+            <div class="about-text">
+                <h2 data-lang-key="ourHistory">Nossa História</h2>
+                <p data-lang-key="historyTextLong">
+                    A play.u nasceu de um sonho compartilhado entre um grupo de amigos apaixonados por tecnologia e, claro, por jogos. Percebemos que havia uma lacuna no mercado para experiências de entretenimento ao vivo que fossem verdadeiramente imersivas e acessíveis. Não queríamos apenas criar mais uma plataforma de jogos; queríamos construir um universo onde cada partida fosse uma história única, cada jogador um protagonista.
+                    <br><br>
+                    Desde o primeiro dia, nosso foco tem sido a qualidade e a inovação. Investimos pesado em tecnologia de ponta para garantir transmissões fluidas, interfaces intuitivas e, o mais importante, jogos que desafiam e encantam. Cada linha de código, cada pixel de design e cada nova funcionalidade são pensados para enriquecer a jornada do jogador conosco. Acreditamos que o entretenimento é uma ponte que conecta pessoas, e é essa conexão que nos motiva a continuar evoluindo e trazendo o futuro dos jogos para o presente.
+                </p>
+            </div>
+        </div>
+     </div>
+</section>
+
+<section id="jogos" class="main-content">
+            <div class="container">
+                <h1 class="page-title" data-lang-key="ourGames">Nossos Jogos</h1>
+                <div class="games-grid">
+                    </div>
+            </div>
+        </section>
+
+        <section id="faq" class="main-content">
+     <div class="container">
+        <h1 class="page-title" data-lang-key="faqTitle">Perguntas Frequentes</h1>
+        
+        <div class="faq-container">
+            <details class="faq-item">
+                <summary class="faq-question" data-lang-key="q1">Como posso agendar um jogo?</summary>
+                <p class="faq-answer" data-lang-key="a1">Para agendar, vá para a página do jogo desejado, selecione uma data e horário disponíveis no calendário e siga para a página de confirmação e pagamento.</p>
+            </details>
+
+            <details class="faq-item">
+                <summary class="faq-question" data-lang-key="q2">Quais métodos de pagamento são aceitos?</summary>
+                <p class="faq-answer" data-lang-key="a2">Aceitamos os principais cartões de crédito (Visa, MasterCard, Amex) e também pagamentos via Pix e boleto bancário.</p>
+            </details>
+
+            <details class="faq-item">
+                <summary class="faq-question" data-lang-key="q3">Posso cancelar um agendamento?</summary>
+                <p class="faq-answer" data-lang-key="a3">Sim, cancelamentos podem ser feitos com até 48 horas de antecedência para um reembolso total. Para menos de 48 horas, será cobrada uma taxa.</p>
+            </details>
+
+            <details class="faq-item">
+                <summary class="faq-question" data-lang-key="q4">Os jogos são multiplayer?</summary>
+                <p class="faq-answer" data-lang-key="a4">A maioria dos nossos jogos possui modos multiplayer. Verifique a página específica de cada jogo para ver as opções disponíveis, como multiplayer local ou online.</p>
+            </details>
+
+            <details class="faq-item">
+                <summary class="faq-question" data-lang-key="q5">Preciso criar uma conta para jogar?</summary>
+                <p class="faq-answer" data-lang-key="a5">Sim, uma conta na play.u é necessária para agendar jogos e salvar seu progresso. O registro é rápido, gratuito e pode ser feito usando seu email ou redes sociais.</p>
+            </details>
+
+            <details class="faq-item">
+                <summary class="faq-question" data-lang-key="q6">O site é compatível com celulares?</summary>
+                <p class="faq-answer" data-lang-key="a6">Com certeza! Todo o nosso site é responsivo, o que significa que você pode navegar, agendar e jogar confortavelmente em seu desktop, tablet ou celular.</p>
+            </details>
+            
+            <details class="faq-item">
+                <summary class="faq-question" data-lang-key="q7">Como funciona o modo escuro?</summary>
+                <p class="faq-answer" data-lang-key="a7">O modo escuro é ativado por padrão. Você pode alternar entre o modo claro e escuro a qualquer momento clicando no ícone de sol/lua no canto superior direito do site.</p>
+            </details>
+
+            <details class="faq-item">
+                <summary class="faq-question" data-lang-key="q8">Esqueci minha senha, e agora?</summary>
+                <p class="faq-answer" data-lang-key="a8">Na tela de login, clique em "Esqueci minha senha". Você receberá um email com as instruções para criar uma nova senha de acesso de forma segura.</p>
+            </details>
+        </div>
+     </div>
+</section>
+
+        <section id="contato" class="main-content alternate-bg">
+    <div class="container">
+        <h1 class="page-title" data-lang-key="contactUs">Entre em Contato</h1>
+        
+        <div class="contact-grid">
+            <div class="contact-form">
+                <h2 data-lang-key="sendMessage">Envie uma Mensagem</h2>
+                <form action="#">
+                    <div class="form-group">
+                        <label for="name" data-lang-key="formName">Nome</label>
+                        <input type="text" id="name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email" data-lang-key="formEmail">Email</label>
+                        <input type="email" id="email" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="subject" data-lang-key="formSubject">Assunto</label>
+                        <input type="text" id="subject" name="subject" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="message" data-lang-key="formMessage">Mensagem</label>
+                        <textarea id="message" name="message" rows="5" required></textarea>
+                    </div>
+                    <button type="submit" class="submit-btn" data-lang-key="formSubmit">Enviar</button>
+                </form>
+            </div>
+            
+            <div class="contact-info">
+                <h2 data-lang-key="infoTitle">Informações de Contato</h2>
+                <p data-lang-key="infoText">Se preferir, pode nos contatar por outros meios ou nos fazer uma visita.</p>
+                <ul>
+                    <li><ion-icon name="call-outline"></ion-icon> (81) 99999-8888</li>
+                    <li><ion-icon name="mail-outline"></ion-icon> contato@playu.com</li>
+                </ul>
+                <div class="social-links">
+                    <a href="https://instagram.com/playu.gg" target="_blank" rel="noopener noreferrer"><ion-icon name="logo-instagram"></ion-icon> Nos siga no Instagram!</a>
+                
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+    </main>
+
+    <a href="#" class="back-to-top" id="back-to-top"><ion-icon name="arrow-up-outline"></ion-icon></a>
+<script>
+    loadAsset('assets/css/style.ecc54681.css');
+    loadAsset('https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js');
+    loadAsset('https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js');
+    loadAsset('assets/js/gamedata.ecc54681.js');
+    loadAsset('assets/js/userdata.ecc54681.js');
+    loadAsset('assets/js/data-manager.ecc54681.js');
+    loadAsset('assets/js/translations.ecc54681.js');
+    loadAsset('assets/js/main.ecc54681.js');
+</script>
+</body>
+</html>

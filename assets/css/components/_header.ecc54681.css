@@ -1,0 +1,68 @@
+.header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background-color: var(--header-bg-color);
+    z-index: 1000;
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: var(--header-shadow);
+}
+.nav {
+    height: 6rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.nav__logo img {
+    width: 150px;
+    transition: transform 0.3s;
+}
+.nav__logo:hover img {
+    transform: scale(1.1);
+}
+.nav__links {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+}
+.nav__link {
+    font-weight: 600;
+    position: relative;
+    padding-bottom: 0.5rem;
+}
+.nav__link::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background-color: var(--secondary-color);
+    transition: width 0.3s;
+}
+.nav__link:hover::after {
+    width: 100%;
+}
+.nav__right-group {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+.nav__controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+.control-btn {
+    background: none;
+    border: none;
+    color: var(--text-color);
+    cursor: pointer;
+    font-family: var(--body-font);
+    font-weight: 500;
+}
+.theme-switcher ion-icon {
+    font-size: 1.5rem;
+    cursor: pointer;
+}

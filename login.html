@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-br" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Painel Administrativo</title>
+    <link rel="stylesheet" href="assets/css/style.ecc54681.css">
+    <link rel="icon" href="assets/images/logo.png" type="image/png">
+    <script src="assets/js/version.ecc54681.js"></script>
+    <script>
+    function loadAsset(path) {
+        const version = typeof SITE_VERSION !== 'undefined' ? SITE_VERSION : new Date().getTime();
+        const extension = path.split('.').pop();
+        if (extension === 'css') {
+            document.write(`<link rel="stylesheet" href="${path}?v=${version}">`);
+        } else if (extension === 'js') {
+            document.write(`<script src="${path}?v=${version}" defer><\/script>`);
+        }
+    }
+    </script>
+</head>
+<body class="login-page-body">
+
+    <div class="login-container">
+        <a href="index.html">
+            <img src="assets/images/logo.png" alt="play.u Logo" class="login-logo">
+        </a>
+        <h1>Acesso ao Painel</h1>
+        <form id="login-form">
+            <div class="form-group">
+                <label for="username">Usuário</label>
+                <input type="text" id="username" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Senha</label>
+                <div class="password-wrapper">
+                    <input type="password" id="password" required>
+                    <ion-icon name="eye-off-outline" id="toggle-password"></ion-icon>
+                </div>
+            </div>
+
+            <div class="form-extra-links">
+                <a href="#" id="forgot-password-link">Esqueci minha senha</a>
+            </div>
+            
+            <p id="error-message" class="error-message" style="display: none;">Usuário ou senha inválidos.</p>
+            <button type="submit" class="submit-btn">Entrar</button>
+        </form>
+    </div>
+<script>
+    loadAsset('assets/css/style.ecc54681.css');
+    loadAsset('https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js');
+    loadAsset('assets/js/userdata.ecc54681.js');
+    loadAsset('assets/js/login.ecc54681.js');
+</script>
+</body>
+</html>

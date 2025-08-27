@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="pt-br" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Administração</title>
+    <link rel="stylesheet" href="assets/css/style.ecc54681.css">
+    <link rel="icon" href="assets/images/logo.png" type="image/png">
+    <script src="assets/js/version.ecc54681.js"></script>
+    <script>
+    function loadAsset(path) {
+        const version = typeof SITE_VERSION !== 'undefined' ? SITE_VERSION : new Date().getTime();
+        const extension = path.split('.').pop();
+        if (extension === 'css') {
+            document.write(`<link rel="stylesheet" href="${path}?v=${version}">`);
+        } else if (extension === 'js') {
+            document.write(`<script src="${path}?v=${version}" defer><\/script>`);
+        }
+    }
+    </script>
+</head>
+<body class="admin-page-body">
+
+    <header class="admin-header">
+        <header class="admin-header">
+    <h1>Painel de Administração - play.u</h1>
+    <div class="admin-header-actions"> <button id="show-profile-btn" class="admin-view-site-btn">Meu Perfil</button>
+        <a href="index.html" class="admin-view-site-btn">Voltar ao Site</a>
+</header>
+    </header>
+
+    <main class="container">
+    <div class="admin-panel">
+        <div class="admin-panel-header">
+            <h2>Meus Jogos</h2>
+            <button id="add-new-game-btn" class="submit-btn">Adicionar Novo Jogo</button>
+        </div>
+        <div id="game-list-container">
+            </div>
+    </div>
+    <div class="admin-panel profile-panel hidden">
+        <div class="admin-panel-header">
+            <h2>Meu Perfil</h2>
+        </div>
+        <form id="profile-form">
+            <div class="form-group">
+                <label for="profile-name">Nome de Exibição</label>
+                <input type="text" id="profile-name" required>
+            </div>
+            <div class="form-group">
+                <label for="profile-email">Email de Contato</label>
+                <input type="email" id="profile-email" required>
+            </div>
+            <hr class="form-divider">
+            <div class="form-group">
+                <label for="profile-new-password">Nova Senha (deixe em branco para não alterar)</label>
+                <input type="password" id="profile-new-password">
+            </div>
+            <div class="form-group">
+                <label for="profile-confirm-password">Confirmar Nova Senha</label>
+                <input type="password" id="profile-confirm-password">
+            </div>
+            <p id="profile-message" style="display: none;"></p>
+            <button type="submit" class="submit-btn">Salvar Alterações</button>
+        </form>
+    </div>
+
+    <dialog id="game-form-modal">
+        <h3 id="modal-title">Adicionar Novo Jogo</h3>
+        <form id="game-form">
+            <input type="hidden" id="game-id">
+            <div class="form-group">
+                <label for="name">Nome do Jogo</label>
+                <input type="text" id="name" required>
+            </div>
+            <div class="form-group">
+                <label>Imagem de Capa</label>
+                <label for="coverImageUpload" class="upload-label">
+                    <ion-icon name="cloud-upload-outline"></ion-icon>
+                    <span>Enviar do Computador</span>
+                </label>
+                <input type="file" id="coverImageUpload" accept="image/png, image/jpeg, image/webp" style="display: none;">
+                <p class="form-hint">Limite de 2MB. Formatos: JPG, PNG, WEBP.</p>
+                <p id="upload-error" class="error-message" style="display: none;"></p>
+                <label for="coverImageUrl" class="form-label-or">Ou cole um link externo</label>
+                <input type="text" id="coverImageUrl" placeholder="https://exemplo.com/imagem.jpg">
+                <img id="image-preview" src="" alt="Pré-visualização da imagem" style="display: none;">
+                <input type="hidden" id="coverImage">
+            </div>
+            <div class="form-group">
+                <label for="fullDescription">Descrição Completa</label>
+                <textarea id="fullDescription" rows="4" required></textarea>
+            </div>
+            <div class="form-group form-toggle-group">
+                <label for="isPaused">Pausar Jogo (desativar agendamentos)</label>
+                <label class="switch">
+                <input type="checkbox" id="isPaused">
+                <span class="slider round"></span>
+                </label>
+            </div>
+            <div class="modal-actions">
+                <button type="button" id="cancel-btn">Cancelar</button>
+                <button type="submit" class="submit-btn">Salvar</button>
+            </div>
+        </form>
+    </dialog>
+    <dialog id="availability-modal">
+    <div class="availability-editor">
+        <div class="calendar-container">
+            <h3 id="availability-game-name">Gerenciar Disponibilidade</h3>
+            <div class="calendar-header">
+                <button id="prev-month-btn-modal" class="month-nav-btn">&lt;</button>
+                <h4 id="month-year-header-modal"></h4>
+                <button id="next-month-btn-modal" class="month-nav-btn">&gt;</button>
+            </div>
+            <div class="calendar-weekdays">
+                </div>
+            <div class="calendar-grid" id="calendar-grid-modal">
+                </div>
+        </div>
+        <div class="time-editor">
+            <h3>Editar Horários para: <span id="selected-date-header"></span></h3>
+            <div id="time-slots-list">
+                </div>
+            <div class="add-time-form">
+                <input type="time" id="new-time-input">
+                <button id="add-time-btn" class="submit-btn small-btn">Adicionar</button>
+            </div>
+            <div class="modal-actions">
+                <button type="button" id="close-availability-modal-btn">Fechar</button>
+                <button type="button" id="save-day-btn" class="submit-btn">Salvar Alterações do Dia</button>
+            </div>
+            <p id="availability-message" class="success" style="display: none;"></p>
+        </div>
+    </div>
+</dialog>
+</main>
+    <script>
+    loadAsset('assets/css/style.ecc54681.css');
+    loadAsset('https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js');
+    loadAsset('https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js');
+    loadAsset('assets/js/gamedata.ecc54681.js');
+    loadAsset('assets/js/userdata.ecc54681.js');
+    loadAsset('assets/js/data-manager.ecc54681.js');
+    loadAsset('assets/js/admin.ecc54681.js');    
+    loadAsset('assets/js/profile-editor.ecc54681.js');
+    loadAsset('assets/js/availability-editor.ecc54681.js');
+</script>
+</body>
+</html>

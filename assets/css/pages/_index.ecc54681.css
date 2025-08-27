@@ -1,0 +1,400 @@
+.home-carousel {
+    padding-top: 8rem;
+    padding-bottom: 4rem;
+    text-align: center;
+    position: relative;
+}
+
+.home-carousel h1 {
+    font-size: var(--h1-font-size);
+    margin-bottom: 2rem;
+    color: var(--secondary-color);
+}
+
+/* A 'janela' do carrossel - agora com overflow para rolagem */
+.carousel-viewport {
+    width: 100%;
+    overflow-x: auto; /* Permite a rolagem */
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory; /* Efeito de "ímã" ao rolar */
+    scroll-behavior: smooth; /* Rolagem suave para os botões */
+    -ms-overflow-style: none;  /* Esconde scrollbar no IE e Edge */
+    scrollbar-width: none;  /* Esconde scrollbar no Firefox */
+    cursor: grab;
+}
+/* Esconde scrollbar no Chrome, Safari e Opera */
+.carousel-viewport::-webkit-scrollbar {
+    display: none;
+}
+/* Muda o cursor quando o usuário está arrastando */
+.carousel-viewport.grabbing {
+    cursor: grabbing;
+}
+
+
+/* O container que segura os slides */
+.carousel-container {
+    display: flex; /* Coloca os slides em linha */
+    align-items: center; /* Alinha os slides verticalmente */
+}
+
+/* Cada slide individual */
+.carousel-slide {
+    position: relative;
+    /* ALTERAÇÃO: O slide agora ocupa 65% da tela, mostrando os vizinhos */
+    flex: 0 0 65%; 
+    margin: 0 1rem;
+    border-radius: 10px;
+    overflow: hidden;
+    transition: transform 0.4s ease-in-out;
+    scroll-snap-align: center; /* Centraliza o slide ao parar de rolar */
+}
+
+/* O slide ativo fica um pouco maior para dar destaque */
+.carousel-slide.active {
+    transform: scale(1.05);
+}
+
+.carousel-slide img {
+    width: 100%;
+    display: block;
+    aspect-ratio: 16/9;
+    object-fit: cover;
+    pointer-events: none; /* Impede que a imagem interfira no arrastar */
+}
+
+.slide-info {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+    padding: 2rem 1rem 1rem;
+    color: white;
+}
+
+/* NOVO VISUAL: Botões de navegação */
+.carousel-nav {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 80%; /* Aumenta a largura para os botões ficarem mais próximos das bordas do slide ativo */
+    display: flex;
+    justify-content: space-between;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+.nav-btn {
+    background-color: rgba(255, 255, 255, 0.2); /* Fundo semi-transparente */
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: var(--text-color);
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.5rem;
+    transition: background-color 0.3s, transform 0.3s;
+    pointer-events: all;
+    backdrop-filter: blur(5px); /* Efeito de vidro fosco */
+    -webkit-backdrop-filter: blur(5px);
+}
+
+.nav-btn:hover {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+    transform: scale(1.1);
+}
+.about-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 3rem;
+    align-items: center;
+    margin-top: 3rem;
+}
+.about-text h2 {
+    margin-bottom: 1.5rem;
+    font-size: var(--h2-font-size);
+}
+.about-text p {
+    line-height: 1.7;
+}
+.about-image img {
+    width: 100%;
+    border-radius: 10px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.25);
+}
+.games-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 2rem;
+}
+
+.game-card {
+    background-color: var(--card-bg-color);
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.game-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 10px 25px rgba(233, 69, 96, 0.4);
+}
+
+.game-card__image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.game-card__overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 20%, transparent 60%);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 1.5rem;
+    color: white;
+    transition: opacity 0.3s ease;
+}
+
+.game-card:hover .game-card__overlay {
+    opacity: 0; /* Esconde o overlay no hover para mostrar o vídeo */
+}
+
+.game-card__title {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.game-card__cta {
+    font-weight: 600;
+    color: var(--secondary-color);
+}
+
+.video-preview {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: none; /* Começa escondido */
+    z-index: 5;
+}
+
+.faq-container {
+    max-width: 1100px;
+    margin: 3rem auto;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    align-items: start;
+}
+.faq-item {
+    background-color: var(--card-bg-color);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+.faq-question {
+    padding: 1.5rem;
+    font-weight: 600;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.faq-question::-webkit-details-marker { display: none; }
+.faq-question::after {
+    content: '+';
+    font-size: 1.5rem;
+    transition: transform 0.3s;
+}
+.faq-item[open] > .faq-question::after {
+    transform: rotate(45deg);
+}
+.faq-answer {
+    padding: 0 1.5rem 1.5rem 1.5rem;
+    opacity: 0.8;
+    line-height: 1.6;
+}
+.contact-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 3rem;
+    margin-top: 3rem;
+}
+.contact-form h2, .contact-info h2 {
+    color: var(--secondary-color);
+    margin-bottom: 1.5rem;
+}
+.contact-info li {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+    gap: 1rem;
+}
+.contact-info ion-icon {
+    font-size: 1.5rem;
+    color: var(--secondary-color);
+}
+.social-links {
+    margin-top: 2rem;
+    display: flex;
+    gap: 1.5rem;
+}
+.social-links a ion-icon {
+    font-size: 2rem;
+    transition: color 0.3s, transform 0.3s;
+}
+.social-links a:hover ion-icon {
+    color: var(--secondary-color);
+    transform: scale(1.2);
+}
+
+.section-title {
+    color: var(--secondary-color);
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.booking-section {
+    margin-top: 4rem;
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 3rem;
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+#month-year-header {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.month-nav-btn {
+    background: none;
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.5rem;
+    transition: background-color 0.3s, color 0.3s;
+}
+.month-nav-btn:hover {
+    background-color: var(--secondary-color);
+    color: white;
+}
+
+.calendar-weekdays, .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.5rem;
+    text-align: center;
+}
+
+.calendar-weekdays {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.calendar-day {
+    padding: 0.8rem 0;
+    border-radius: 8px;
+    color: var(--text-color);
+    opacity: 0.4;
+}
+
+.calendar-day.available {
+    opacity: 1;
+    font-weight: 600;
+    background-color: rgba(233, 69, 96, 0.1);
+    border: 1px solid var(--secondary-color);
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.calendar-day.available:hover {
+    background-color: rgba(233, 69, 96, 0.3);
+}
+
+.calendar-day.selected {
+    background-color: var(--secondary-color);
+    color: white;
+    font-weight: 700;
+}
+
+/* Detalhes do Agendamento */
+.booking-details .instruction {
+    font-style: italic;
+    opacity: 0.7;
+    margin-bottom: 1rem;
+}
+
+.time-slots-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 1rem;
+}
+
+.time-slot-btn {
+    padding: 0.8rem;
+    border: 1px solid var(--border-color);
+    background-color: var(--card-bg-color);
+    color: var(--text-color);
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s, color 0.3s;
+}
+.time-slot-btn:hover {
+    border-color: var(--secondary-color);
+}
+.time-slot-btn.selected {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+    color: white;
+    font-weight: 600;
+}
+
+.confirmation-section {
+    margin-top: 2rem;
+    padding: 1rem;
+    border-radius: 8px;
+    background-color: var(--card-bg-color);
+    border: 1px solid var(--secondary-color);
+}
+
+.gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.gallery-grid img {
+    width: 100%;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
