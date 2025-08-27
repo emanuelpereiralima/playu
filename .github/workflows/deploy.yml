@@ -60,7 +60,7 @@ jobs:
           done
           
           # 3. Copia os arquivos que não mudam de nome (HTML, imagens, vídeos) para a pasta 'dist'
-          cp -r *.html assets/images assets/videos dist/
+          cp -r *.html assets/images dist/
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3 # 4. Publica o conteúdo da pasta 'dist'
