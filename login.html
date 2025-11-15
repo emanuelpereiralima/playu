@@ -1,58 +1,86 @@
 <!DOCTYPE html>
-<html lang="pt-br" data-theme="dark">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Painel Administrativo</title>
+    <title>Login - Arautos Games</title>
     <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="icon" href="assets/images/logo.png" type="image/png">
-    <script src="assets/js/version.js"></script>
-    <script>
-    function loadAsset(path) {
-        const version = typeof SITE_VERSION !== 'undefined' ? SITE_VERSION : new Date().getTime();
-        const extension = path.split('.').pop();
-        if (extension === 'css') {
-            document.write(`<link rel="stylesheet" href="${path}?v=${version}">`);
-        } else if (extension === 'js') {
-            document.write(`<script src="${path}?v=${version}" defer><\/script>`);
-        }
-    }
-    </script>
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
 </head>
-<body class="login-page-body">
+<body class="login-page">
 
     <div class="login-container">
-        <a href="index.html">
-            <img src="assets/images/logo.png" alt="play.u Logo" class="login-logo">
-        </a>
-        <h1>Acesso ao Painel</h1>
-        <form id="login-form">
-            <div class="form-group">
-                <label for="username">Usuário</label>
-                <input type="text" id="username" required>
-            </div>
+        
+        <form id="login-form" class="login-form">
+            <h2>Login</h2>
+            <p>Acesse sua conta para continuar.</p>
             
+            <div id="login-error" class="error-message hidden"></div>
+
             <div class="form-group">
-                <label for="password">Senha</label>
-                <div class="password-wrapper">
-                    <input type="password" id="password" required>
-                    <ion-icon name="eye-off-outline" id="toggle-password"></ion-icon>
-                </div>
+                <label for="login-email">Email</label>
+                <input type="email" id="login-email" required>
+            </div>
+            <div class="form-group">
+                <label for="login-password">Senha</label>
+                <input type="password" id="login-password" required>
+            </div>
+            <button type="submit" class="submit-btn">Entrar</button>
+
+            <div class="form-separator"><span>ou</span></div>
+
+            <div class="social-login">
+                <button type="button" id="google-login-btn" class="social-btn google">
+                    <ion-icon name="logo-google"></ion-icon>
+                    Entrar com Google
+                </button>
+                <button type="button" id="apple-login-btn" class="social-btn apple" title="Requer configuração de desenvolvedor Apple">
+                    <ion-icon name="logo-apple"></ion-icon>
+                    Entrar com Apple
+                </button>
             </div>
 
-            <div class="form-extra-links">
-                <a href="#" id="forgot-password-link">Esqueci minha senha</a>
-            </div>
-            
-            <p id="error-message" class="error-message" style="display: none;">Usuário ou senha inválidos.</p>
-            <button type="submit" class="submit-btn">Entrar</button>
+            <p class="toggle-form">
+                Não tem uma conta? 
+                <a href="#" id="show-register-link">Cadastre-se</a>
+            </p>
         </form>
+
+        <form id="register-form" class="login-form hidden">
+            <h2>Cadastro</h2>
+            <p>Crie sua conta para agendar jogos.</p>
+
+            <div id="register-error" class="error-message hidden"></div>
+
+            <div class="form-group">
+                <label for="register-name">Nome Completo</label>
+                <input type="text" id="register-name" required>
+            </div>
+            <div class="form-group">
+                <label for="register-email">Email</label>
+                <input type="email" id="register-email" required>
+            </div>
+            <div class="form-group">
+                <label for="register-password">Senha (mín. 6 caracteres)</label>
+                <input type="password" id="register-password" required>
+            </div>
+            <button type="submit" class="submit-btn">Criar Conta</button>
+
+            <p class="toggle-form">
+                Já tem uma conta? 
+                <a href="#" id="show-login-link">Faça login</a>
+            </p>
+        </form>
+
     </div>
-<script>
-    loadAsset('assets/css/style.css');
-    loadAsset('https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js');
-    loadAsset('assets/js/userdata.js');
-    loadAsset('assets/js/login.js');
-</script>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+
+    <script src="assets/js/firebase-config.js"></script>
+    <script src="assets/js/storage.js"></script>
+    <script src="assets/js/login.js"></script>
 </body>
 </html>

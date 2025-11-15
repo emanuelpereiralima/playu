@@ -1,25 +1,121 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // --- DADOS E ESTADO INICIAL ---
-    const urlParams = new URLSearchParams(window.location.search);
-    const bookingId = urlParams.get('bookingId');
+    // --- ELEMENTOS DE VÍDEO E ESTADO ---
+    const localVideo = document.getElementById('local-video');
+    const remoteVideo = document.getElementById('remote-video');
     
-    const bookings = getBookings();
-    const allGames = getGames();
-    const session = bookings.find(b => b.bookingId === bookingId);
-    const gameForSession = session ? allGames.find(g => g.id === session.gameId) : null;
-    const sessionDataKey = `session_${bookingId}`;
-    
-    let userMediaStream = null;
+    let localStream = null;
+    let pc = null; // RTCPeerConnection
+    let roomRef = null;
     let timerInterval = null;
-    let mainTime = 21 * 60;
-    let extraTime = 7 * 60;
-    let isExtraTime = false;
+    let localSessionData = { // Estado local para salvar decisões
+        decisions: []
+    };
 
-    // --- CONTROLE DE ACESSO ESTRITO PARA O HOST ---
-    const loggedInUser = JSON.parse(sessionStorage.getItem('loggedInUser'));
-    const accessMsgContainer = document.getElementById('access-message-container');
+    // --- CONFIGURAÇÃO DO WEBRTC ---
+    const servers = {
+        iceServers: [
+            { urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'] },
+        ],
+        iceCandidatePoolSize: 10,
+    };
 
-    /*(if (!session || !gameForSession) {
+    // --- DADOS DA SESSÃO ---
+// --- DADOS DA SESSÃO E CONTROLE DE ACESSO (Assíncrono) ---
+const urlParams = new URLSearchParams(window.location.search);
+const bookingId = urlParams.get('bookingId');
+const loggedInUser = JSON.parse(sessionStorage.getItem('loggedInUser'));
+const accessMsgContainer = document.getElementById('access-message-container');
+const allGames = getGames(); // Do gamedata.js
+
+let session = null;
+let gameForSession = null;
+
+// Esta função assíncrona irá bloquear o carregamento da sala
+// até que tenhamos os dados da sessão e verifiquemos o acesso.
+async function verifyAccessAndLoadData() {
+    if (!bookingId) {
+        showAccessError('<h1>Sessão Inválida</h1><p>O link de agendamento não foi encontrado.</p>');
+        return false;
+    }
+    if (!loggedInUser) {
+        showAccessError('<h1>Acesso Negado</h1><p>Você precisa estar logado para acessar esta sala.</p><a href="login.html" class="submit-btn" style="text-decoration:none; margin-top:1rem;">Fazer Login</a>');
+        return false;
+    }
+
+    // Busca o agendamento no Firestore
+    try {
+        const bookingRef = db.collection('bookings').doc(bookingId);
+        const bookingDoc = await bookingRef.get();
+
+        if (!bookingDoc.exists) {
+            showAccessError('<h1>Sessão Inválida</h1><p>Este agendamento não existe ou foi excluído.</p>');
+            return false;
+        }
+
+        session = bookingDoc.data();
+        gameForSession = allGames.find(g => g.id === session.gameId);
+
+        if (!gameForSession) {
+            showAccessError('<h1>Erro no Jogo</h1><p>O jogo associado a este agendamento não foi encontrado.</p>');
+            return false;
+        }
+
+        // --- VERIFICAÇÃO DE ACESSO ESPECÍFICA ---
+        // (Isso é um pouco diferente entre os dois arquivos, ajuste conforme abaixo)
+        
+        // =====================================================================
+        // NO ARQUIVO sala-host.js, use esta verificação:
+        if (loggedInUser.role !== 'admin' && loggedInUser.username !== gameForSession.ownerId) {
+            showAccessError('<h1>Acesso Negado</h1><p>Você não tem permissão para acessar esta sala como host.</p>');
+            return false;
+        }
+        // =====================================================================
+
+        // =====================================================================
+        // NO ARQUIVO sala-jogador.js, use esta verificação:
+        if (session.userId !== loggedInUser.username) {
+            showAccessError('<h1>Acesso Negado</h1><p>Você não é o jogador agendado para esta sessão.</p>');
+            return false;
+        }
+        // =====================================================================
+
+        // Se chegou até aqui, o acesso é permitido
+        return true; 
+        
+    } catch (error) {
+        console.error("Erro ao verificar acesso:", error);
+        showAccessError('<h1>Erro de Conexão</h1><p>Não foi possível verificar os dados da sessão. Tente novamente.</p>');
+        return false;
+    }
+}
+
+function showAccessError(message) {
+    accessMsgContainer.innerHTML = message;
+    accessMsgContainer.style.display = 'flex';
+    document.getElementById('host-view')?.classList.add('hidden'); // Esconde a view
+    document.getElementById('player-view')?.classList.add('hidden'); // Esconde a view
+}
+
+// --- INICIALIZAÇÃO DA SALA ---
+// roomRef = db.collection('sessions').doc(bookingId); // Esta linha já deve existir
+// initHostView(); // Esta linha já deve existir
+
+// SUBSTITUA a chamada direta (ex: initHostView()) por esta lógica:
+verifyAccessAndLoadData().then(accessGranted => {
+    if (accessGranted) {
+        console.log('Acesso concedido. Carregando sala...');
+        // Referência do Firestore para a SESSÃO DE VÍDEO (diferente do agendamento)
+        roomRef = db.collection('sessions').doc(bookingId); 
+        
+        // Chame a função de inicialização que já existia
+        // Em sala-host.js:
+        initHostView();
+        // Em sala-jogador.js:
+        // initPlayerView();
+    }
+});
+
+    if (!bookingId || !session || !gameForSession) {
         accessMsgContainer.innerHTML = '<h1>Sessão Inválida</h1><p>O agendamento ou o jogo correspondente não foi encontrado.</p>';
         accessMsgContainer.style.display = 'flex';
         return;
@@ -28,61 +124,70 @@ document.addEventListener('DOMContentLoaded', () => {
         accessMsgContainer.innerHTML = '<h1>Acesso Negado</h1><p>Você não tem permissão para acessar esta sala como host.</p><a href="login.html" class="submit-btn" style="text-decoration:none; margin-top:1rem;">Fazer Login</a>';
         accessMsgContainer.style.display = 'flex';
         return;
-    }*/
-    
-    initHostView();
-
-    // --- LÓGICA DE SINCRONIZAÇÃO (RECEBE A ESCOLHA DO JOGADOR) ---
-    window.addEventListener('storage', (event) => {
-        if (event.key === sessionDataKey) {
-            const newData = JSON.parse(event.newValue || '{}');
-            const feedbackEl = document.getElementById('player-choice-feedback');
-            if (feedbackEl && newData.playerChoice) {
-                feedbackEl.textContent = `Jogador escolheu: "${newData.playerChoice}"`;
-                // Esconde o overlay do host quando o jogador escolhe
-                const decisionOverlay = document.getElementById('player-decision-overlay');
-                if (decisionOverlay) {
-                    decisionOverlay.classList.add('hidden');
-                }
-            }
-        }
-    });
-    
-    // --- NOVA FUNÇÃO PARA RENDERIZAR A DECISÃO NA TELA DO HOST ---
-    function renderLiveDecision(sessionData) {
-        const decisionOverlay = document.getElementById('player-decision-overlay');
-        const decisionTitle = document.getElementById('decision-title');
-        const optionsContainer = document.getElementById('decision-options-container');
-        
-        const decisionId = sessionData.liveDecision;
-        const allDecisions = sessionData.decisions || [];
-        const activeDecision = allDecisions.find(d => d.id === decisionId);
-
-        if (activeDecision) {
-            decisionTitle.textContent = activeDecision.title;
-            optionsContainer.innerHTML = '';
-            activeDecision.options.forEach(optionText => {
-                const button = document.createElement('button');
-                button.className = 'submit-btn';
-                button.textContent = optionText;
-                button.disabled = true; // Botões são desabilitados para o host
-                optionsContainer.appendChild(button);
-            });
-            decisionOverlay.classList.remove('hidden');
-        } else {
-            decisionOverlay.classList.add('hidden');
-        }
     }
 
-    // --- FUNÇÕES GLOBAIS DA SALA ---
-    async function startUserMedia(videoElementId) {
-        try {
-            userMediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-            const videoElement = document.getElementById(videoElementId);
-            if(videoElement) {
-                videoElement.srcObject = userMediaStream;
-                videoElement.muted = true;
+    // --- INICIALIZAÇÃO DA SALA ---
+    roomRef = db.collection('sessions').doc(bookingId);
+
+    initHostView();
+
+    // --- FUNÇÃO PRINCIPAL DE INICIALIZAÇÃO ---
+    async function initHostView() {
+        document.getElementById('host-view').classList.remove('hidden');
+        
+        await setupWebRTC();
+        
+        // Carrega dados iniciais do jogo (dicas, decisões, mídias) para o host
+        await loadInitialGameData(); 
+        
+        setupHostTools();
+        listenForPlayerUpdates();
+    }
+    
+    // --- CARREGAR DADOS INICIAIS ---
+    async function loadInitialGameData() {
+        // Carrega dados pré-configurados do jogo (de gamedata.js)
+        localSessionData.decisions = gameForSession.decisions || [];
+        
+        if (gameForSession.hints) {
+            document.getElementById('hint1-input').value = gameForSession.hints['1'] || '';
+            document.getElementById('hint2-input').value = gameForSession.hints['2'] || '';
+            document.getElementById('hint3-input').value = gameForSession.hints['3'] || '';
+        }
+        
+        // Salva dados iniciais no Firebase para o jogador ver
+        await roomRef.set({ 
+            hints: gameForSession.hints || {},
+            decisions: gameForSession.decisions || []
+        }, { merge: true }); // Merge: true para não sobrescrever a oferta de vídeo
+
+        // Renderiza as decisões pré-salvas
+        renderSavedDecisions();
+    }
+
+    // --- LÓGICA DO WEBRTC (Sem alterações) ---
+    async function setupWebRTC() {
+        pc = new RTCPeerConnection(servers);
+        await setupLocalMedia();
+        pc.ontrack = event => {
+            console.log('Recebendo stream remoto do jogador...');
+            if (event.streams && event.streams[0]) {
+                remoteVideo.srcObject = event.streams[0];
+            } else {
+                let inboundStream = new MediaStream(event.track);
+                remoteVideo.srcObject = inboundStream;
             }
+        };
+        await createOffer();
+    }
+
+    async function setupLocalMedia() {
+        try {
+            localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            localVideo.srcObject = localStream;
+            localStream.getTracks().forEach(track => {
+                pc.addTrack(track, localStream);
+            });
             setupMediaControls(true, 'host');
         } catch (err) {
             console.error("Erro ao acessar a câmera/microfone:", err);
@@ -90,257 +195,232 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    async function createOffer() {
+        const offerCandidates = roomRef.collection('offerCandidates');
+        const answerCandidates = roomRef.collection('answerCandidates');
+        pc.onicecandidate = event => {
+            if (event.candidate) {
+                offerCandidates.add(event.candidate.toJSON());
+            }
+        };
+        const offerDescription = await pc.createOffer();
+        await pc.setLocalDescription(offerDescription);
+        const offer = {
+            sdp: offerDescription.sdp,
+            type: offerDescription.type,
+        };
+        await roomRef.set({ offer }, { merge: true });
+        console.log('Host: Oferta salva no Firebase');
+        roomRef.onSnapshot(async (snapshot) => {
+            const data = snapshot.data();
+            if (!pc.currentRemoteDescription && data?.answer) {
+                console.log('Host: Recebendo resposta do jogador...');
+                const answerDescription = new RTCSessionDescription(data.answer);
+                await pc.setRemoteDescription(answerDescription);
+                console.log('Host: Conexão estabelecida com sucesso!');
+            }
+        });
+        answerCandidates.onSnapshot(snapshot => {
+            snapshot.docChanges().forEach(change => {
+                if (change.type === 'added') {
+                    const candidate = new RTCIceCandidate(change.doc.data());
+                    pc.addIceCandidate(candidate);
+                }
+            });
+        });
+    }
+
+    // --- CONTROLES DE MÍDIA (Sem alterações) ---
     function setupMediaControls(enable, prefix) {
         const micBtn = document.getElementById(`${prefix}-mic-btn`);
         const camBtn = document.getElementById(`${prefix}-cam-btn`);
         if (!micBtn || !camBtn) return;
-        
         micBtn.disabled = !enable;
         camBtn.disabled = !enable;
-
         if (enable) {
-            micBtn.classList.remove('control-btn-toggled');
-            camBtn.classList.remove('control-btn-toggled');
             micBtn.classList.add('active');
             camBtn.classList.add('active');
             micBtn.querySelector('ion-icon').setAttribute('name', 'mic-outline');
             camBtn.querySelector('ion-icon').setAttribute('name', 'videocam-outline');
         }
-
         micBtn.onclick = () => {
-            if (!userMediaStream) return;
-            const audioTrack = userMediaStream.getAudioTracks()[0];
+            if (!localStream) return;
+            const audioTrack = localStream.getAudioTracks()[0];
             audioTrack.enabled = !audioTrack.enabled;
             micBtn.classList.toggle('active', audioTrack.enabled);
             micBtn.classList.toggle('control-btn-toggled', !audioTrack.enabled);
             micBtn.querySelector('ion-icon').setAttribute('name', audioTrack.enabled ? 'mic-outline' : 'mic-off-outline');
         };
         camBtn.onclick = () => {
-            if (!userMediaStream) return;
-            const videoTrack = userMediaStream.getVideoTracks()[0];
+            if (!localStream) return;
+            const videoTrack = localStream.getVideoTracks()[0];
             videoTrack.enabled = !videoTrack.enabled;
             camBtn.classList.toggle('active', videoTrack.enabled);
             camBtn.classList.toggle('control-btn-toggled', !videoTrack.enabled);
             camBtn.querySelector('ion-icon').setAttribute('name', videoTrack.enabled ? 'videocam-outline' : 'videocam-off-outline');
         };
     }
-    
-    function applyTimerStyles(styleData) {
-        const timerElements = document.querySelectorAll('.timer-display');
-        if (styleData) {
-            timerElements.forEach(el => {
-                if(el) {
-                    el.style.color = styleData.color || 'white';
-                    el.style.borderColor = styleData.color || 'white';
-                    el.style.fontFamily = styleData.font || "'Poppins', sans-serif";
-                }
-            });
-        }
-    }
 
-    function updateTimerDisplay(timeInSeconds, elementId) {
-        const element = document.getElementById(elementId);
-        if (!element) return;
-        const minutes = Math.floor(timeInSeconds / 60);
-        const seconds = timeInSeconds % 60;
-        element.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-    }
-    
-    function startTimer() {
-        if (timerInterval) return;
-        let sessionData = JSON.parse(localStorage.getItem(sessionDataKey) || '{}');
-        if (!sessionData.startTime) return;
-
-        const elapsedSeconds = Math.floor((Date.now() - sessionData.startTime) / 1000);
-        const totalDuration = (21 * 60) + (7 * 60);
-
-        if (elapsedSeconds >= totalDuration) {
-            mainTime = 0; 
-            extraTime = 0;
-        } else {
-            const remainingTotalSeconds = totalDuration - elapsedSeconds;
-            if (remainingTotalSeconds > (7 * 60)) {
-                isExtraTime = false;
-                mainTime = remainingTotalSeconds - (7 * 60);
-                extraTime = 7 * 60;
-            } else {
-                isExtraTime = true;
-                mainTime = 0;
-                extraTime = remainingTotalSeconds;
-            }
-        }
+    // --- LÓGICA DAS FERRAMENTAS DO HOST (Refatorado para Firebase) ---
+    function setupHostTools() {
+        document.getElementById('host-exit-btn').onclick = () => {
+             window.location.href = loggedInUser.role === 'admin' ? 'admin.html' : 'host-panel.html';
+        };
         
-        timerInterval = setInterval(() => {
-            let currentTime;
-            if (!isExtraTime) {
-                mainTime--;
-                currentTime = mainTime;
-                if (mainTime <= 0) {
-                    isExtraTime = true;
-                    document.querySelectorAll('.timer-display').forEach(el => el.classList.add('extra-time'));
-                }
-            } else {
-                extraTime--;
-                currentTime = extraTime;
-                if (extraTime < 0) {
-                    currentTime = 0;
-                    clearInterval(timerInterval);
-                    alert('O tempo acabou!');
-                }
-            }
-            updateTimerDisplay(currentTime, 'host-timer-display');
-        }, 1000);
-    }
-    
-    // --- INICIALIZAÇÃO DA VISÃO DO HOST ---
-    function initHostView() {
-        document.getElementById('host-view').classList.remove('hidden');
-                document.getElementById('host-exit-btn').onclick = () => window.location.href = 'index.html';
-
         const closeDecisionBtn = document.getElementById('host-close-decision-btn');
         if(closeDecisionBtn) {
             closeDecisionBtn.onclick = () => { 
                 document.getElementById('player-decision-overlay').classList.add('hidden');
             };
         }
-        
-        startUserMedia('host-own-video-feed');
 
         const hostToolsWrapper = document.getElementById('host-tools-wrapper');
         const hostToolsToggleBtn = document.getElementById('host-tools-toggle-btn');
-
         if(hostToolsToggleBtn && hostToolsWrapper) {
             hostToolsToggleBtn.addEventListener('click', () => {
                 hostToolsWrapper.classList.toggle('collapsed');
             });
         }
-
-        let sessionData = JSON.parse(localStorage.getItem(sessionDataKey) || '{}');
-        if (!sessionData) sessionData = {};
-        applyTimerStyles(sessionData.timerStyle);
-
+        
+        // --- Timer (Firebase) ---
         const startTimerBtn = document.getElementById('start-timer-btn');
-        if(startTimerBtn){
+        if (startTimerBtn) {
             startTimerBtn.addEventListener('click', () => {
-                let currentSessionData = JSON.parse(localStorage.getItem(sessionDataKey) || '{}');
-                if (!currentSessionData.startTime) {
-                    currentSessionData.startTime = Date.now();
-                    localStorage.setItem(sessionDataKey, JSON.stringify(currentSessionData));
-                    startTimer();
+                roomRef.update({
+                    startTime: firebase.firestore.FieldValue.serverTimestamp()
+                }).then(() => {
                     startTimerBtn.textContent = "Timer Iniciado";
                     startTimerBtn.disabled = true;
-                }
+                });
             });
-
-            if (sessionData.startTime) {
-                startTimer();
+        }
+        
+        roomRef.onSnapshot(snapshot => {
+            const data = snapshot.data();
+            if (data && data.startTime && !timerInterval) {
+                console.log('Timer iniciado pelo Firebase');
+                startTimer(data.startTime.toDate());
                 startTimerBtn.textContent = "Timer Iniciado";
                 startTimerBtn.disabled = true;
-            } else {
-                updateTimerDisplay(mainTime, 'host-timer-display');
             }
+        });
+        
+        const timerColorInput = document.getElementById('timer-color-input');
+        const timerFontSelect = document.getElementById('timer-font-select');
+        
+        function saveTimerStyle() {
+            const styleData = {
+                color: timerColorInput.value,
+                font: timerFontSelect.value
+            };
+            roomRef.update({ timerStyle: styleData });
+            applyTimerStyles(styleData);
         }
+        if(timerColorInput) timerColorInput.addEventListener('input', saveTimerStyle);
+        if(timerFontSelect) timerFontSelect.addEventListener('change', saveTimerStyle);
+        
 
+        // --- Dicas (Firebase) ---
         const hintsForm = document.getElementById('hints-editor-form');
-        if(hintsForm) {
+        if (hintsForm) {
             const hintInputs = { 
                 1: document.getElementById('hint1-input'), 
                 2: document.getElementById('hint2-input'), 
                 3: document.getElementById('hint3-input') 
             };
             
-            if (!sessionData.hints) sessionData.hints = {};
-            hintInputs[1].value = sessionData.hints['1'] || '';
-            hintInputs[2].value = sessionData.hints['2'] || '';
-            hintInputs[3].value = sessionData.hints['3'] || '';
-
             hintsForm.addEventListener('submit', (e) => {
                 e.preventDefault();
-                let currentSessionData = JSON.parse(localStorage.getItem(sessionDataKey) || '{}');
-                if (!currentSessionData.hints) currentSessionData.hints = {};
-                currentSessionData.hints['1'] = hintInputs[1].value;
-                currentSessionData.hints['2'] = hintInputs[2].value;
-                currentSessionData.hints['3'] = hintInputs[3].value;
-                localStorage.setItem(sessionDataKey, JSON.stringify(currentSessionData));
-                alert('Dicas salvas!');
+                roomRef.update({
+                    hints: {
+                        '1': hintInputs[1].value,
+                        '2': hintInputs[2].value,
+                        '3': hintInputs[3].value,
+                    }
+                }).then(() => alert('Dicas salvas!'));
             });
         }
-
-        const timerColorInput = document.getElementById('timer-color-input');
-        const timerFontSelect = document.getElementById('timer-font-select');
         
-        function saveTimerStyle() {
-            let currentSessionData = JSON.parse(localStorage.getItem(sessionDataKey) || '{}');
-            if(!currentSessionData.timerStyle) currentSessionData.timerStyle = {};
-            currentSessionData.timerStyle.color = timerColorInput.value;
-            currentSessionData.timerStyle.font = timerFontSelect.value;
-            localStorage.setItem(sessionDataKey, JSON.stringify(currentSessionData));
-            applyTimerStyles(currentSessionData.timerStyle);
-        }
+        // --- Mídia do Jogo (Firebase) ---
+        // ESTA SEÇÃO FOI COMPLETAMENTE SUBSTITUÍDA
+        
+        // Lógica das Abas de Mídia
+        document.querySelectorAll('.asset-tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabGroup = btn.closest('.asset-tabs');
+                const manager = btn.closest('.asset-manager-compact');
+                
+                tabGroup.querySelectorAll('.asset-tab-btn.active').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                manager.querySelectorAll('.asset-tab-content.active').forEach(c => c.classList.remove('active'));
+                manager.querySelector(`#${btn.dataset.tab}-tab`).classList.add('active');
+            });
+        });
 
-        if(timerColorInput) timerColorInput.addEventListener('input', saveTimerStyle);
-        if(timerFontSelect) timerFontSelect.addEventListener('change', saveTimerStyle);
-
-        const mediaUpload = document.getElementById('media-upload');
-        const mediaPreviews = document.getElementById('media-previews');
-        const mediaOverlay = document.getElementById('host-media-display-overlay');
-
-        if(mediaUpload) {
-            const mediaDropZone = document.getElementById('media-drop-zone');
+        // Função para renderizar as mídias salvas
+        function renderMediaTools() {
+            const photosPreview = document.getElementById('host-photos-preview');
+            const videosPreview = document.getElementById('host-videos-preview');
+            const soundsPreview = document.getElementById('host-sounds-preview');
             
-            function handleMediaFiles(files) {
-                if(mediaPreviews) mediaPreviews.innerHTML = '';
-                for (const file of files) {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        const thumb = document.createElement(file.type.startsWith('image') ? 'img' : 'video');
-                        thumb.src = e.target.result;
-                        thumb.className = 'media-thumb';
-                        thumb.onclick = () => showMediaInOverlay(e.target.result, file.type);
-                        if(mediaPreviews) mediaPreviews.appendChild(thumb);
-                    };
-                    reader.readAsDataURL(file);
-                }
-            }
-
-            mediaUpload.addEventListener('change', (event) => {
-                handleMediaFiles(event.target.files);
+            if (!photosPreview || !videosPreview || !soundsPreview) return;
+            
+            photosPreview.innerHTML = '';
+            videosPreview.innerHTML = '';
+            soundsPreview.innerHTML = '';
+            
+            // Popula Fotos
+            (gameForSession.photos || []).forEach(asset => {
+                const thumb = document.createElement('img');
+                thumb.src = asset.dataUrl;
+                thumb.className = 'asset-thumb';
+                thumb.title = `Enviar foto: ${asset.name}`;
+                thumb.onclick = () => {
+                    console.log('Enviando foto para o jogador...');
+                    roomRef.update({
+                        liveMedia: { src: asset.dataUrl, type: 'image' }
+                    });
+                };
+                photosPreview.appendChild(thumb);
             });
-
-            if(mediaDropZone) {
-                mediaDropZone.addEventListener('dragover', (event) => {
-                    event.preventDefault();
-                    mediaDropZone.classList.add('drag-over');
-                });
-                mediaDropZone.addEventListener('dragleave', () => {
-                    mediaDropZone.classList.remove('drag-over');
-                });
-                mediaDropZone.addEventListener('drop', (event) => {
-                    event.preventDefault();
-                    mediaDropZone.classList.remove('drag-over');
-                    handleMediaFiles(event.dataTransfer.files);
-                });
-            }
+            
+            // Popula Vídeos
+            (gameForSession.videos || []).forEach(asset => {
+                const thumb = document.createElement('video');
+                thumb.src = asset.dataUrl;
+                thumb.className = 'asset-thumb';
+                thumb.title = `Enviar vídeo: ${asset.name}`;
+                thumb.onclick = () => {
+                    console.log('Enviando vídeo para o jogador...');
+                    roomRef.update({
+                        liveMedia: { src: asset.dataUrl, type: 'video' }
+                    });
+                };
+                videosPreview.appendChild(thumb);
+            });
+            
+            // Popula Sons
+            (gameForSession.sounds || []).forEach(asset => {
+                const item = document.createElement('div');
+                item.className = 'asset-audio-item';
+                // Adiciona ícone e nome
+                item.innerHTML = `<span><ion-icon name="musical-notes-outline"></ion-icon> ${asset.name.substring(0, 20)}...</span>`;
+                item.title = `Tocar som: ${asset.name}`;
+                item.onclick = () => {
+                    console.log('Enviando som para o jogador...');
+                    roomRef.update({
+                        liveMedia: { src: asset.dataUrl, type: 'audio' }
+                    });
+                };
+                soundsPreview.appendChild(item);
+            });
         }
         
-        function showMediaInOverlay(src, type) {
-            if(!mediaOverlay) return;
-            mediaOverlay.innerHTML = '';
-            const media = document.createElement(type.startsWith('image') ? 'img' : 'video');
-            if (type.startsWith('video')) {
-                media.autoplay = true;
-                media.controls = true;
-            }
-            media.src = src;
-            mediaOverlay.appendChild(media);
-
-            mediaOverlay.classList.remove('hidden');
-            mediaOverlay.onclick = () => {
-                mediaOverlay.classList.add('hidden');
-                mediaOverlay.innerHTML = '';
-            };
-        }
-
+        // Chama a renderização
+        renderMediaTools();
+        
+        // --- Decisões (Firebase) ---
         const decisionForm = document.getElementById('decision-creator-form');
         const decisionTitleInput = document.getElementById('decision-title-input');
         const optionsContainer = document.getElementById('decision-options-inputs');
@@ -348,31 +428,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const savedDecisionsList = document.getElementById('saved-decisions-list');
         const playerChoiceFeedback = document.getElementById('player-choice-feedback');
         
-        if (!sessionData.decisions) sessionData.decisions = [];
-
-        function renderSavedDecisions() {
-            if(!savedDecisionsList) return;
-            savedDecisionsList.innerHTML = '';
-            sessionData.decisions.forEach(decision => {
-                const item = document.createElement('div');
-                item.className = 'saved-decision-item';
-                item.innerHTML = `<span>${decision.title}</span><button class="submit-btn small-btn" data-id="${decision.id}">Enviar</button>`;
-                savedDecisionsList.appendChild(item);
-            });
-            savedDecisionsList.querySelectorAll('button').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const decisionId = btn.dataset.id;
-                    let currentSessionData = JSON.parse(localStorage.getItem(sessionDataKey) || '{}');
-                    if(!currentSessionData.decisions) currentSessionData.decisions = [];
-                    currentSessionData.liveDecision = decisionId;
-                    currentSessionData.playerChoice = null;
-                    localStorage.setItem(sessionDataKey, JSON.stringify(currentSessionData));
-                    if(playerChoiceFeedback) playerChoiceFeedback.textContent = 'Aguardando jogador...';
-                    renderLiveDecision(currentSessionData); // MOSTRA O OVERLAY PARA O HOST
-                });
-            });
-        }
-
         if (addOptionBtn) {
             addOptionBtn.addEventListener('click', () => {
                 const newInput = document.createElement('input');
@@ -393,13 +448,132 @@ document.addEventListener('DOMContentLoaded', () => {
                     title: decisionTitleInput.value,
                     options: options
                 };
-                sessionData.decisions.push(newDecision);
-                localStorage.setItem(sessionDataKey, JSON.stringify(sessionData));
-                renderSavedDecisions();
-                decisionForm.reset();
-                optionsContainer.innerHTML = '<input type="text" class="decision-option-input" placeholder="Opção 1" required><input type="text" class="decision-option-input" placeholder="Opção 2" required>';
+                
+                localSessionData.decisions.push(newDecision);
+                roomRef.update({ decisions: localSessionData.decisions })
+                    .then(() => {
+                        renderSavedDecisions();
+                        decisionForm.reset();
+                        optionsContainer.innerHTML = '<input type="text" class="decision-option-input" placeholder="Opção 1" required><input type="text" class="decision-option-input" placeholder="Opção 2" required>';
+                    });
             });
         }
-        renderSavedDecisions();
     }
+    
+    // --- FUNÇÕES AUXILIARES (Decisões, Timer) ---
+    
+    function renderSavedDecisions() {
+        const savedDecisionsList = document.getElementById('saved-decisions-list');
+        if(!savedDecisionsList) return;
+        
+        savedDecisionsList.innerHTML = '';
+        localSessionData.decisions.forEach(decision => {
+            const item = document.createElement('div');
+            item.className = 'saved-decision-item';
+            item.innerHTML = `<span>${decision.title}</span><button class="submit-btn small-btn" data-id="${decision.id}">Enviar</button>`;
+            savedDecisionsList.appendChild(item);
+        });
+        
+        savedDecisionsList.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const decisionId = btn.dataset.id;
+                const playerChoiceFeedback = document.getElementById('player-choice-feedback');
+
+                roomRef.update({
+                    liveDecision: decisionId,
+                    playerChoice: null 
+                }).then(() => {
+                    if(playerChoiceFeedback) playerChoiceFeedback.textContent = 'Aguardando jogador...';
+                    
+                    const decisionOverlay = document.getElementById('player-decision-overlay');
+                    const decisionTitle = document.getElementById('decision-title');
+                    const optionsContainer = document.getElementById('decision-options-container');
+                    const activeDecision = localSessionData.decisions.find(d => d.id === decisionId);
+                    
+                    if (activeDecision && decisionOverlay) {
+                        decisionTitle.textContent = activeDecision.title;
+                        optionsContainer.innerHTML = '';
+                        activeDecision.options.forEach(optionText => {
+                            const btn = document.createElement('button');
+                            btn.className = 'submit-btn';
+                            btn.textContent = optionText;
+                            btn.disabled = true;
+                            optionsContainer.appendChild(btn);
+                        });
+                        decisionOverlay.classList.remove('hidden');
+                    }
+                });
+            });
+        });
+    }
+
+    function startTimer(startTime) {
+        if (timerInterval) return;
+        let mainTime = 21 * 60;
+        let extraTime = 7 * 60;
+        let isExtraTime = false;
+        
+        timerInterval = setInterval(() => {
+            const elapsedSeconds = Math.floor((Date.now() - startTime.getTime()) / 1000);
+            const totalDuration = (21 * 60) + (7 * 60);
+            let currentTime;
+
+            if (elapsedSeconds >= totalDuration) {
+                currentTime = 0;
+                clearInterval(timerInterval);
+                alert('O tempo acabou!');
+            } else {
+                const remainingTotalSeconds = totalDuration - elapsedSeconds;
+                if (remainingTotalSeconds > (7 * 60)) {
+                    isExtraTime = false;
+                    currentTime = remainingTotalSeconds - (7 * 60);
+                } else {
+                    isExtraTime = true;
+                    currentTime = remainingTotalSeconds;
+                    document.querySelectorAll('.timer-display').forEach(el => el.classList.add('extra-time'));
+                }
+            }
+            updateTimerDisplay(currentTime, 'host-timer-display');
+        }, 1000);
+    }
+    
+    function updateTimerDisplay(timeInSeconds, elementId) {
+        const element = document.getElementById(elementId);
+        if (!element) return;
+        const minutes = Math.floor(timeInSeconds / 60);
+        const seconds = timeInSeconds % 60;
+        element.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+    
+    function applyTimerStyles(styleData) {
+        const timerElements = document.querySelectorAll('.timer-display');
+        if (styleData) {
+            timerElements.forEach(el => {
+                if(el) {
+                    el.style.color = styleData.color || 'white';
+                    el.style.borderColor = styleData.color || 'white';
+                    el.style.fontFamily = styleData.font || "'Poppins', sans-serif";
+                }
+            });
+        }
+    }
+
+    // --- OUVINTE DE ATUALIZAÇÕES DO JOGADOR (Firebase) ---
+    function listenForPlayerUpdates() {
+        roomRef.onSnapshot(snapshot => {
+            const data = snapshot.data();
+            if (!data) return;
+
+            const feedbackEl = document.getElementById('player-choice-feedback');
+            if (feedbackEl && data.playerChoice) {
+                feedbackEl.textContent = `Jogador escolheu: "${data.playerChoice}"`;
+                const decisionOverlay = document.getElementById('player-decision-overlay');
+                if (decisionOverlay) {
+                    decisionOverlay.classList.add('hidden');
+                }
+                roomRef.update({ playerChoice: null }); 
+            }
+        });
+    }
+
 });

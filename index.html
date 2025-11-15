@@ -43,6 +43,39 @@
                 <div class="theme-switcher"><ion-icon name="sunny-outline" id="theme-toggle"></ion-icon></div>
             </div>
         </div>
+         <div class="mobile-menu-dropdown">
+        <button class="dropdown-toggle" id="mobile-menu-toggle">
+            <ion-icon name="menu-outline"></ion-icon>
+        </button>
+        <div class="dropdown-content" id="mobile-menu-content">
+            <a href="login.html" class="dropdown-btn">Login</a>
+            <button class="dropdown-btn" id="dropdown-player-mode-btn">
+                <ion-icon name="game-controller-outline"></ion-icon>
+                <span>Entrar como Jogador</span>
+            </button>
+            <button class="dropdown-btn" id="dropdown-host-mode-btn">
+                <ion-icon name="desktop-outline"></ion-icon>
+                <span>Entrar como Host</span>
+            </button>
+            
+            <div class="dropdown-divider"></div>
+
+            <div class="dropdown-item-flex">
+                <span>Modo Escuro</span>
+                <div class="theme-switcher-mobile">
+                    <ion-icon name="moon-outline" id="theme-toggle-mobile"></ion-icon>
+                </div>
+            </div>
+
+            <div class="dropdown-item-flex">
+                <span>Idioma</span>
+                <select id="language-switcher-mobile" class="control-btn dropdown-select">
+                    <option value="pt-BR">Português</option>
+                    <option value="en-US">English</option>
+                </select>
+            </div>
+        </div>
+    </div>
     </nav>
 </header>
 

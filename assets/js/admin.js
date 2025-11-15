@@ -1,154 +1,149 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Lógica dos botões do Header
-    const showProfileBtn = document.getElementById('show-profile-btn');
-    const profilePanel = document.querySelector('.profile-panel');
-    const logoutBtn = document.getElementById('logout-btn');
+    // Referências do Firebase
+    // const auth = firebase.auth();
+    // const db = firebase.firestore();
 
-    if (showProfileBtn && profilePanel) {
-        showProfileBtn.addEventListener('click', () => {
-            profilePanel.classList.toggle('hidden');
-        });
-    }
-    if (logoutBtn) {
+    // Elementos da UI
+    const userGreeting = document.getElementById('user-greeting');
+    const logoutBtn = document.getElementById('logout-btn');
+    const userTableBody = document.getElementById('user-table-body');
+    const gameListContainer = document.getElementById('game-list-container');
+
+    let loggedInUser = null;
+
+    // --- 1. VERIFICAÇÃO DE AUTENTICAÇÃO (O MAIS IMPORTANTE) ---
+    function checkAuth() {
+        const user = JSON.parse(sessionStorage.getItem('loggedInUser'));
+        
+        // Se não estiver logado OU se não for um admin, expulsa
+        if (!user || user.role !== 'admin') {
+            alert('Acesso negado.');
+            window.location.href = 'login.html';
+            return;
+        }
+        
+        loggedInUser = user;
+        
+        // Personaliza a UI
+        userGreeting.textContent = `Olá, ${loggedInUser.name.split(' ')[0]}`;
         logoutBtn.addEventListener('click', () => {
             sessionStorage.removeItem('loggedInUser');
             window.location.href = 'login.html';
         });
+
+        // Carrega os dados da página
+        loadAllUsers();
+        loadAllGames();
     }
 
-    // Lógica de Gerenciamento de Jogos
-    const gameListContainer = document.getElementById('game-list-container');
-    const addNewGameBtn = document.getElementById('add-new-game-btn');
-    const gameFormModal = document.getElementById('game-form-modal');
-    const gameForm = document.getElementById('game-form');
-    const cancelBtn = document.getElementById('cancel-btn');
-    const modalTitle = document.getElementById('modal-title');
-    const gameIdInput = document.getElementById('game-id');
+    // --- 2. CARREGAR TODOS OS USUÁRIOS (Do Firestore) ---
+    async function loadAllUsers() {
+        userTableBody.innerHTML = ''; // Limpa o loader
+        
+        try {
+            const snapshot = await db.collection('users').get();
+            if (snapshot.empty) {
+                userTableBody.innerHTML = '<tr><td colspan="4">Nenhum usuário encontrado.</td></tr>';
+                return;
+            }
 
-    function renderGameList() {
-        if (!gameListContainer) return;
+            snapshot.forEach(doc => {
+                const user = doc.data();
+                const userId = doc.id; // UID do usuário
+                
+                // Ignora o próprio admin (para não se rebaixar sem querer)
+                if (userId === loggedInUser.username) return;
+
+                const tr = document.createElement('tr');
+                
+                // Cria o <select> de cargos
+                const roleSelect = `
+                    <select class="role-select" data-user-id="${userId}">
+                        <option value="user" ${user.role === 'user' ? 'selected' : ''}>Jogador</option>
+                        <option value="host" ${user.role === 'host' ? 'selected' : ''}>Host</option>
+                        <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option>
+                    </select>
+                `;
+
+                tr.innerHTML = `
+                    <td>${user.name || 'Nome não definido'}</td>
+                    <td>${user.email || 'Email não definido'}</td>
+                    <td>${roleSelect}</td>
+                    <td>
+                        <button class="submit-btn small-btn save-role-btn" data-user-id="${userId}">
+                            Salvar
+                        </button>
+                    </td>
+                `;
+                userTableBody.appendChild(tr);
+            });
+
+            // Adiciona os eventos aos botões "Salvar"
+            document.querySelectorAll('.save-role-btn').forEach(button => {
+                button.addEventListener('click', handleRoleSave);
+            });
+
+        } catch (error) {
+            console.error("Erro ao carregar usuários:", error);
+            userTableBody.innerHTML = '<tr><td colspan="4">Erro ao carregar usuários.</td></tr>';
+        }
+    }
+
+    // --- 3. ATUALIZAR CARGO (No Firestore) ---
+    async function handleRoleSave(event) {
+        const button = event.target;
+        const userId = button.dataset.userId;
+        const select = document.querySelector(`.role-select[data-user-id="${userId}"]`);
+        const newRole = select.value;
+
+        button.textContent = 'Salvando...';
+        button.disabled = true;
+
+        try {
+            // Atualiza o documento do usuário no Firestore
+            await db.collection('users').doc(userId).update({
+                role: newRole
+            });
+            
+            alert(`Cargo do usuário atualizado para "${newRole}".`);
+            button.textContent = 'Salvar';
+            button.disabled = false;
+
+        } catch (error) {
+            console.error("Erro ao atualizar cargo:", error);
+            alert('Erro ao salvar. Tente novamente.');
+            button.textContent = 'Salvar';
+            button.disabled = false;
+        }
+    }
+
+    // --- 4. CARREGAR JOGOS (Do gamedata.js) ---
+    function loadAllGames() {
+        const allGames = getGames(); // Do gamedata.js
         gameListContainer.innerHTML = '';
-        const games = getGames();
-
-        if (!games || games.length === 0) {
-            gameListContainer.innerHTML = '<p>Nenhum jogo encontrado. Adicione um para começar.</p>';
+        
+        if (!allGames || allGames.length === 0) {
+            gameListContainer.innerHTML = '<p>Nenhum jogo cadastrado.</p>';
             return;
         }
 
-        games.forEach(game => {
-            const gameElement = document.createElement('details');
-            gameElement.className = 'game-list-item';
-            
-            const statusClass = game.status === 'pending' ? 'status-pending' : 'status-approved';
-            let mainActionButtons = `
-                <button class="schedule-btn" data-id="${game.id}">Agendar</button>
-                <button class="edit-btn" data-id="${game.id}">Editar Jogo</button>
-                <button class="remove-btn" data-id="${game.id}">Remover Jogo</button>
+        allGames.forEach(game => {
+            const item = document.createElement('div');
+            item.className = 'booking-item'; // Reutilizando estilo
+            item.innerHTML = `
+                <div class="booking-item-info">
+                    <strong>${game.title}</strong>
+                    <span>Proprietário: ${game.ownerId}</span>
+                </div>
+                <a href="host-panel.html?gameId=${game.id}" class="submit-btn small-btn">
+                    Editar Jogo
+                    <ion-icon name="pencil-outline"></ion-icon>
+                </a>
             `;
-            if (game.status === 'pending') {
-                mainActionButtons = `<button class="approve-btn" data-id="${game.id}">Aprovar</button>` + mainActionButtons;
-            }
-
-            gameElement.innerHTML = `
-                <summary>
-                    <div>
-                        <span>${game.name}</span>
-                        <span class="status-badge ${statusClass}">${game.status || 'N/A'}</span>
-                        <span class="owner-badge">Dono: ${game.ownerId || 'N/A'}</span>
-                    </div>
-                    <div class="item-actions">${mainActionButtons}</div>
-                </summary>
-                `;
-            gameListContainer.appendChild(gameElement);
+            gameListContainer.appendChild(item);
         });
-        addEventListenersToButtons();
     }
 
-    function addEventListenersToButtons() {
-        document.querySelectorAll('.edit-btn').forEach(b => b.addEventListener('click', handleEditGame));
-        document.querySelectorAll('.remove-btn').forEach(b => b.addEventListener('click', handleRemoveGame));
-        document.querySelectorAll('.approve-btn').forEach(b => b.addEventListener('click', handleApproveGame));
-        document.querySelectorAll('.schedule-btn').forEach(b => b.addEventListener('click', (e) => {
-            if (window.openAvailabilityModal) window.openAvailabilityModal(e.target.dataset.id);
-        }));
-    }
-
-    function handleEditGame(event) {
-        const gameId = event.target.dataset.id;
-        const game = getGames().find(g => g.id === gameId);
-        if (!game) return;
-        modalTitle.textContent = 'Editar Jogo';
-        gameForm.reset();
-        gameIdInput.value = game.id;
-        document.getElementById('name').value = game.name;
-        document.getElementById('fullDescription').value = game.fullDescription;
-        document.getElementById('isPaused').checked = game.isPaused || false;
-        gameFormModal.showModal();
-    }
-
-    function handleRemoveGame(event) {
-        const gameId = event.target.dataset.id;
-        let games = getGames();
-        const gameToRemove = games.find(g => g.id === gameId);
-        if (gameToRemove && confirm(`Remover "${gameToRemove.name}"?`)) {
-            saveGames(games.filter(g => g.id !== gameId));
-            renderGameList();
-        }
-    }
-
-    function handleApproveGame(event) {
-        const gameId = event.target.dataset.id;
-        let games = getGames();
-        const gameIndex = games.findIndex(g => g.id === gameId);
-        if (gameIndex > -1) {
-            games[gameIndex].status = 'approved';
-            saveGames(games);
-            renderGameList();
-        }
-    }
-
-    addNewGameBtn.addEventListener('click', () => {
-        modalTitle.textContent = 'Adicionar Novo Jogo';
-        gameForm.reset();
-        gameIdInput.value = '';
-        gameFormModal.showModal();
-    });
-
-    cancelBtn.addEventListener('click', () => gameFormModal.close());
-
-    gameForm.addEventListener('submit', (event) => {
-        event.preventDefault();
-        let allGames = getGames();
-        const editingId = gameIdInput.value;
-        const formData = {
-            name: document.getElementById('name').value,
-            fullDescription: document.getElementById('fullDescription').value,
-            isPaused: document.getElementById('isPaused').checked
-        };
-        if (editingId) {
-            const gameIndex = allGames.findIndex(g => g.id === editingId);
-            if (gameIndex > -1) {
-                allGames[gameIndex] = { ...allGames[gameIndex], ...formData };
-            }
-        } else {
-            const newGame = {
-                id: formData.name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, ''),
-                ownerId: 'admin',
-                status: 'approved',
-                shortDescription: (formData.fullDescription || '').substring(0, 50) + '...',
-                coverImage: "https://via.placeholder.com/500x700/cccccc/FFFFFF?text=Novo+Jogo",
-                videoPreview: "",
-                galleryImages: [],
-                sessionDuration: "60 minutos",
-                availability: {},
-                ...formData
-            };
-            allGames.push(newGame);
-        }
-        saveGames(allGames);
-        renderGameList();
-        gameFormModal.close();
-    });
-
-    renderGameList();
+    // --- INICIALIZAÇÃO ---
+    checkAuth();
 });

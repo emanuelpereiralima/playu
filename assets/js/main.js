@@ -50,6 +50,76 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+     // --- Lógica do Dropdown Mobile ---
+    const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
+    const mobileMenuContent = document.getElementById('mobile-menu-content');
+    const themeToggleMobile = document.getElementById('theme-toggle-mobile');
+    const languageSwitcherMobile = document.getElementById('language-switcher-mobile');
+    const dropdownPlayerModeBtn = document.getElementById('dropdown-player-mode-btn');
+    const dropdownHostModeBtn = document.getElementById('dropdown-host-mode-btn');
+
+    if (mobileMenuToggle) {
+        mobileMenuToggle.addEventListener('click', (event) => {
+            mobileMenuContent.classList.toggle('show');
+            event.stopPropagation(); // Impede que o clique se propague e feche o menu imediatamente
+        });
+
+        // Fecha o dropdown se clicar fora dele
+        window.addEventListener('click', (event) => {
+            if (!mobileMenuDropdown.contains(event.target)) {
+                mobileMenuContent.classList.remove('show');
+            }
+        });
+    }
+
+    // Lógica para o tema no dropdown mobile
+    if (themeToggleMobile) {
+        themeToggleMobile.addEventListener('click', () => {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeIcons(newTheme); // Chame sua função existente para atualizar ícones
+        });
+    }
+
+    // Lógica para o idioma no dropdown mobile
+    if (languageSwitcherMobile) {
+        languageSwitcherMobile.value = localStorage.getItem('language') || 'pt-BR'; // Carrega o idioma salvo
+        languageSwitcherMobile.addEventListener('change', (event) => {
+            const newLang = event.target.value;
+            localStorage.setItem('language', newLang);
+            // Você precisaria de uma função 'loadTranslations(newLang)' aqui para recarregar os textos
+            alert(`Idioma alterado para: ${newLang}. Recarregue a página para ver as traduções.`);
+        });
+    }
+
+    // Lógica para os botões "Entrar como Jogador" / "Entrar como Host" no dropdown mobile
+    if (dropdownPlayerModeBtn) {
+        dropdownPlayerModeBtn.addEventListener('click', () => {
+            window.location.href = 'sala.html'; // Redireciona para a sala do jogador
+        });
+    }
+    if (dropdownHostModeBtn) {
+        dropdownHostModeBtn.addEventListener('click', () => {
+            window.location.href = 'host-panel.html'; // Redireciona para o painel do host
+        });
+    }
+
+    // Função para atualizar os ícones de tema (certifique-se de que esta função exista no seu JS)
+    function updateThemeIcons(theme) {
+        const desktopIcon = document.getElementById('theme-toggle');
+        const mobileIcon = document.getElementById('theme-toggle-mobile');
+
+        if (theme === 'dark') {
+            if (desktopIcon) desktopIcon.setAttribute('name', 'moon-outline');
+            if (mobileIcon) mobileIcon.setAttribute('name', 'moon-outline');
+        } else {
+            if (desktopIcon) desktopIcon.setAttribute('name', 'sunny-outline');
+            if (mobileIcon) mobileIcon.setAttribute('name', 'sunny-outline');
+        }
+    }
+
     // --- FUNÇÕES DE RENDERIZAÇÃO ---
     function createGameCard(game) {
         const isPausedClass = game.isPaused ? 'game-card--paused' : '';
