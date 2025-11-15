@@ -165,6 +165,134 @@ img {
     cursor: pointer;
 }
 
+/* ===== 10. RESPONSIVIDADE DO CABEÇALHO (NOVO) ===== */
+
+/* --- Estilos do Dropdown Mobile --- */
+.mobile-menu-dropdown {
+    position: relative;
+    display: none; /* Esconde por padrão, só aparece em mobile */
+}
+
+.dropdown-toggle {
+    background-color: var(--secondary-color);
+    border: none;
+    color: white;
+    padding: 0.8rem 1rem;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s;
+}
+
+.dropdown-toggle:hover {
+    background-color: #d8304d;
+}
+
+.dropdown-content {
+    display: none; /* Esconde o conteúdo por padrão */
+    position: absolute;
+    background-color: var(--card-bg-color);
+    min-width: 250px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.4);
+    z-index: 1001;
+    right: 0;
+    top: calc(100% + 10px); /* Posição abaixo do botão */
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    padding: 0.5rem 0;
+}
+
+.dropdown-content.show {
+    display: block; /* Mostra quando a classe 'show' é adicionada via JS */
+}
+
+.dropdown-link, .dropdown-btn {
+    color: var(--text-color);
+    padding: 0.8rem 1.5rem;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    font-weight: 500;
+    transition: background-color 0.2s, color 0.2s;
+    background: none; /* Para botões */
+    border: none; /* Para botões */
+    width: 100%; /* Para botões */
+    text-align: left; /* Para botões */
+}
+
+.dropdown-link:hover, .dropdown-btn:hover {
+    background-color: rgba(233, 69, 96, 0.1); /* Cor de hover mais suave */
+    color: var(--secondary-color);
+}
+
+.dropdown-btn ion-icon {
+    font-size: 1.2rem;
+    color: var(--secondary-color);
+}
+
+.dropdown-divider {
+    height: 1px;
+    background-color: var(--border-color);
+    margin: 0.5rem 0;
+    opacity: 0.3;
+}
+
+.dropdown-item-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.8rem 1.5rem;
+}
+
+.theme-switcher-mobile ion-icon {
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text-color);
+    transition: color 0.3s;
+}
+
+.theme-switcher-mobile ion-icon:hover {
+    color: var(--secondary-color);
+}
+
+.dropdown-select {
+    background-color: var(--bg-color);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    padding: 0.4rem 0.6rem;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: var(--body-font);
+    font-size: 0.9rem;
+}
+
+/* --- Media Queries para Ativar o Dropdown --- */
+@media screen and (max-width: 992px) {
+    .nav__links, .nav__controls {
+        display: none; /* Esconde os links e controles de desktop */
+    }
+    .mobile-menu-dropdown {
+        display: block; /* Mostra o dropdown em mobile */
+    }
+    .nav {
+        height: 4rem; /* Reduz a altura do cabeçalho em mobile */
+    }
+    .nav__logo img {
+        width: 150px; /* Reduz o logo em mobile */
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .nav__logo img {
+        width: 120px; /* Reduz ainda mais o logo em telas muito pequenas */
+    }
+}
+
 /* --- Botões --- */
 .submit-btn {
     background-color: var(--secondary-color);
@@ -980,4 +1108,491 @@ dialog::backdrop {
     padding: 1rem;
     background-color: #1a1a1a;
     width: 300px;
+}
+
+/* ==================== FERRAMENTA DE ÁUDIO DO HOST ==================== */
+.audio-players-container {
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.audio-player-item {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 1rem;
+    background-color: var(--card-bg-color);
+    padding: 0.8rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.audio-player-item p {
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.audio-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.audio-controls .play-btn, .audio-controls .loop-btn {
+    background: none;
+    border: none;
+    color: var(--text-color);
+    font-size: 1.8rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+
+.audio-controls .loop-btn.active {
+    color: var(--secondary-color);
+}
+
+.audio-controls .volume-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100px;
+    height: 8px;
+    background: #444;
+    outline: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.audio-controls .volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    background: var(--secondary-color);
+    border-radius: 50%;
+}
+
+.audio-controls .volume-slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    background: var(--secondary-color);
+    border-radius: 50%;
+    border: none;
+}
+
+/* ADICIONE ESTES NOVOS ESTILOS AO style.css */
+.asset-manager-compact {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-top: 0.5rem;
+}
+.asset-tabs {
+    display: flex;
+    background-color: var(--primary-color-dark);
+}
+.asset-tab-btn {
+    flex-grow: 1;
+    background: none;
+    border: none;
+    color: var(--text-color);
+    opacity: 0.6;
+    padding: 0.5rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border-bottom: 3px solid transparent;
+}
+.asset-tab-btn.active {
+    opacity: 1;
+    border-bottom-color: var(--secondary-color);
+}
+.asset-content-compact {
+    padding: 0.5rem;
+    background-color: var(--primary-color);
+    max-height: 200px;
+    overflow-y: auto;
+}
+.asset-tab-content {
+    display: none;
+}
+.asset-tab-content.active {
+    display: block;
+}
+.asset-preview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+    gap: 0.5rem;
+}
+.asset-thumb {
+    position: relative;
+    cursor: pointer;
+}
+.asset-thumb img, .asset-thumb video {
+    width: 100%;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 5px;
+    border: 2px solid transparent;
+}
+.asset-thumb:hover img, .asset-thumb:hover video {
+    border-color: var(--secondary-color);
+}
+.asset-preview-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.asset-audio-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: var(--primary-color-dark);
+    padding: 0.5rem;
+    border-radius: 5px;
+    cursor: pointer;
+}
+.asset-audio-item span {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+}
+.asset-audio-item:hover {
+    background-color: var(--secondary-color);
+}
+
+/* ==================== ESTILOS LOGIN/CADASTRO ==================== */
+.login-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: var(--bg-color);
+}
+
+.login-container {
+    width: 100%;
+    max-width: 420px;
+    padding: 2rem;
+    background-color: var(--primary-color);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+}
+
+.login-form h2 {
+    text-align: center;
+    margin-bottom: 0.5rem;
+}
+
+.login-form p {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    color: var(--text-color-light);
+}
+
+.form-separator {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 1.5rem 0;
+    color: var(--text-color-light);
+}
+
+.form-separator::before,
+.form-separator::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.form-separator span {
+    padding: 0 1rem;
+}
+
+.social-login {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.social-btn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.social-btn ion-icon {
+    font-size: 1.3rem;
+}
+
+.social-btn.google {
+    background-color: #ffffff;
+    color: #333;
+    border: 1px solid #ddd;
+}
+.social-btn.google:hover {
+    background-color: #f7f7f7;
+}
+
+.social-btn.apple {
+    background-color: #000000;
+    color: #ffffff;
+}
+.social-btn.apple:hover {
+    background-color: #333333;
+}
+
+.toggle-form {
+    text-align: center;
+    margin-top: 1.5rem;
+    font-size: 0.9rem;
+}
+
+.toggle-form a {
+    color: var(--secondary-color);
+    font-weight: 600;
+    text-decoration: none;
+}
+.toggle-form a:hover {
+    text-decoration: underline;
+}
+
+.error-message {
+    background-color: #ff3b3b2a;
+    color: #ff4f4f;
+    border: 1px solid #ff4f4f;
+    border-radius: 8px;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+/* ==================== ESTILOS DO DASHBOARD ==================== */
+.main-header {
+    background-color: var(--primary-color);
+    border-bottom: 1px solid var(--border-color);
+    padding: 1rem 2rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.logo {
+    font-size: 1.5rem;
+    color: var(--text-color);
+    margin: 0;
+}
+
+.main-nav {
+    display: flex;
+    gap: 1.5rem;
+}
+
+.main-nav a {
+    color: var(--text-color-light);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.main-nav a:hover {
+    color: var(--secondary-color);
+}
+
+.user-menu {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+#user-greeting {
+    font-weight: 500;
+}
+
+.dashboard-main {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 3rem;
+}
+
+.dashboard-section h2 {
+    font-size: 1.8rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid var(--secondary-color);
+    padding-bottom: 0.5rem;
+}
+
+/* Grade de Jogos */
+.game-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+.game-card {
+    background-color: var(--primary-color);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.game-card-img {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+}
+
+.game-card-content {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.game-card-content h3 {
+    margin: 0 0 0.5rem 0;
+}
+
+.game-card-content p {
+    font-size: 0.9rem;
+    color: var(--text-color-light);
+    flex-grow: 1;
+    margin-bottom: 1rem;
+}
+
+/* Lista de Agendamentos */
+.bookings-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.booking-item {
+    background-color: var(--primary-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.booking-item-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.booking-item-info strong {
+    font-size: 1.1rem;
+}
+
+.booking-item-info span {
+    color: var(--text-color-light);
+    font-size: 0.9rem;
+}
+
+/* Modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background-color: var(--primary-color);
+    padding: 2rem;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 450px;
+    position: relative;
+    border: 1px solid var(--border-color);
+}
+
+#booking-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* ==================== ESTILOS DO PAINEL ADMIN ==================== */
+.table-container {
+    width: 100%;
+    overflow-x: auto; /* Para responsividade em telas pequenas */
+    background-color: var(--primary-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.admin-table th,
+.admin-table td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.admin-table th {
+    background-color: var(--primary-color-dark);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    color: var(--text-color-light);
+}
+
+.admin-table tr:last-child td {
+    border-bottom: none;
+}
+
+.admin-table td .submit-btn.small-btn {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+}
+
+/* Estilo para o <select> de cargos */
+.role-select {
+    padding: 0.5rem;
+    border-radius: 6px;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.9rem;
 }

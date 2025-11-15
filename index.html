@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>play.u Live Entertainment</title>
-    <link rel="stylesheet" href="assets/css/style.069b42ab.css">
+    <link rel="stylesheet" href="assets/css/style.eee39d36.css">
     <link rel="icon" href="assets/images/logo.png" type="image/png">
-    <script src="assets/js/version.069b42ab.js"></script>
+    <script src="assets/js/version.eee39d36.js"></script>
 <script>
     function loadAsset(path) {
         const version = typeof SITE_VERSION !== 'undefined' ? SITE_VERSION : new Date().getTime();
@@ -43,6 +43,39 @@
                 <div class="theme-switcher"><ion-icon name="sunny-outline" id="theme-toggle"></ion-icon></div>
             </div>
         </div>
+         <div class="mobile-menu-dropdown">
+        <button class="dropdown-toggle" id="mobile-menu-toggle">
+            <ion-icon name="menu-outline"></ion-icon>
+        </button>
+        <div class="dropdown-content" id="mobile-menu-content">
+            <a href="login.html" class="dropdown-btn">Login</a>
+            <button class="dropdown-btn" id="dropdown-player-mode-btn">
+                <ion-icon name="game-controller-outline"></ion-icon>
+                <span>Entrar como Jogador</span>
+            </button>
+            <button class="dropdown-btn" id="dropdown-host-mode-btn">
+                <ion-icon name="desktop-outline"></ion-icon>
+                <span>Entrar como Host</span>
+            </button>
+            
+            <div class="dropdown-divider"></div>
+
+            <div class="dropdown-item-flex">
+                <span>Modo Escuro</span>
+                <div class="theme-switcher-mobile">
+                    <ion-icon name="moon-outline" id="theme-toggle-mobile"></ion-icon>
+                </div>
+            </div>
+
+            <div class="dropdown-item-flex">
+                <span>Idioma</span>
+                <select id="language-switcher-mobile" class="control-btn dropdown-select">
+                    <option value="pt-BR">Português</option>
+                    <option value="en-US">English</option>
+                </select>
+            </div>
+        </div>
+    </div>
     </nav>
 </header>
 
@@ -179,14 +212,14 @@
 
     <a href="#" class="back-to-top" id="back-to-top"><ion-icon name="arrow-up-outline"></ion-icon></a>
 <script>
-    loadAsset('assets/css/style.069b42ab.css');
+    loadAsset('assets/css/style.eee39d36.css');
     loadAsset('https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js');
     loadAsset('https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js');
-    loadAsset('assets/js/gamedata.069b42ab.js');
-    loadAsset('assets/js/userdata.069b42ab.js');
-    loadAsset('assets/js/data-manager.069b42ab.js');
-    loadAsset('assets/js/translations.069b42ab.js');
-    loadAsset('assets/js/main.069b42ab.js');
+    loadAsset('assets/js/gamedata.eee39d36.js');
+    loadAsset('assets/js/userdata.eee39d36.js');
+    loadAsset('assets/js/data-manager.eee39d36.js');
+    loadAsset('assets/js/translations.eee39d36.js');
+    loadAsset('assets/js/main.eee39d36.js');
 </script>
 </body>
 </html>

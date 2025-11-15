@@ -1,135 +1,136 @@
 <!DOCTYPE html>
-<html lang="pt-br" data-theme="dark">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sala do Host - play.u</title>
-    <link rel="stylesheet" href="assets/css/style.069b42ab.css">
-    <link rel="icon" href="assets/images/logo.png" type="image/png">
-    <script src="assets/js/version.069b42ab.js"></script>
-    <script>
-    function loadAsset(path) {
-        const version = typeof SITE_VERSION !== 'undefined' ? SITE_VERSION : new Date().getTime();
-        const extension = path.split('.').pop();
-        if (extension === 'css') {
-            document.write(`<link rel="stylesheet" href="${path}?v=${version}">`);
-        } else if (extension === 'js') {
-            document.write(`<script src="${path}?v=${version}" defer><\/script>`);
-        }
-    }
-    </script>
+    <title>Sala do Host - Arautos Games</title>
+    <link rel="stylesheet" href="assets/css/style.eee39d36.css">
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
 </head>
-<body class="game-room-body">
+<body>
 
-    <div id="orientation-lock-overlay" class="orientation-lock-overlay">
-        <ion-icon name="phone-landscape-outline"></ion-icon>
-        <p>Por favor, vire o seu dispositivo para a posição horizontal para uma melhor experiência.</p>
+    <div id="access-message-container">
+        <h1>Verificando Acesso...</h1>
+        <div class="loader"></div>
     </div>
-    <div id="access-message-container" class="access-message" style="display: none;"></div>
 
-    <div id="host-view" class="game-room-container hidden">
-
-        <div id="player-decision-overlay" class="player-decision-overlay hidden">
-        <div class="decision-box">
-            <h2 id="decision-title"></h2>
-            <div id="decision-options-container">
+    <main id="host-view" class="room-view hidden">
+        
+        <div class="video-grid-container">
+            <div class="video-grid">
+                <div class="video-container">
+                    <h3>Host (Você)</h3>
+                    <video id="local-video" autoplay muted playsinline></video>
                 </div>
-            <button id="host-close-decision-btn" class="submit-btn small-btn" style="margin-top: 1.5rem; background-color: #555;">Fechar Visualização</button>
-        </div>
-        </div>
-        <div class="main-content-area">
-            <div id="host-timer-display" class="timer-display">21:00</div>
-            <div id="host-media-display-overlay" class="media-display-overlay hidden"></div>
-            <div class="video-feed-container">
-                <video id="host-own-video-feed" autoplay playsinline muted></video>
-                <div class="my-camera-preview">
-                    <video id="player-video-preview" autoplay playsinline muted></video>
+                <div class="video-container">
+                    <h3>Jogador</h3>
+                    <video id="remote-video" autoplay playsinline></video>
                 </div>
             </div>
-            <div class="player-controls">
-                <button id="host-mic-btn" class="control-btn-toggled" disabled><ion-icon name="mic-off-outline"></ion-icon></button>
-                <button id="host-cam-btn" class="control-btn-toggled" disabled><ion-icon name="videocam-off-outline"></ion-icon></button>
-                <button id="start-timer-btn">Iniciar Timer</button>
-                <button id="host-exit-btn" class="exit-btn"><ion-icon name="exit-outline"></ion-icon> Sair</button>
+            
+            <div class="media-controls">
+                <button id="host-mic-btn" class="control-btn" disabled>
+                    <ion-icon name="mic-off-outline"></ion-icon>
+                </button>
+                <button id="host-cam-btn" class="control-btn" disabled>
+                    <ion-icon name="videocam-off-outline"></ion-icon>
+                </button>
+                <button id="host-exit-btn" class="control-btn danger">
+                    <ion-icon name="exit-outline"></ion-icon>
+                    Sair
+                </button>
             </div>
         </div>
-        <div id="host-tools-wrapper" class="host-tools-wrapper collapsed">
-            <button id="host-tools-toggle-btn" class="tools-toggle-btn"><ion-icon name="build-outline"></ion-icon></button>
-            <div class="host-tools-panel">
-                <h3>Ferramentas do Host</h3>
+
+        <div id="host-tools-wrapper" class="collapsed">
+            <button id="host-tools-toggle-btn">
+                <ion-icon name="chevron-back-outline"></ion-icon>
+            </button>
+            
+            <div class="host-tools-content">
+                <h2>Ferramentas do Host</h2>
+                
                 <div class="tool-section">
-                    <h4><ion-icon name="help-buoy-outline"></ion-icon> Editar Dicas</h4>
+                    <h3>Timer</h3>
+                    <div id="host-timer-display" class="timer-display">00:00</div>
+                    <button id="start-timer-btn" class="submit-btn small-btn">Iniciar Timer</button>
+                    <input type="color" id="timer-color-input" title="Cor do Timer">
+                    <select id="timer-font-select" title="Fonte do Timer">
+                        <option value="'Poppins', sans-serif">Poppins</option>
+                        <option value="'Courier New', Courier, monospace">Courier</option>
+                        <option value="'Times New Roman', Times, serif">Times</form>
+                    </select>
+                </div>
+
+                <div class="tool-section">
+                    <h3>Controle de Dicas</h3>
                     <form id="hints-editor-form">
-                        <textarea id="hint1-input" rows="2" placeholder="Texto da Dica 1"></textarea>
-                        <textarea id="hint2-input" rows="2" placeholder="Texto da Dica 2"></textarea>
-                        <textarea id="hint3-input" rows="2" placeholder="Texto da Dica 3"></textarea>
-                        <button type="submit" class="submit-btn">Salvar Dicas</button>
+                        <input type="text" id="hint1-input" placeholder="Dica 1">
+                        <input type="text" id="hint2-input" placeholder="Dica 2">
+                        <input type="text" id="hint3-input" placeholder="Dica 3">
+                        <button type="submit" class="submit-btn small-btn">Salvar Dicas</button>
                     </form>
                 </div>
+
                 <div class="tool-section">
-                    <h4><ion-icon name="timer-outline"></ion-icon> Estilo do Timer</h4>
-                    <div class="styler-group"><label for="timer-color-input">Cor (Texto e Borda)</label><input type="color" id="timer-color-input" value="#FFFFFF"></div>
-                    <div class="styler-group">
-                        <label for="timer-font-select">Fonte</label>
-                        <select id="timer-font-select">
-                            <option value="'Poppins', sans-serif">Padrão (Poppins)</option>
-                            <option value="'Orbitron', sans-serif">Sci-Fi (Orbitron)</option>
-                            <option value="'MedievalSharp', cursive">Medieval</option>
-                            <option value="'Press Start 2P', cursive">Pixel (Retrô)</option>
-                            <option value="'Courier New', Courier, monospace">Monospace</option>
-                            <option value="'Times New Roman', Times, serif">Serif</option>
-                        </select>
+                    <h3>Decisões do Jogador</h3>
+                    <form id="decision-creator-form">
+                        <input type="text" id="decision-title-input" placeholder="Título da Decisão" required>
+                        <div id="decision-options-inputs">
+                            <input type="text" class="decision-option-input" placeholder="Opção 1" required>
+                            <input type="text" class="decision-option-input" placeholder="Opção 2" required>
+                        </div>
+                        <button type="button" id="add-option-btn" class="submit-btn small-btn">Add Opção</button>
+                        <button type="submit" class="submit-btn small-btn">Salvar Decisão</button>
+                    </form>
+                    <div id="saved-decisions-list"></div>
+                    <p id="player-choice-feedback">Aguardando jogador...</p>
+                </div>
+
+                <div class="tool-section">
+                    <h3>Mídia do Jogo</h3>
+                    <div class="asset-manager-compact">
+                        <div class="asset-tabs">
+                            <button type="button" class="asset-tab-btn active" data-tab="host-photos">Fotos</button>
+                            <button type="button" class="asset-tab-btn" data-tab="host-videos">Vídeos</button>
+                            <button type="button" class="asset-tab-btn" data-tab="host-sounds">Sons</button>
+                        </div>
+                        <div class="asset-content-compact">
+                            <div id="host-photos-tab" class="asset-tab-content active">
+                                <div id="host-photos-preview" class="asset-preview-grid"></div>
+                            </div>
+                            <div id="host-videos-tab" class="asset-tab-content">
+                                <div id="host-videos-preview" class="asset-preview-grid"></div>
+                            </div>
+                            <div id="host-sounds-tab" class="asset-tab-content">
+                                <div id="host-sounds-preview" class="asset-preview-list"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="tool-section drop-zone-wrapper"> <h4><ion-icon name="images-outline"></ion-icon> Mídia do Jogo</h4>
-                <div id="media-drop-zone" class="drop-zone">
-                    <p>Arraste e solte arquivos aqui, ou</p>
-                    <label for="media-upload" class="upload-label small-label">
-                        <ion-icon name="cloud-upload-outline"></ion-icon>
-                        <span>Selecione os arquivos</span>
-                    </label>
-                    <input type="file" id="media-upload" multiple accept="image/*,video/*" style="display: none;">
-                </div>
-                <div id="media-previews" class="media-previews"></div>
-            </div>
-            <div class="tool-section">
-    <h4><ion-icon name="git-branch-outline"></ion-icon> Criador de Decisões</h4>
-    <form id="decision-creator-form">
-        <div class="form-group">
-            <label>Título da Decisão (a pergunta)</label>
-            <input type="text" id="decision-title-input" placeholder="Ex: Qual porta você escolhe?" required>
-        </div>
-        <div class="form-group">
-            <label>Opções de Botão</label>
-            <div id="decision-options-inputs">
-                <input type="text" class="decision-option-input" placeholder="Opção 1" required>
-                <input type="text" class="decision-option-input" placeholder="Opção 2" required>
-            </div>
-            <button type="button" id="add-option-btn" class="small-btn">Adicionar Opção</button>
-        </div>
-        <button type="submit" class="submit-btn">Salvar Decisão</button>
-            </form>
-            <hr class="form-divider">
-            <h4>Decisões Salvas</h4>
-            <div id="saved-decisions-list">
-                </div>
-            <hr class="form-divider">
-            <h4>Escolha do Jogador:</h4>
-            <div id="player-choice-feedback" class="player-choice-feedback">
-                Aguardando...
-            </div>
-            </div>
+
             </div>
         </div>
-    </div>
-    <script>
-    loadAsset('assets/css/style.069b42ab.css');
-    loadAsset('https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js');
-    loadAsset('https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js');
-    loadAsset('assets/js/gamedata.069b42ab.js');
-    loadAsset('assets/js/userdata.069b42ab.js');
-    loadAsset('assets/js/data-manager.069b42ab.js');
-    loadAsset('assets/js/sala-host.069b42ab.js');
-</script>
+
+        <div id="player-decision-overlay" class="overlay-container hidden">
+            <div class="overlay-content">
+                <button id="host-close-decision-btn" class="close-overlay-btn">&times;</button>
+                <h3>Jogador está decidindo:</h3>
+                <h2 id="decision-title">...</h2>
+                <div id="decision-options-container"></div>
+            </div>
+        </div>
+        <div id="host-media-display-overlay" class="overlay-container media-overlay hidden"></div>
+    </main>
+
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+    <script src="assets/js/storage.js"></script>
+    <script src="assets/js/gamedata.eee39d36.js"></script>
+    <script src="assets/js/firebase-config.js"></script>
+    <script src="assets/js/sala-host.eee39d36.js"></script>
 </body>
 </html>
