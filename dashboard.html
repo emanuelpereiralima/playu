@@ -1,23 +1,33 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-br" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Arautos Games</title>
-    <link rel="stylesheet" href="assets/css/style.css">
-    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
-    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    <title>Dashboard - PlayU</title>
+    <script src="assets/js/version.js"></script>
+    <script>
+        function loadAsset(path) {
+            const version = typeof SITE_VERSION !== 'undefined' ? SITE_VERSION : new Date().getTime();
+            const extension = path.split('.').pop();
+            if (extension === 'css') {
+                document.write(`<link rel="stylesheet" href="${path}?v=${version}">`);
+            } else if (extension === 'js') {
+                document.write(`<script src="${path}?v=${version}" defer><\/script>`);
+            }
+        }
+    </script>
 </head>
 <body>
     <header class="main-header">
         <div class="header-container">
-            <h1 class="logo">Arautos Games</h1>
-            <nav class="main-nav">
-                <a href="#available-games">Agendar Jogo</a>
-                <a href="#my-bookings">Meus Agendamentos</a>
-            </nav>
+            <h1 class="logo">PlayU Dashboard</h1>
             <div class="user-menu">
-                <span id="user-greeting">Olá, ...</span>
+                <div class="user-profile-trigger" id="edit-profile-btn" title="Clique para alterar seu nome">
+                    <span id="user-greeting">Carregando...</span>
+                    <ion-icon name="pencil-outline"></ion-icon>
+                </div>
+                
+                <a href="index.html" class="submit-btn small-btn">Voltar ao Site</a>
                 <button id="logout-btn" class="submit-btn small-btn danger">Sair</button>
             </div>
         </div>
@@ -25,45 +35,48 @@
 
     <main class="dashboard-main">
         
-        <section id="available-games" class="dashboard-section">
-            <h2>Jogos Disponíveis</h2>
-            <div id="game-list-container" class="game-grid">
+        <div id="admin-tabs" class="dashboard-tabs hidden">
+            <button class="tab-btn active" data-target="my-bookings">Meus Agendamentos</button>
+            <button class="tab-btn" data-target="manage-games">Gerenciar Jogos</button>
+        </div>
+
+        <section id="my-bookings" class="dashboard-section active-section">
+            <h2>Meus Agendamentos</h2>
+            <div id="my-bookings-container" class="bookings-list">
                 <div class="loader"></div>
             </div>
         </section>
 
-        <section id="my-bookings" class="dashboard-section">
-            <h2>Meus Agendamentos</h2>
-            <div id="my-bookings-container" class="bookings-list">
-                <p id="no-bookings-msg">Você ainda não tem jogos agendados.</p>
+        <section id="manage-games" class="dashboard-section hidden-section">
+            <div class="section-header">
+                <h2>Jogos Disponíveis</h2>
+                <div id="admin-actions-container">
+                    </div>
             </div>
+            
+            <div id="game-list-container" class="game-grid">
+                </div>
         </section>
 
     </main>
 
-    <div id="booking-modal" class="modal-overlay hidden">
+    <div id="profile-modal" class="modal-overlay hidden">
         <div class="modal-content">
-            <button id="close-modal-btn" class="close-overlay-btn">&times;</button>
-            <h3 id="modal-game-title">Agendar Jogo</h3>
-            <p>Selecione uma data e horário para sua sessão.</p>
+            <button id="close-profile-modal" class="close-overlay-btn">&times;</button>
+            <h3>Editar Perfil</h3>
+            <p>Como você gostaria de ser chamado?</p>
             
-            <form id="booking-form">
+            <form id="profile-form">
                 <div class="form-group">
-                    <label for="booking-date">Data</label>
-                    <input type="date" id="booking-date" required>
+                    <label for="profile-name-input">Nome de Exibição</label>
+                    <input type="text" id="profile-name-input" required minlength="2">
                 </div>
                 <div class="form-group">
-                    <label for="booking-time">Horário</label>
-                    <input type="time" id="booking-time" required>
+                    <label>Email</label>
+                    <input type="email" id="profile-email-display" disabled style="opacity: 0.7; cursor: not-allowed;">
                 </div>
                 
-                <input type="hidden" id="modal-game-id">
-                
-                <div id="booking-error" class="error-message hidden"></div>
-                
-                <button type="submit" id="confirm-booking-btn" class="submit-btn">
-                    Confirmar Agendamento
-                </button>
+                <button type="submit" class="submit-btn">Salvar Alterações</button>
             </form>
         </div>
     </div>
@@ -71,8 +84,14 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
 
     <script src="assets/js/firebase-config.js"></script>
-    <script src="assets/js/gamedata.js"></script> <script src="assets/js/dashboard.js"></script> 
+    <script>
+        loadAsset('assets/css/style.css');
+        loadAsset('https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js');
+        loadAsset('https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js');
+        loadAsset('assets/js/dashboard.js');
+    </script>
 </body>
 </html>

@@ -1596,3 +1596,413 @@ dialog::backdrop {
     font-family: 'Poppins', sans-serif;
     font-size: 0.9rem;
 }
+
+/* ==================== ESTILOS DA HOMEPAGE (INDEX) ==================== */
+
+.homepage .main-header {
+    /* Torna o header da home transparente até rolar a página */
+    background-color: transparent;
+    position: absolute;
+    width: 100%;
+    border-bottom: none;
+}
+
+.homepage .main-nav a {
+    color: var(--text-color);
+}
+
+.homepage .user-menu .submit-btn {
+    background-color: var(--secondary-color);
+    color: var(--primary-color);
+}
+.homepage .user-menu .submit-btn:hover {
+    background-color: #f0c04f;
+}
+
+
+/* --- Seção Hero --- */
+.hero-section {
+    background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('https://images.unsplash.com/photo-1542779283-429940ce8336?auto=format&fit=crop&w=1500&q=80');
+    background-size: cover;
+    background-position: center;
+    height: 70vh;
+    min-height: 450px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 2rem;
+    color: #fff;
+}
+
+.hero-content h2 {
+    font-size: 3rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.hero-content p {
+    font-size: 1.25rem;
+    max-width: 600px;
+    margin: 0 auto 2rem auto;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.submit-btn.large-btn {
+    font-size: 1.1rem;
+    padding: 0.9rem 2rem;
+}
+
+/* --- Seção Features --- */
+.features-section {
+    max-width: 1200px;
+    margin: 4rem auto;
+    padding: 2rem;
+    text-align: center;
+}
+
+.features-section h2 {
+    font-size: 2.2rem;
+    margin-bottom: 3rem;
+}
+
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+}
+
+.feature-item {
+    padding: 2rem;
+    background-color: var(--primary-color);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+}
+
+.feature-item ion-icon {
+    font-size: 3rem;
+    color: var(--secondary-color);
+    margin-bottom: 1rem;
+}
+
+.feature-item h3 {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.feature-item p {
+    color: var(--text-color-light);
+}
+
+/* --- Footer --- */
+.main-footer {
+    text-align: center;
+    padding: 2rem;
+    background-color: var(--primary-color-dark);
+    border-top: 1px solid var(--border-color);
+    margin-top: 3rem;
+}
+
+.main-footer p {
+    color: var(--text-color-light);
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+/* CSS para Abas do Dashboard */
+.dashboard-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 10px;
+}
+
+.tab-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-color-light);
+    padding: 10px 20px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    border-bottom: 2px solid transparent;
+    transition: all 0.3s;
+}
+
+.tab-btn:hover {
+    color: var(--text-color);
+}
+
+.tab-btn.active {
+    color: var(--secondary-color);
+    border-bottom: 2px solid var(--secondary-color);
+}
+
+/* Controle de Visibilidade */
+.hidden-section {
+    display: none !important;
+}
+
+.active-section {
+    display: block;
+    animation: fadeIn 0.5s;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.user-profile-trigger {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 8px;
+    transition: background 0.3s;
+}
+
+.user-profile-trigger:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.user-profile-trigger ion-icon {
+    font-size: 1.1rem;
+    color: var(--secondary-color);
+}
+
+/* ==================== ESTILOS DE MODAL DE ADMIN ==================== */
+
+.modal-footer {
+    display: flex;
+    justify-content: space-between; /* Espalha: Delete na esquerda, Ações na direita */
+    align-items: center;
+    margin-top: 2rem;
+    border-top: 1px solid var(--border-color);
+    padding-top: 1rem;
+}
+
+.right-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+/* Botão Secundário (Cancelar) */
+.submit-btn.secondary-btn {
+    background-color: transparent;
+    border: 1px solid var(--text-color-light);
+    color: var(--text-color-light);
+}
+
+.submit-btn.secondary-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--text-color);
+}
+
+/* Botão Perigo (Excluir) */
+.submit-btn.danger-btn {
+    background-color: rgba(255, 59, 59, 0.1);
+    border: 1px solid #ff3b3b;
+    color: #ff3b3b;
+}
+
+.submit-btn.danger-btn:hover {
+    background-color: #ff3b3b;
+    color: white;
+}
+
+/* Ajuste de ícones dentro dos botões */
+.submit-btn ion-icon {
+    vertical-align: middle;
+    margin-right: 5px;
+    font-size: 1.1em;
+}
+
+/* ==================== ESTILOS DE MODAL LARGO ==================== */
+
+/* Classe para modais maiores (como o de Criar Jogo) */
+.modal-content.large-modal {
+    max-width: 700px;
+    width: 95%;
+    max-height: 90vh; /* Limita altura à tela */
+    display: flex;
+    flex-direction: column;
+}
+
+/* Formulário com rolagem interna */
+.scrollable-form {
+    overflow-y: auto;
+    padding-right: 10px; /* Espaço para scrollbar */
+    margin-top: 1rem;
+    /* Estilizando scrollbar */
+    scrollbar-width: thin;
+    scrollbar-color: var(--secondary-color) var(--bg-color);
+}
+
+.scrollable-form::-webkit-scrollbar {
+    width: 8px;
+}
+.scrollable-form::-webkit-scrollbar-track {
+    background: var(--bg-color);
+}
+.scrollable-form::-webkit-scrollbar-thumb {
+    background-color: var(--secondary-color);
+    border-radius: 4px;
+}
+
+/* Grid de Formulário (2 colunas) */
+.form-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.form-row .form-group {
+    flex: 1;
+    min-width: 200px;
+}
+
+.form-group small {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.8rem;
+    color: var(--text-color-light);
+}
+
+/* ==================== RESPONSIVIDADE DO MODAL ==================== */
+
+/* Ajustes para telas menores que 768px (Tablets e Celulares) */
+@media (max-width: 768px) {
+    .modal-content.large-modal {
+        width: 95%;      /* Ocupa quase toda a largura */
+        height: 95vh;    /* Ocupa quase toda a altura */
+        max-height: 95vh;
+        padding: 1rem;   /* Menos padding interno */
+        margin: auto;
+    }
+
+    /* Faz os campos que estavam lado a lado (Row) ficarem um embaixo do outro */
+    .form-row {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .form-row .form-group {
+        width: 100%; /* Força largura total */
+        min-width: unset;
+    }
+
+    /* Ajuste nos botões do rodapé para empilhar se necessário */
+    .modal-footer {
+        flex-direction: column-reverse; /* Botões principais em cima no mobile */
+        gap: 1rem;
+    }
+
+    .right-buttons {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .submit-btn {
+        width: 100%; /* Botões largura total no mobile */
+        justify-content: center;
+    }
+}
+
+/* ==================== ESTILO DO BOTÃO FECHAR (X) ==================== */
+
+/* 1. Garante que o modal seja a referência para o botão */
+.modal-content, 
+.modal-content.large-modal {
+    position: relative; /* Essencial para o position: absolute funcionar */
+}
+
+/* 2. Estilo do Botão Fechar */
+.close-overlay-btn {
+    position: absolute;    /* Flutua sobre o conteúdo */
+    top: 15px;             /* Distância do topo */
+    right: 15px;           /* Distância da direita */
+    
+    width: 36px;           /* Largura fixa (evita esticar) */
+    height: 36px;          /* Altura fixa (cria o quadrado) */
+    
+    background-color: transparent;
+    border: none;
+    border-radius: 50%;    /* Deixa redondinho */
+    color: var(--text-color-light);
+    
+    display: flex;         /* Centraliza o ícone (X) dentro da bolinha */
+    align-items: center;
+    justify-content: center;
+    
+    font-size: 1.8rem;     /* Tamanho do ícone */
+    line-height: 1;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 10;           /* Garante que fique acima de scrolls */
+}
+
+/* Efeito Hover (Ao passar o mouse) */
+.close-overlay-btn:hover {
+    background-color: rgba(255, 59, 59, 0.15); /* Fundo vermelho suave */
+    color: #ff3b3b; /* Ícone vermelho */
+    transform: rotate(90deg); /* Pequena animação de giro opcional */
+}
+
+/* ==================== ESTILO DA BARRA DE PESQUISA ==================== */
+
+.search-box {
+    position: relative;
+    width: 100%;
+    max-width: 300px; /* Tamanho máximo */
+}
+
+.search-box input {
+    width: 100%;
+    padding: 10px 10px 10px 40px; /* Espaço na esquerda para o ícone */
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+    background-color: var(--primary-color-dark);
+    color: var(--text-color);
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.search-box input:focus {
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 5px rgba(255, 187, 0, 0.3);
+}
+
+.search-box ion-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-color-light);
+    font-size: 1.2rem;
+    pointer-events: none; /* Deixa clicar "através" do ícone */
+}
+
+/* Ajuste para mobile: empilhar título e busca */
+@media (max-width: 600px) {
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    .search-box {
+        max-width: 100%;
+    }
+}

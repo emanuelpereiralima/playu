@@ -1,61 +1,67 @@
-function getGames() {
-    const storedGames = localStorage.getItem('games');
-    if (storedGames) {
-        try {
-            // Tenta converter o texto para um objeto.
-            return JSON.parse(storedGames);
-        } catch (error) {
-            // Se falhar (JSON inválido), avisa no console e reseta com os dados padrão.
-            console.error("Erro ao analisar os dados de 'games' do localStorage. Resetando para o padrão.", error);
-            localStorage.removeItem('games'); // Remove a entrada corrompida.
+// assets/js/data-manager.js (NOVA VERSÃO FIREBASE)
+
+/**
+ * Gerenciador de Dados (Conectado ao Firebase)
+ * * Este script agora é responsável por buscar dados do Firestore
+ * e fornecê-los de forma assíncrona.
+ */
+
+// Referências diretas (assumindo que firebase-config.js já rodou)
+const db = firebase.firestore();
+
+/**
+ * Busca todos os jogos publicados na coleção 'games'.
+ * * @returns {Promise<Array<Object>>} Uma promessa que resolve para um array de jogos.
+ */
+async function getAllGames() {
+    const games = [];
+    try {
+        // Busca na coleção 'games' do Firestore
+        const snapshot = await db.collection('games').get();
+        
+        if (snapshot.empty) {
+            console.warn("Nenhum jogo encontrado na coleção 'games'.");
+            return [];
         }
+
+        snapshot.forEach(doc => {
+            games.push({
+                id: doc.id, // Adiciona o ID do documento ao objeto
+                ...doc.data() // Adiciona o restante dos dados (title, description, etc.)
+            });
+        });
+
+        console.log('Jogos carregados do Firestore:', games);
+        return games;
+
+    } catch (error) {
+        console.error("Erro ao buscar jogos do Firestore:", error);
+        return []; // Retorna um array vazio em caso de erro
     }
-    
-    // Este código é executado se não houver dados ou se eles estiverem corrompidos.
-    const defaultGames = typeof DEFAULT_GAMES_DATA !== 'undefined' ? DEFAULT_GAMES_DATA : [];
-    localStorage.setItem('games', JSON.stringify(defaultGames));
-    return defaultGames;
 }
 
-function saveGames(games) {
-    localStorage.setItem('games', JSON.stringify(games));
-}
+/**
+ * Busca um único jogo pelo seu ID.
+ * * @param {string} gameId O ID do documento do jogo no Firestore.
+ * @returns {Promise<Object|null>} Uma promessa que resolve para o objeto do jogo ou nulo.
+ */
+async function getGameById(gameId) {
+    try {
+        const doc = await db.collection('games').doc(gameId).get();
 
-function getBookings() {
-    // Adicionando o mesmo tratamento de erro para os agendamentos.
-    const storedBookings = localStorage.getItem('bookings');
-    if(storedBookings) {
-        try {
-            return JSON.parse(storedBookings);
-        } catch (error) {
-            console.error("Erro ao analisar os dados de 'bookings' do localStorage. Resetando.", error);
-            localStorage.removeItem('bookings');
+        if (!doc.exists) {
+            console.warn(`Jogo com ID "${gameId}" não encontrado.`);
+            return null;
         }
+
+        return { id: doc.id, ...doc.data() };
+
+    } catch (error) {
+        console.error("Erro ao buscar jogo por ID:", error);
+        return null;
     }
-    return []; // Retorna um array vazio se não houver ou se estiver corrompido.
 }
 
-function saveBookings(bookings) {
-    localStorage.setItem('bookings', JSON.stringify(bookings));
-}
-
-function getUsers() {
-    // Adicionando o mesmo tratamento de erro para os usuários.
-    const storedUsers = localStorage.getItem('users');
-    if (storedUsers) {
-        try {
-            return JSON.parse(storedUsers);
-        } catch (error) {
-            console.error("Erro ao analisar os dados de 'users' do localStorage. Resetando para o padrão.", error);
-            localStorage.removeItem('users');
-        }
-    }
-    
-    const defaultUsers = typeof DEFAULT_USERS_DATA !== 'undefined' ? DEFAULT_USERS_DATA : {};
-    localStorage.setItem('users', JSON.stringify(defaultUsers));
-    return defaultUsers;
-}
-
-function saveUsers(users) {
-    localStorage.setItem('users', JSON.stringify(users));
-}
+// Nota: As funções antigas como 'initData()' ou 'getUsers()'
+// que dependiam de 'userdata.js' e 'gamedata.js'
+// agora estão obsoletas ou são tratadas por outros scripts (como login.js).

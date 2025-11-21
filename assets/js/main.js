@@ -1,319 +1,145 @@
-/* ==================================================================
-   ARQUIVO JAVASCRIPT PRINCIPAL - play.u LIVE ENTERTAINMENT
-   Página Pública (index.html)
-   ================================================================== */
+// assets/js/main.js (NOVA VERSÃO FIREBASE)
 
-// --- LÓGICA GLOBAL DE UI (TEMA E 'VOLTAR AO TOPO') ---
-const themeToggle = document.getElementById('theme-toggle');
-const htmlElement = document.documentElement;
-
-function applyTheme(theme) {
-    htmlElement.setAttribute('data-theme', theme);
-    if (themeToggle) {
-        themeToggle.setAttribute('name', theme === 'light' ? 'moon-outline' : 'sunny-outline');
-    }
-    localStorage.setItem('theme', theme);
-}
-
-if (themeToggle) {
-    themeToggle.addEventListener('click', () => {
-        const currentTheme = htmlElement.getAttribute('data-theme');
-        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-        applyTheme(newTheme);
-    });
-}
-
-const savedTheme = localStorage.getItem('theme') || 'dark';
-applyTheme(savedTheme);
-
-const backToTopButton = document.getElementById('back-to-top');
-if (backToTopButton) {
-    window.addEventListener('scroll', () => {
-        if (window.scrollY >= 400) {
-            backToTopButton.classList.add('show-scroll');
-        } else {
-            backToTopButton.classList.remove('show-scroll');
-        }
-    });
-}
-
-// --- LÓGICA PRINCIPAL DA PÁGINA (Executada após o carregamento do HTML) ---
 document.addEventListener('DOMContentLoaded', () => {
-    // Garante que o script só execute na página de início
-    const indexPageContainer = document.getElementById('jogos');
-    if (!indexPageContainer) return;
+    
+    // Inicializa todas as funções principais da página
+    initApp();
 
-    // --- SINCRONIZAÇÃO AUTOMÁTICA ---
-    window.addEventListener('storage', (event) => {
-        if (event.key === 'games' || event.key === 'bookings') {
-            populateContent();
-        }
+    // Tenta carregar os dados dinâmicos (jogos)
+    loadDynamicContent();
+});
+
+/**
+ * Inicializa os componentes estáticos da página
+ * (Ex: tema, tradução, back-to-top)
+ */
+function initApp() {
+    console.log('App inicializado.');
+
+    // Lógica do Tema (Dark/Light)
+    const themeToggle = document.getElementById('theme-toggle');
+    if (themeToggle) {
+        themeToggle.addEventListener('click', () => {
+            const isDark = document.documentElement.toggleAttribute('data-theme', 'dark');
+            themeToggle.setAttribute('name', isDark ? 'sunny-outline' : 'moon-outline');
+            // Opcional: Salvar preferência no localStorage aqui
+        });
+    }
+
+    // Lógica do botão Voltar ao Topo
+    const backToTop = document.getElementById('back-to-top');
+    if(backToTop) {
+        window.addEventListener('scroll', () => {
+            backToTop.classList.toggle('visible', window.scrollY > 300);
+        });
+    }
+
+    // NOTA: A lógica dos botões "Entrar como Jogador/Host" foi removida 
+    // pois o acesso agora é exclusivo via Dashboard/Admin.
+}
+
+/**
+ * Carrega o conteúdo dinâmico (jogos) do Firestore
+ * e preenche o carrossel e a grade de jogos.
+ */
+async function loadDynamicContent() {
+    // Busca os jogos usando o novo data-manager
+    const games = await getAllGames(); 
+
+    if (!games || games.length === 0) {
+        console.warn('Nenhum jogo retornado pelo data-manager.');
+        return;
+    }
+
+    // Popula o carrossel (ex: 5 primeiros jogos)
+    populateCarousel(games.slice(0, 5));
+    
+    // Popula a grade principal de jogos
+    populateGamesGrid(games);
+}
+
+/**
+ * Preenche o carrossel de destaque
+ * @param {Array<Object>} featuredGames Array de jogos para o carrossel
+ */
+function populateCarousel(featuredGames) {
+    const container = document.querySelector('.carousel-container');
+    if (!container) return;
+
+    container.innerHTML = ''; // Limpa o loader (se houver)
+    
+    featuredGames.forEach(game => {
+        const slide = document.createElement('div');
+        slide.className = 'carousel-slide';
+        // Note: Assumindo que o 'thumbnailUrl' foi salvo no host-panel
+        slide.innerHTML = `
+            <img src="${game.thumbnailUrl || 'assets/images/placeholder.png'}" alt="${game.title}">
+            <div class="carousel-caption">
+                <h3>${game.title}</h3>
+                <p>${game.description.substring(0, 100)}...</p>
+                <a href="dashboard.html" class="submit-btn small-btn">Agendar Agora</a>
+            </div>
+        `;
+        container.appendChild(slide);
+    });
+    
+    // Aqui você inicializaria a lógica do carrossel (prev/next)
+    // (A lógica de controle do carrossel em si não foi fornecida, 
+    //  mas este é o local para ativá-la)
+    console.log('Carrossel populado.');
+    initCarouselControls(); // Função de exemplo
+}
+
+/**
+ * Preenche a grade de jogos
+ * @param {Array<Object>} allGames Array com todos os jogos
+ */
+function populateGamesGrid(allGames) {
+    const grid = document.querySelector('.games-grid');
+    if (!grid) return;
+
+    grid.innerHTML = ''; // Limpa o loader
+
+    allGames.forEach(game => {
+        const card = document.createElement('div');
+        card.className = 'game-card'; // Reutilizando a classe do dashboard
+        card.innerHTML = `
+            <img src="${game.thumbnailUrl || 'assets/images/placeholder.png'}" alt="${game.title}" class="game-card-img">
+            <div class="game-card-content">
+                <h3>${game.title}</h3>
+                <p>${game.description.substring(0, 100)}...</p>
+                <a href="dashboard.html" class="submit-btn">Ver Agendamentos</a>
+            </div>
+        `;
+        grid.appendChild(card);
+    });
+    console.log('Grade de jogos populada.');
+}
+
+// Função de exemplo para a lógica do carrossel
+function initCarouselControls() {
+    const container = document.querySelector('.carousel-container');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    
+    if (!container || !prevBtn || !nextBtn || container.children.length === 0) return;
+
+    let currentIndex = 0;
+    const slides = container.children;
+    const totalSlides = slides.length;
+
+    function updateCarousel() {
+        const offset = -currentIndex * 100;
+        container.style.transform = `translateX(${offset}%)`;
+    }
+
+    prevBtn.addEventListener('click', () => {
+        currentIndex = (currentIndex > 0) ? currentIndex - 1 : totalSlides - 1;
+        updateCarousel();
     });
 
-     // --- Lógica do Dropdown Mobile ---
-    const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
-    const mobileMenuContent = document.getElementById('mobile-menu-content');
-    const themeToggleMobile = document.getElementById('theme-toggle-mobile');
-    const languageSwitcherMobile = document.getElementById('language-switcher-mobile');
-    const dropdownPlayerModeBtn = document.getElementById('dropdown-player-mode-btn');
-    const dropdownHostModeBtn = document.getElementById('dropdown-host-mode-btn');
-
-    if (mobileMenuToggle) {
-        mobileMenuToggle.addEventListener('click', (event) => {
-            mobileMenuContent.classList.toggle('show');
-            event.stopPropagation(); // Impede que o clique se propague e feche o menu imediatamente
-        });
-
-        // Fecha o dropdown se clicar fora dele
-        window.addEventListener('click', (event) => {
-            if (!mobileMenuDropdown.contains(event.target)) {
-                mobileMenuContent.classList.remove('show');
-            }
-        });
-    }
-
-    // Lógica para o tema no dropdown mobile
-    if (themeToggleMobile) {
-        themeToggleMobile.addEventListener('click', () => {
-            const currentTheme = document.documentElement.getAttribute('data-theme');
-            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-            document.documentElement.setAttribute('data-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
-            updateThemeIcons(newTheme); // Chame sua função existente para atualizar ícones
-        });
-    }
-
-    // Lógica para o idioma no dropdown mobile
-    if (languageSwitcherMobile) {
-        languageSwitcherMobile.value = localStorage.getItem('language') || 'pt-BR'; // Carrega o idioma salvo
-        languageSwitcherMobile.addEventListener('change', (event) => {
-            const newLang = event.target.value;
-            localStorage.setItem('language', newLang);
-            // Você precisaria de uma função 'loadTranslations(newLang)' aqui para recarregar os textos
-            alert(`Idioma alterado para: ${newLang}. Recarregue a página para ver as traduções.`);
-        });
-    }
-
-    // Lógica para os botões "Entrar como Jogador" / "Entrar como Host" no dropdown mobile
-    if (dropdownPlayerModeBtn) {
-        dropdownPlayerModeBtn.addEventListener('click', () => {
-            window.location.href = 'sala.html'; // Redireciona para a sala do jogador
-        });
-    }
-    if (dropdownHostModeBtn) {
-        dropdownHostModeBtn.addEventListener('click', () => {
-            window.location.href = 'host-panel.html'; // Redireciona para o painel do host
-        });
-    }
-
-    // Função para atualizar os ícones de tema (certifique-se de que esta função exista no seu JS)
-    function updateThemeIcons(theme) {
-        const desktopIcon = document.getElementById('theme-toggle');
-        const mobileIcon = document.getElementById('theme-toggle-mobile');
-
-        if (theme === 'dark') {
-            if (desktopIcon) desktopIcon.setAttribute('name', 'moon-outline');
-            if (mobileIcon) mobileIcon.setAttribute('name', 'moon-outline');
-        } else {
-            if (desktopIcon) desktopIcon.setAttribute('name', 'sunny-outline');
-            if (mobileIcon) mobileIcon.setAttribute('name', 'sunny-outline');
-        }
-    }
-
-    // --- FUNÇÕES DE RENDERIZAÇÃO ---
-    function createGameCard(game) {
-        const isPausedClass = game.isPaused ? 'game-card--paused' : '';
-        const pausedOverlay = game.isPaused ? `<div class="paused-overlay"><span data-lang-key="paused">Pausado</span></div>` : '';
-
-        return `
-            <a href="jogo-template.html?id=${game.id}" class="game-card ${isPausedClass}">
-                ${pausedOverlay}
-                <img src="${game.coverImage}" alt="Capa do Jogo ${game.name}" class="game-card__image">
-                <div class="game-card__overlay">
-                    <h3 class="game-card__title">${game.name}</h3>
-                    <p class="game-card__cta" data-lang-key="seeMore">Ver Mais</p>
-                </div>
-                <video class="video-preview" src="${game.videoPreview}" muted loop playsinline></video>
-            </a>
-        `;
-    }
-
-    function createCarouselSlide(game) {
-        const isPausedClass = game.isPaused ? 'game-card--paused' : '';
-        return `
-            <a href="jogo-template.html?id=${game.id}" class="carousel-slide ${isPausedClass}">
-                <img src="${game.coverImage}" alt="Imagem do Jogo ${game.name}">
-                <div class="slide-info"><h3>${game.name}</h3></div>
-            </a>
-        `;
-    }
-
-    function populateContent() {
-        const games = getGames().filter(g => g.status === 'approved');
-
-        const gamesGrid = document.querySelector('#jogos .games-grid');
-        if (gamesGrid) {
-            gamesGrid.innerHTML = games.map(createGameCard).join('');
-        }
-        
-        const carouselContainer = document.querySelector('#home .carousel-container');
-        if (carouselContainer) {
-            carouselContainer.innerHTML = games.map(createCarouselSlide).join('');
-        }
-        
-        initCarousel();
-        initGameCardHover();
-        
-        const currentLang = localStorage.getItem('language') || 'pt';
-        if (typeof setLanguage === 'function') setLanguage(currentLang);
-    }
-    
-    // --- FUNÇÕES DE INICIALIZAÇÃO DE COMPONENTES ---
-    function initCarousel() {
-        const homeCarousel = document.querySelector('.home-carousel');
-        const carouselContainer = document.querySelector('#home .carousel-container');
-        if (!homeCarousel || !carouselContainer) return;
-
-        const slidesArray = Array.from(carouselContainer.children);
-        if (slidesArray.length === 0) return;
-
-        for (let i = slidesArray.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [slidesArray[i], slidesArray[j]] = [slidesArray[j], slidesArray[i]];
-        }
-        slidesArray.forEach(slide => carouselContainer.appendChild(slide));
-        
-        const viewport = document.querySelector('.carousel-viewport');
-        const slides = carouselContainer.querySelectorAll('.carousel-slide');
-        const prevBtn = document.getElementById('prev-btn');
-        const nextBtn = document.getElementById('next-btn');
-        let currentIndex = 0;
-        let isDown = false;
-        let startX;
-        let scrollLeft;
-
-        viewport.addEventListener('mousedown', (e) => {
-            isDown = true;
-            viewport.classList.add('grabbing');
-            startX = e.pageX - viewport.offsetLeft;
-            scrollLeft = viewport.scrollLeft;
-        });
-        viewport.addEventListener('mouseleave', () => { isDown = false; viewport.classList.remove('grabbing'); });
-        viewport.addEventListener('mouseup', () => { isDown = false; viewport.classList.remove('grabbing'); });
-        viewport.addEventListener('mousemove', (e) => {
-            if (!isDown) return;
-            e.preventDefault();
-            const x = e.pageX - viewport.offsetLeft;
-            const walk = (x - startX) * 2;
-            viewport.scrollLeft = scrollLeft - walk;
-        });
-
-        function snapToSlide() {
-            if (slides.length === 0) return;
-            const slideWidth = slides[0].offsetWidth;
-            const currentScroll = viewport.scrollLeft;
-            currentIndex = Math.round(currentScroll / slideWidth);
-            if (currentIndex >= slides.length) currentIndex = slides.length - 1;
-            updateCarousel(true);
-        }
-        viewport.addEventListener('scrollend', snapToSlide);
-        
-        function updateCarousel(smooth = false) {
-            if (slides.length === 0) return;
-            const slideWidth = slides[0].offsetWidth;
-            const targetScroll = slideWidth * currentIndex;
-            viewport.scrollTo({ left: targetScroll, behavior: smooth ? 'smooth' : 'instant' });
-            slides.forEach((slide, index) => slide.classList.toggle('active', index === currentIndex));
-        }
-
-        nextBtn.addEventListener('click', () => {
-            if (slides.length === 0) return;
-            currentIndex = (currentIndex + 1) % slides.length;
-            updateCarousel(true);
-        });
-        prevBtn.addEventListener('click', () => {
-            if (slides.length === 0) return;
-            currentIndex = (currentIndex - 1 + slides.length) % slides.length;
-            updateCarousel(true);
-        });
-        
-        window.addEventListener('resize', () => updateCarousel(false));
-        updateCarousel(false);
-    }
-
-    function initGameCardHover() {
-        const gamesGrid = document.querySelector('#jogos .games-grid');
-        if (!gamesGrid) return;
-
-        const gameCards = gamesGrid.querySelectorAll('.game-card');
-        let hoverTimeout;
-
-        gameCards.forEach(card => {
-            const videoPreview = card.querySelector('.video-preview');
-            card.addEventListener('mouseenter', () => {
-                hoverTimeout = setTimeout(() => {
-                    if (videoPreview) {
-                        videoPreview.style.display = 'block';
-                        videoPreview.play();
-                    }
-                }, 15000);
-            });
-            card.addEventListener('mouseleave', () => {
-                clearTimeout(hoverTimeout);
-                if (videoPreview) {
-                    videoPreview.style.display = 'none';
-                    videoPreview.pause();
-                    videoPreview.currentTime = 0;
-                }
-            });
-        });
-    }
-    
-    // --- LÓGICA DOS BOTÕES DE ATALHO DO HEADER (VERSÃO DE TESTE) ---
-    const joinPlayerBtn = document.getElementById('header-join-player-btn');
-    const joinHostBtn = document.getElementById('header-join-host-btn');
-
-    function createTestSessionAndJoin(viewMode) {
-        const allGames = getGames();
-        if (!allGames || allGames.length === 0) {
-            alert('Nenhum jogo disponível para criar uma sala de teste.');
-            return;
-        }
-        const testGame = allGames[0];
-
-        const now = new Date();
-        const dateStr = now.toISOString().split('T')[0];
-        const timeStr = now.toTimeString().substring(0, 5);
-
-        const testBooking = {
-            bookingId: `test_${Date.now()}`,
-            gameId: testGame.id,
-            gameName: testGame.name,
-            date: dateStr,
-            time: timeStr,
-            bookedBy: 'TestUser'
-        };
-
-        const allBookings = getBookings();
-        allBookings.push(testBooking);
-        saveBookings(allBookings);
-
-        const page = viewMode === 'host' ? 'sala-host.html' : 'sala.html';
-        window.location.href = `${page}?bookingId=${testBooking.bookingId}`;
-    }
-
-    if (joinPlayerBtn) {
-        joinPlayerBtn.addEventListener('click', () => {
-            createTestSessionAndJoin('player');
-        });
-    }
-
-    if (joinHostBtn) {
-        joinHostBtn.addEventListener('click', () => {
-            createTestSessionAndJoin('host');
-        });
-    }
-
-    // --- CARGA INICIAL ---
-    populateContent();
-});
+    nextBtn.addEventListener('click', () => {
+        currentIndex = (currentIndex < totalSlides - 1) ? currentIndex + 1 : 0;
+        updateCarousel();
+    });
+}
