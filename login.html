@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Arautos Games</title>
-    <link rel="stylesheet" href="assets/css/style.e843132d.css">
+    <title>Login - PlayU</title>
+    <link rel="stylesheet" href="assets/css/style.ed1c03a0.css">
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
 </head>
@@ -12,6 +12,7 @@
 
     <div class="login-container">
         
+        <!-- Formulário de Login (Visível por padrão) -->
         <form id="login-form" class="login-form">
             <h2>Login</h2>
             <p>Acesse sua conta para continuar.</p>
@@ -30,6 +31,7 @@
 
             <div class="form-separator"><span>ou</span></div>
 
+            <!-- Botões de Login Social -->
             <div class="social-login">
                 <button type="button" id="google-login-btn" class="social-btn google">
                     <ion-icon name="logo-google"></ion-icon>
@@ -47,40 +49,47 @@
             </p>
         </form>
 
-        <form id="register-form" class="login-form hidden">
-            <h2>Cadastro</h2>
-            <p>Crie sua conta para agendar jogos.</p>
+<form id="register-form" class="login-form hidden">
+    <h2>Cadastro</h2>
+    <p>Crie sua conta para agendar jogos.</p>
 
-            <div id="register-error" class="error-message hidden"></div>
+    <div id="register-error" class="error-message hidden"></div>
 
-            <div class="form-group">
-                <label for="register-name">Nome Completo</label>
-                <input type="text" id="register-name" required>
-            </div>
-            <div class="form-group">
-                <label for="register-email">Email</label>
-                <input type="email" id="register-email" required>
-            </div>
-            <div class="form-group">
-                <label for="register-password">Senha (mín. 6 caracteres)</label>
-                <input type="password" id="register-password" required>
-            </div>
-            <button type="submit" class="submit-btn">Criar Conta</button>
-
-            <p class="toggle-form">
-                Já tem uma conta? 
-                <a href="#" id="show-login-link">Faça login</a>
-            </p>
-        </form>
-
+    <div class="form-group">
+        <label for="register-name">Nome e Sobrenome</label>
+        <input type="text" id="register-name" required>
+    </div>
+    <div class="form-group">
+        <label for="register-email">Email</label>
+        <input type="email" id="register-email" required>
+    </div>
+    <div class="form-group">
+        <label for="register-password">Senha (mín. 6 caracteres)</label>
+        <input type="password" id="register-password" required>
+    </div>
+    
+    <div class="form-group">
+        <label for="register-confirm-password">Confirmar Senha</label>
+        <input type="password" id="register-confirm-password" required>
     </div>
 
+    <button type="submit" class="submit-btn">Criar Conta</button>
+
+    <p class="toggle-form">
+        Já tem uma conta? 
+        <a href="#" id="show-login-link">Faça login</a>
+    </p>
+</form>
+
+    </div>
+    <script src="assets/js/login.ed1c03a0.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
 
     <script src="assets/js/firebase-config.js"></script>
+
     <script src="assets/js/storage.js"></script>
-    <script src="assets/js/login.e843132d.js"></script>
 </body>
 </html>
