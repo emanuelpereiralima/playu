@@ -350,8 +350,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const galleryImages = galleryRaw.split(',').map(u => u.trim()).filter(u => u);
             const isPaused = (status === 'paused');
 
+            const slug = name.toLowerCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, "") // Remove acentos
+                .replace(/[^a-z0-9]/g, '-') // Substitui símbolos por traço
+                .replace(/-+/g, '-') // Remove traços duplicados
+                .replace(/^-|-$/g, ''); // Remove traços do início/fim
+
             const gameData = {
                 name: name,
+                slug: slug, // <--- Novo campo
                 status: status,
                 sessionDuration: duration,
                 tags: tags,
@@ -366,6 +373,8 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 if (isEditMode) {
                     // ATUALIZAR
+                    // Nota: Se atualizar o nome, o slug muda e a URL antiga para de funcionar. 
+                    // Idealmente, manteríamos o slug antigo se não quisesse mudar, mas para simplificar vamos atualizar.
                     await db.collection('games').doc(gameId).update(gameData);
                     alert("Jogo atualizado!");
                 } else {
@@ -377,12 +386,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     const docRef = await db.collection('games').add(gameData);
                     alert("Jogo criado com sucesso!");
                     
-                    // Opcional: oferecer ir para mídia logo após criar
                     if(confirm("Deseja adicionar arquivos de mídia agora?")) {
                          window.location.href = `host-panel.html?gameId=${docRef.id}`;
                          return;
                     }
                 }
+                
+                // Força atualização do cache local se estiver usando data-manager
+                localStorage.removeItem('games'); 
 
                 closeModal();
                 loadAllGames();
@@ -440,6 +451,178 @@ document.addEventListener('DOMContentLoaded', () => {
 
         createGameModal.classList.remove('hidden');
     }
+
+    // =========================================================================
+    // 4. GERENCIAMENTO DE CONTEÚDO (FAQ E SOBRE)
+    // =========================================================================
+
+    // Elementos UI
+    const faqListAdmin = document.getElementById('faq-list-admin');
+    const addFaqBtn = document.getElementById('add-faq-btn');
+    const faqModal = document.getElementById('faq-modal');
+    const faqForm = document.getElementById('faq-form');
+    const closeFaqModal = document.getElementById('close-faq-modal');
+    const cancelFaqBtn = document.getElementById('cancel-faq-btn');
+    const deleteFaqBtn = document.getElementById('delete-faq-btn');
+    const aboutForm = document.getElementById('about-form');
+
+    // --- Navegação de Abas (Função Global) ---
+    window.switchAdminTab = (tabId) => {
+        document.querySelectorAll('.dashboard-section').forEach(s => s.classList.add('hidden-section'));
+        document.getElementById(tabId).classList.remove('hidden-section');
+        
+        // Remove classe ativa dos botões
+        document.querySelectorAll('.dashboard-tabs .tab-btn').forEach(b => b.classList.remove('active'));
+        // Adiciona ao botão clicado (lógica simplificada, ideal é passar o evento)
+        event.target.classList.add('active');
+
+        if (tabId === 'content-management') {
+            loadFAQs();
+            loadAboutText();
+        }
+    };
+
+    // Lógica das sub-abas (FAQ vs Sobre)
+    document.querySelectorAll('.content-tabs .tab-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.content-tabs .tab-btn').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            
+            document.querySelectorAll('.content-sub-section').forEach(s => s.classList.add('hidden-section'));
+            document.getElementById(e.target.dataset.target).classList.remove('hidden-section');
+        });
+    });
+
+    // --- Lógica do FAQ ---
+
+    async function loadFAQs() {
+        faqListAdmin.innerHTML = '<div class="loader"></div>';
+        try {
+            const doc = await db.collection('siteContent').doc('faq').get();
+            let faqs = [];
+            if (doc.exists && doc.data().items) {
+                faqs = doc.data().items;
+            }
+
+            faqListAdmin.innerHTML = '';
+            if (faqs.length === 0) {
+                faqListAdmin.innerHTML = '<p>Nenhuma pergunta cadastrada.</p>';
+                return;
+            }
+
+            faqs.forEach((faq, index) => {
+                const div = document.createElement('div');
+                div.className = 'booking-item';
+                div.innerHTML = `
+                    <div class="booking-item-info">
+                        <strong>${faq.question}</strong>
+                        <span>${faq.answer.substring(0, 50)}...</span>
+                    </div>
+                    <button class="submit-btn small-btn" onclick="openFaqModal(${index})">Editar</button>
+                `;
+                faqListAdmin.appendChild(div);
+            });
+            
+            // Salva em memória para edição
+            window.currentFaqs = faqs;
+
+        } catch (error) {
+            console.error("Erro ao carregar FAQs:", error);
+            faqListAdmin.innerHTML = '<p>Erro ao carregar.</p>';
+        }
+    }
+
+    // Modal FAQ
+    window.openFaqModal = (index = null) => {
+        const isEdit = index !== null;
+        document.getElementById('faq-modal-title').textContent = isEdit ? 'Editar Pergunta' : 'Nova Pergunta';
+        document.getElementById('faq-id').value = isEdit ? index : '';
+        
+        if (isEdit) {
+            const faq = window.currentFaqs[index];
+            document.getElementById('faq-question').value = faq.question;
+            document.getElementById('faq-answer').value = faq.answer;
+            deleteFaqBtn.classList.remove('hidden');
+            deleteFaqBtn.onclick = () => deleteFaq(index);
+        } else {
+            faqForm.reset();
+            deleteFaqBtn.classList.add('hidden');
+        }
+        
+        faqModal.classList.remove('hidden');
+    };
+
+    addFaqBtn.addEventListener('click', () => openFaqModal(null));
+    const closeFaq = () => faqModal.classList.add('hidden');
+    closeFaqModal.addEventListener('click', closeFaq);
+    cancelFaqBtn.addEventListener('click', closeFaq);
+
+    // Salvar FAQ
+    faqForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const index = document.getElementById('faq-id').value;
+        const question = document.getElementById('faq-question').value;
+        const answer = document.getElementById('faq-answer').value;
+        
+        let faqs = window.currentFaqs || [];
+        
+        const newFaq = { question, answer };
+
+        if (index !== '') {
+            faqs[index] = newFaq; // Atualiza existente
+        } else {
+            faqs.push(newFaq); // Cria novo
+        }
+
+        await saveFaqsToFirebase(faqs);
+        closeFaq();
+    });
+
+    // Deletar FAQ
+    async function deleteFaq(index) {
+        if (!confirm('Excluir esta pergunta?')) return;
+        let faqs = window.currentFaqs;
+        faqs.splice(index, 1);
+        await saveFaqsToFirebase(faqs);
+        closeFaq();
+    }
+
+    async function saveFaqsToFirebase(faqs) {
+        try {
+            await db.collection('siteContent').doc('faq').set({ items: faqs });
+            alert('FAQ atualizado!');
+            loadFAQs();
+        } catch (error) {
+            console.error(error);
+            alert('Erro ao salvar.');
+        }
+    }
+
+    // --- Lógica do Sobre ---
+
+    async function loadAboutText() {
+        try {
+            const doc = await db.collection('siteContent').doc('about').get();
+            if (doc.exists) {
+                document.getElementById('about-history').value = doc.data().text || '';
+            }
+        } catch (error) {
+            console.error("Erro ao carregar Sobre:", error);
+        }
+    }
+
+    aboutForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const text = document.getElementById('about-history').value;
+        
+        try {
+            await db.collection('siteContent').doc('about').set({ text });
+            alert('Texto "Sobre" atualizado!');
+        } catch (error) {
+            console.error(error);
+            alert('Erro ao salvar.');
+        }
+    });
 
     // Inicializa tudo
     checkAuth();

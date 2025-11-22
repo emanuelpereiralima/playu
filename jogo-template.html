@@ -4,95 +4,96 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Carregando Jogo...</title>
-    <link rel="stylesheet" href="assets/css/style.ed1c03a0.css">
+    <link rel="stylesheet" href="assets/css/style.9fd9b626.css">
     <link rel="icon" href="assets/images/logo.png" type="image/png">
 </head>
 <body>
 
     <header id="header" class="header">
-    <nav class="nav container">
-        <ul class="nav__links left">
-            </ul>
-        <a href="index.html#home" class="nav__logo"><img src="assets/images/logo.png" alt="play.u Logo"></a>
-        <div class="nav__right-group">
-            <ul class="nav__links right">
-                </ul>
-            <div class="nav__controls">
-                <button class="control-btn header-shortcut-btn" id="header-join-player-btn">
-                    <ion-icon name="game-controller-outline"></ion-icon> <span>Entrar como Jogador</span>
-                </button>
-                <button class="control-btn header-shortcut-btn" id="header-join-host-btn">
-                    <ion-icon name="easel-outline"></ion-icon> <span>Entrar como Host</span>
-                </button>
-                <a href="login.html" class="control-btn" id="login-btn" data-lang-key="login">Login</a>
-                <div class="language-switcher">
-                    <button class="control-btn" id="lang-pt">PT</button> | <button class="control-btn" id="lang-en">EN</button>
+        <nav class="nav container">
+            <a href="index.html#home" class="nav__logo"><img src="assets/images/logo.png" alt="play.u Logo"></a>
+            <div class="nav__right-group">
+                <div class="nav__controls">
+                    <a href="index.html" class="control-btn">Voltar ao Início</a>
+                    <div class="theme-switcher"><ion-icon name="sunny-outline" id="theme-toggle"></ion-icon></div>
                 </div>
-                <div class="theme-switcher"><ion-icon name="sunny-outline" id="theme-toggle"></ion-icon></div>
             </div>
-        </div>
-    </nav>
-</header>
+        </nav>
+    </header>
 
     <main class="main-content">
-        <main class="main-content">
+        
         <div id="paused-message" class="container paused-notice" style="display: none;">
-        <h3><ion-icon name="pause-circle-outline"></ion-icon> Jogo Pausado</h3>
-        <p>Este jogo está temporariamente indisponível para novos agendamentos. Por favor, volte mais tarde.</p>
+            <h3><ion-icon name="pause-circle-outline"></ion-icon> Jogo Pausado</h3>
+            <p>Este jogo está temporariamente indisponível pois não há datas disponíveis no momento. Aguarde o Host adicionar novos horários.</p>
         </div>
+
         <div class="container" id="game-details-container">
-            <h1 id="game-title"></h1>
-            <p id="game-description"></p>
-            <div id="game-gallery" class="gallery-grid"></div>
-
-<div class="booking-section">
-    <div class="calendar-container">
-        <h2 class="section-title" data-lang-key="calendarTitle">Calendário de Agendamento</h2>
-        <div class="calendar-header">
-            <button id="prev-month-btn" class="month-nav-btn">&lt;</button>
-            <h3 id="month-year-header"></h3>
-            <button id="next-month-btn" class="month-nav-btn">&gt;</button>
-        </div>
-        <div class="calendar-weekdays">
-            <div data-lang-key="daySun">Dom</div>
-            <div data-lang-key="dayMon">Seg</div>
-            <div data-lang-key="dayTue">Ter</div>
-            <div data-lang-key="dayWed">Qua</div>
-            <div data-lang-key="dayThu">Qui</div>
-            <div data-lang-key="dayFri">Sex</div>
-            <div data-lang-key="daySat">Sáb</div>
-        </div>
-        <div class="calendar-grid" id="calendar-grid">
+            <h1 id="game-title" class="page-title"></h1>
+            
+            <div id="carousel-container" class="game-carousel-wrapper hidden">
+                <div class="game-carousel-track" id="game-carousel-track">
+                    </div>
+                <button class="carousel-btn prev-slide" id="btn-prev-photo">&#10094;</button>
+                <button class="carousel-btn next-slide" id="btn-next-photo">&#10095;</button>
             </div>
-    </div>
-    <div class="booking-details">
-        <h2 class="section-title" data-lang-key="bookingDetailsTitle">Detalhes do Agendamento</h2>
-        <p><strong><span data-lang-key="duration">Duração da Sessão:</span></strong> <span id="session-duration"></span></p>
-        <p class="instruction" id="instruction-text" data-lang-key="selectDay">Selecione um dia disponível no calendário.</p>
-        <div class="time-slots-container" id="time-slots-container">
-            </div>
-        <div class="confirmation-section" id="confirmation-section" style="display: none;">
-            <p id="selection-summary"></p>
-            <button id="confirm-booking-btn" class="submit-btn" data-lang-key="confirmBookingBtn">Confirmar Agendamento</button>
-        </div>
-    </div>
-</div>
 
-        <div class="container" id="game-not-found" style="display: none; text-align: center;">
-            <h1 data-lang-key="gameNotFound">Jogo não encontrado!</h1>
-            <p data-lang-key="gameNotFoundText">O jogo que você está procurando não existe ou foi movido.</p>
-            <a href="index.html#jogos" class="submit-btn" style="text-decoration: none; display: inline-block; margin-top: 1rem;">Ver todos os jogos</a>
+            <div style="max-width: 800px; margin: 2rem auto;">
+                <p id="game-description" style="line-height: 1.8; font-size: 1.1rem;"></p>
+                <p style="margin-top: 1rem; opacity: 0.8;">
+                    <strong><ion-icon name="time-outline" style="vertical-align: middle;"></ion-icon> Duração:</strong> 
+                    <span id="session-duration"></span>
+                </p>
+            </div>
+
+            <div id="game-trailer-section" class="trailer-container hidden">
+                <h2 class="section-title">Trailer</h2>
+                <div class="trailer-wrapper" id="trailer-embed-wrapper">
+                    </div>
+            </div>
+
+            <div id="booking-section-wrapper" class="booking-section">
+                <div class="calendar-container">
+                    <h2 class="section-title" data-lang-key="calendarTitle">Datas Disponíveis</h2>
+                    <div class="calendar-header">
+                        <button id="prev-month-btn" class="month-nav-btn">&lt;</button>
+                        <h3 id="month-year-header"></h3>
+                        <button id="next-month-btn" class="month-nav-btn">&gt;</button>
+                    </div>
+                    <div class="calendar-weekdays">
+                        <div>Dom</div><div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div>
+                    </div>
+                    <div class="calendar-grid" id="calendar-grid"></div>
+                </div>
+                
+                <div class="booking-details">
+                    <h2 class="section-title">Horários</h2>
+                    <p class="instruction" id="instruction-text">Selecione um dia no calendário.</p>
+                    <div class="time-slots-container" id="time-slots-container"></div>
+                    
+                    <div class="confirmation-section" id="confirmation-section" style="display: none;">
+                        <p id="selection-summary"></p>
+                        <button id="confirm-booking-btn" class="submit-btn">Confirmar Agendamento</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="container" id="game-not-found" style="display: none; text-align: center; margin-top: 5rem;">
+            <h1>Jogo não encontrado!</h1>
+            <p>O jogo que você procura não existe ou foi removido.</p>
+            <a href="index.html" class="submit-btn" style="margin-top: 2rem;">Voltar</a>
         </div>
     </main>
     
-    <a href="#" class="back-to-top" id="back-to-top"><ion-icon name="arrow-up-outline"></ion-icon></a>
-<script>
-    loadAsset('assets/css/style.ed1c03a0.css');
-    loadAsset('https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js');
-    loadAsset('assets/js/gamedata.js');
-    loadAsset('assets/js/userdata.ed1c03a0.js');
-    loadAsset('assets/js/data-manager.ed1c03a0.js');
-    loadAsset('assets/js/translations.ed1c03a0.js');
-    loadAsset('assets/js/game-page.ed1c03a0.js');
-</script>
+    <script>
+        // Scripts auxiliares de carregamento
+        const version = new Date().getTime();
+        document.write(`<script src="assets/js/gamedata.js?v=${version}"><\/script>`);
+        document.write(`<script src="assets/js/data-manager.9fd9b626.js?v=${version}"><\/script>`);
+        document.write(`<script src="assets/js/game-page.9fd9b626.js?v=${version}"><\/script>`);
+    </script>
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+</body>
 </html>

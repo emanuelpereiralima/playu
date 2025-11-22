@@ -2006,3 +2006,66 @@ dialog::backdrop {
         max-width: 100%;
     }
 }
+
+
+/* =========================================
+   ESTILOS DA PÁGINA DE DETALHES DO JOGO (CARROSSEL E TRAILER)
+   ========================================= */
+
+.game-carousel-wrapper {
+    position: relative;
+    max-width: 800px;
+    margin: 2rem auto;
+    overflow: hidden;
+    border-radius: 10px;
+}
+
+.game-carousel-track {
+    display: flex;
+    transition: transform 0.5s ease-in-out;
+}
+
+.game-carousel-slide {
+    min-width: 100%;
+    box-sizing: border-box;
+}
+
+.game-carousel-slide img {
+    width: 100%;
+    height: 400px;
+    object-fit: cover;
+    display: block;
+}
+
+.carousel-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0,0,0,0.5);
+    color: white;
+    border: none;
+    padding: 1rem;
+    cursor: pointer;
+    z-index: 10;
+    transition: background-color 0.3s;
+}
+
+.carousel-btn:hover {
+    background: rgba(233, 69, 96, 0.8); /* Cor secundária com opacidade */
+}
+
+.prev-slide { left: 10px; }
+.next-slide { right: 10px; }
+
+.trailer-container {
+    max-width: 800px;
+    margin: 3rem auto;
+    text-align: center;
+}
+
+.trailer-wrapper iframe {
+    width: 100%;
+    aspect-ratio: 16/9;
+    border: none;
+    border-radius: 10px;
+}

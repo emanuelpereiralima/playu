@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel Admin - PlayU</title>
-    <script src="assets/js/version.ed1c03a0.js"></script>
+    <script src="assets/js/version.9fd9b626.js"></script>
     <script>
         function loadAsset(path) {
             const version = typeof SITE_VERSION !== 'undefined' ? SITE_VERSION : new Date().getTime();
@@ -30,6 +30,62 @@
     </header>
 
     <main class="dashboard-main">
+
+        <section id="content-management" class="dashboard-section hidden-section">
+            <div class="section-header">
+                <h2>Gerenciamento de Conteúdo</h2>
+                <div class="dashboard-tabs">
+                <button class="tab-btn active" onclick="switchAdminTab('user-management')">Usuários</button>
+                <button class="tab-btn" onclick="switchAdminTab('content-management')">Conteúdo (FAQ/Sobre)</button>
+                <button class="tab-btn" onclick="switchAdminTab('game-management')">Jogos</button>
+            </div>
+            </div>
+
+            <div id="edit-faq" class="content-sub-section active-section">
+                <h3>Perguntas Frequentes</h3>
+                <div id="faq-list-admin" class="bookings-list">
+                    </div>
+                <button id="add-faq-btn" class="submit-btn" style="margin-top: 1rem;">
+                    <ion-icon name="add-circle-outline"></ion-icon> Adicionar Nova Pergunta
+                </button>
+            </div>
+
+            <div id="edit-about" class="content-sub-section hidden-section">
+                <h3>Sobre a PlayU</h3>
+                <form id="about-form">
+                    <div class="form-group">
+                        <label for="about-history">Nossa História (Texto Longo)</label>
+                        <textarea id="about-history" rows="10" required></textarea>
+                    </div>
+                    <button type="submit" class="submit-btn">Salvar Alterações</button>
+                </form>
+            </div>
+        </section>
+
+    <div id="faq-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <button id="close-faq-modal" class="close-overlay-btn">&times;</button>
+            <h3 id="faq-modal-title">Editar Pergunta</h3>
+            <form id="faq-form">
+                <input type="hidden" id="faq-id">
+                <div class="form-group">
+                    <label for="faq-question">Pergunta</label>
+                    <input type="text" id="faq-question" required>
+                </div>
+                <div class="form-group">
+                    <label for="faq-answer">Resposta</label>
+                    <textarea id="faq-answer" rows="4" required></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" id="delete-faq-btn" class="submit-btn danger-btn hidden">Excluir</button>
+                    <div class="right-buttons">
+                        <button type="button" id="cancel-faq-btn" class="submit-btn secondary-btn">Cancelar</button>
+                        <button type="submit" class="submit-btn">Salvar</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
         
         <section id="user-management" class="dashboard-section">
     <div class="section-header">
@@ -183,10 +239,10 @@
 
     <script src="assets/js/firebase-config.js"></script>
     <script>
-        loadAsset('assets/css/style.ed1c03a0.css');
+        loadAsset('assets/css/style.9fd9b626.css');
         loadAsset('https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js');
         loadAsset('https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js');
-        loadAsset('assets/js/admin.ed1c03a0.js');
+        loadAsset('assets/js/admin.9fd9b626.js');
     </script>
 </body>
 </html>

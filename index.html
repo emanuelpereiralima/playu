@@ -5,48 +5,46 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>play.u Live Entertainment</title>
     <link rel="icon" href="assets/images/logo.png" type="image/png">
-    <script src="assets/js/version.ed1c03a0.js"></script>
-<script>
-    function loadAsset(path) {
-        const version = typeof SITE_VERSION !== 'undefined' ? SITE_VERSION : new Date().getTime();
-        const extension = path.split('.').pop();
-        if (extension === 'css') {
-            document.write(`<link rel="stylesheet" href="${path}?v=${version}">`);
-        } else if (extension === 'js') {
-            document.write(`<script src="${path}?v=${version}" defer><\/script>`);
+    <script src="assets/js/version.9fd9b626.js"></script>
+    <script>
+        function loadAsset(path) {
+            const version = typeof SITE_VERSION !== 'undefined' ? SITE_VERSION : new Date().getTime();
+            const extension = path.split('.').pop();
+            if (extension === 'css') {
+                document.write(`<link rel="stylesheet" href="${path}?v=${version}">`);
+            } else if (extension === 'js') {
+                document.write(`<script src="${path}?v=${version}" defer><\/script>`);
+            }
         }
-    }
-</script>
+    </script>
 </head>
 <body>
 
     <header id="header" class="header">
-    <nav class="nav container">
-        <ul class="nav__links left">
-            </ul>
-        
-        <a href="index.html#home" class="nav__logo">
-            <img src="assets/images/logo.png" alt="PlayU Logo">
-        </a>
-
-        <div class="nav__right-group">
-            <ul class="nav__links right">
-                </ul>
+        <nav class="nav container">
+            <ul class="nav__links left"></ul>
             
-            <div class="nav__controls">
-                <a href="login.html" class="control-btn" id="login-btn" data-lang-key="login">Login</a>
+            <a href="index.html#home" class="nav__logo">
+                <img src="assets/images/logo.png" alt="PlayU Logo">
+            </a>
+
+            <div class="nav__right-group">
+                <ul class="nav__links right"></ul>
                 
-                <div class="language-switcher">
-                    <button class="control-btn" id="lang-pt">PT</button> | <button class="control-btn" id="lang-en">EN</button>
-                </div>
-                
-                <div class="theme-switcher">
-                    <ion-icon name="sunny-outline" id="theme-toggle"></ion-icon>
+                <div class="nav__controls">
+                    <a href="login.html" class="control-btn" id="login-btn" data-lang-key="login">Login</a>
+                    
+                    <div class="language-switcher">
+                        <button class="control-btn" id="lang-pt">PT</button> | <button class="control-btn" id="lang-en">EN</button>
+                    </div>
+                    
+                    <div class="theme-switcher">
+                        <ion-icon name="sunny-outline" id="theme-toggle"></ion-icon>
+                    </div>
                 </div>
             </div>
-        </div>
-    </nav>
-</header>
+        </nav>
+    </header>
 
     <main>
         <section id="home" class="home-carousel">
@@ -62,23 +60,21 @@
         </section>
 
         <section id="sobre" class="main-content alternate-bg">
-    <div class="container">
-        <h1 class="page-title" data-lang-key="aboutUs">Sobre a PlayU</h1>
-        
-        <div class="about-grid">
-            <div class="about-text">
-                <h2 data-lang-key="ourHistory">Nossa História</h2>
-                <p data-lang-key="historyTextLong">
-                    A play.u nasceu de um sonho compartilhado...
-                    <br><br>
-                    Desde o primeiro dia, nosso foco tem sido a qualidade e a inovação...
-                </p>
+            <div class="container">
+                <h1 class="page-title" data-lang-key="aboutUs">Sobre a PlayU</h1>
+                
+                <div class="about-grid">
+                    <div class="about-text">
+                        <h2 data-lang-key="ourHistory">Nossa História</h2>
+                        <p data-lang-key="historyTextLong">
+                            Carregando nossa história...
+                        </p>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
-</section>
+        </section>
 
-<section id="jogos" class="main-content">
+        <section id="jogos" class="main-content">
             <div class="container">
                 <h1 class="page-title" data-lang-key="ourGames">Nossos Jogos</h1>
                 <div class="games-grid">
@@ -87,109 +83,145 @@
         </section>
 
         <section id="faq" class="main-content">
-    <div class="container">
-        <h1 class="page-title" data-lang-key="faqTitle">Perguntas Frequentes</h1>
-        
-        <div class="faq-container">
-            <details class="faq-item">
-                <summary class="faq-question" data-lang-key="q1">Como posso agendar um jogo?</summary>
-                <p class="faq-answer" data-lang-key="a1">Para agendar, vá para a página do jogo desejado, selecione uma data e horário disponíveis no calendário e siga para a página de confirmação e pagamento.</p>
-            </details>
-            </div>
-    </div>
-</section>
-
-        <section id="contato" class="main-content alternate-bg">
-    <div class="container">
-        <h1 class="page-title" data-lang-key="contactUs">Entre em Contato</h1>
-        
-        <div class="contact-grid">
-            <div class="contact-form">
-                <h2 data-lang-key="sendMessage">Envie uma Mensagem</h2>
-                <form action="#">
-                    <div class="form-group">
-                        <label for="name" data-lang-key="formName">Nome</label>
-                        <input type="text" id="name" name="name" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="email" data-lang-key="formEmail">Email</label>
-                        <input type="email" id="email" name="email" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="subject" data-lang-key="formSubject">Assunto</label>
-                        <input type="text" id="subject" name="subject" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="message" data-lang-key="formMessage">Mensagem</label>
-                        <textarea id="message" name="message" rows="5" required></textarea>
-                    </div>
-                    <button type="submit" class="submit-btn" data-lang-key="formSubmit">Enviar</button>
-                </form>
-            </div>
-            
-            <div class="contact-info">
-                <h2 data-lang-key="infoTitle">Informações de Contato</h2>
-                <p data-lang-key="infoText">Se preferir, pode nos contatar por outros meios ou nos fazer uma visita.</p>
-                <ul>
-                    <li><ion-icon name="call-outline"></ion-icon> (81) 99999-8888</li>
-                    <li><ion-icon name="mail-outline"></ion-icon> contato@playu.com</li>
-                </ul>
-                <div class="social-links">
-                    <a href="https://instagram.com/playu.gg" target="_blank" rel="noopener noreferrer"><ion-icon name="logo-instagram"></ion-icon> Nos siga no Instagram!</a>
+            <div class="container">
+                <h1 class="page-title" data-lang-key="faqTitle">Perguntas Frequentes</h1>
                 
+                <div class="faq-container">
+                    <div class="loader"></div>
                 </div>
             </div>
-        </div>
-    </div>
-</section>
+        </section>
+
+        <section id="contato" class="main-content alternate-bg">
+            <div class="container">
+                <h1 class="page-title" data-lang-key="contactUs">Entre em Contato</h1>
+                
+                <div class="contact-grid">
+                    <div class="contact-form">
+                        <h2 data-lang-key="sendMessage">Envie uma Mensagem</h2>
+                        <form action="#">
+                            <div class="form-group">
+                                <label for="name" data-lang-key="formName">Nome</label>
+                                <input type="text" id="name" name="name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="email" data-lang-key="formEmail">Email</label>
+                                <input type="email" id="email" name="email" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="subject" data-lang-key="formSubject">Assunto</label>
+                                <input type="text" id="subject" name="subject" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="message" data-lang-key="formMessage">Mensagem</label>
+                                <textarea id="message" name="message" rows="5" required></textarea>
+                            </div>
+                            <button type="submit" class="submit-btn" data-lang-key="formSubmit">Enviar</button>
+                        </form>
+                    </div>
+                    
+                    <div class="contact-info">
+                        <h2 data-lang-key="infoTitle">Informações de Contato</h2>
+                        <p data-lang-key="infoText">Se preferir, pode nos contatar por outros meios ou nos fazer uma visita.</p>
+                        <ul>
+                            <li><ion-icon name="call-outline"></ion-icon> (81) 99999-8888</li>
+                            <li><ion-icon name="mail-outline"></ion-icon> contato@playu.com</li>
+                        </ul>
+                        <div class="social-links">
+                            <a href="https://instagram.com/playu.gg" target="_blank" rel="noopener noreferrer"><ion-icon name="logo-instagram"></ion-icon> Nos siga no Instagram!</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
     </main>
 
     <a href="#" class="back-to-top" id="back-to-top"><ion-icon name="arrow-up-outline"></ion-icon></a>
 
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
 
-<script src="assets/js/firebase-config.js"></script>
+    <script src="assets/js/firebase-config.js"></script>
 
-<script>
-    (function() {
-        const loggedInUser = JSON.parse(sessionStorage.getItem('loggedInUser'));
+    <script>
+        (function() {
+            const loggedInUser = JSON.parse(sessionStorage.getItem('loggedInUser'));
 
-        if (loggedInUser) {
-            // Usuário está logado, vamos redirecionar
-            let targetPage = 'dashboard.html'; // Padrão para 'user'
-
-            if (loggedInUser.role === 'admin') {
-                targetPage = 'admin.html';
-            } else if (loggedInUser.role === 'host') {
-                targetPage = 'host-panel.html'; // Ou 'admin.html' se host também for admin
+            if (loggedInUser) {
+                let targetPage = 'dashboard.html'; 
+                if (loggedInUser.role === 'admin') {
+                    targetPage = 'admin.html';
+                } else if (loggedInUser.role === 'host') {
+                    targetPage = 'host-panel.html';
+                }
+                // Redirecionamento apenas se o usuário tentar acessar a home explicitamente para login, 
+                // mas como a home agora é pública, podemos remover ou ajustar essa lógica se desejar.
+                // Por enquanto, mantive para preservar o comportamento de "Dashboard" se já logado.
+                // window.location.replace(targetPage); 
             }
+        })();
+    </script>
 
-            // Usamos window.location.replace() para que o usuário
-            // não possa "Voltar" do painel para a index.
-            window.location.replace(targetPage);
-        }
-        // Se não houver usuário, não faz nada e a página de login carrega.
-    })();
-</script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Aguarda o firebase-config inicializar o window.db ou usa direto
+            const db = window.db || firebase.firestore();
 
+            // 1. Carregar Sobre
+            try {
+                const aboutDoc = await db.collection('siteContent').doc('about').get();
+                if (aboutDoc.exists && aboutDoc.data().text) {
+                    const aboutParagraph = document.querySelector('.about-text p');
+                    if(aboutParagraph) {
+                        aboutParagraph.innerHTML = aboutDoc.data().text.replace(/\n/g, '<br>');
+                    }
+                }
+            } catch (e) { console.error("Erro ao carregar Sobre", e); }
 
-<script>
-    loadAsset('assets/css/style.ed1c03a0.css');
-    // Você está carregando os ícones duas vezes (no head e aqui). Vou manter sua lógica:
-    loadAsset('https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js');
-    loadAsset('https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js');
-    
-    // COMENTADOS - Estes arquivos não serão mais usados.
-    // loadAsset('assets/js/gamedata.js'); 
-    // loadAsset('assets/js/userdata.ed1c03a0.js'); 
-    
-    // O data-manager.ed1c03a0.js e main.ed1c03a0.js precisarão ser reescritos para usar Firestore.
-    loadAsset('assets/js/data-manager.ed1c03a0.js'); 
-    loadAsset('assets/js/translations.ed1c03a0.js');
-    loadAsset('assets/js/main.ed1c03a0.js');
-</script>
+            // 2. Carregar FAQ
+            try {
+                const faqDoc = await db.collection('siteContent').doc('faq').get();
+                if (faqDoc.exists && faqDoc.data().items) {
+                    const faqs = faqDoc.data().items;
+                    const faqContainer = document.querySelector('.faq-container');
+                    
+                    if(faqContainer && faqs.length > 0) {
+                        faqContainer.innerHTML = ''; // Remove o loader
+                        
+                        faqs.forEach(faq => {
+                            const details = document.createElement('details');
+                            details.className = 'faq-item';
+                            details.innerHTML = `
+                                <summary class="faq-question">${faq.question}</summary>
+                                <p class="faq-answer">${faq.answer.replace(/\n/g, '<br>')}</p>
+                            `;
+                            faqContainer.appendChild(details);
+                        });
+                    } else {
+                        if(faqContainer) faqContainer.innerHTML = '<p>Em breve.</p>';
+                    }
+                } else {
+                    // Caso não tenha nada no banco ainda, mostra placeholder ou remove o loader
+                    const faqContainer = document.querySelector('.faq-container');
+                    if(faqContainer) faqContainer.innerHTML = '<p>Nenhuma pergunta encontrada.</p>';
+                }
+            } catch (e) { 
+                console.error("Erro ao carregar FAQ", e);
+                const faqContainer = document.querySelector('.faq-container');
+                if(faqContainer) faqContainer.innerHTML = '<p>Erro ao carregar perguntas.</p>';
+            }
+        });
+    </script>
+
+    <script>
+        loadAsset('assets/css/style.9fd9b626.css');
+        loadAsset('https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js');
+        loadAsset('https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js');
+        loadAsset('assets/js/data-manager.9fd9b626.js'); 
+        loadAsset('assets/js/translations.9fd9b626.js');
+        loadAsset('assets/js/main.9fd9b626.js');
+    </script>
 </body>
 </html>
