@@ -1,122 +1,158 @@
-// assets/js/main.js (NOVA VERSÃO FIREBASE)
+// assets/js/main.js
 
 document.addEventListener('DOMContentLoaded', () => {
-    
-    // Inicializa todas as funções principais da página
-    initApp();
-
-    // Tenta carregar os dados dinâmicos (jogos)
-    loadDynamicContent();
+    initApp();       // Inicia tema, scroll e UI básica
+    loadGameContent(); // Inicia o carregamento dos jogos
 });
 
 /**
- * Inicializa os componentes estáticos da página
- * (Ex: tema, tradução, back-to-top)
+ * Função principal que orquestra o carregamento dos jogos
  */
-function initApp() {
-    console.log('App inicializado.');
+async function loadGameContent() {
+    const carouselContainer = document.querySelector('.carousel-container');
+    const gamesGrid = document.querySelector('.games-grid');
 
-    // Lógica do Tema (Dark/Light)
-    const themeToggle = document.getElementById('theme-toggle');
-    if (themeToggle) {
-        themeToggle.addEventListener('click', () => {
-            const isDark = document.documentElement.toggleAttribute('data-theme', 'dark');
-            themeToggle.setAttribute('name', isDark ? 'sunny-outline' : 'moon-outline');
-            // Opcional: Salvar preferência no localStorage aqui
-        });
+    // Se não estiver na home (ex: login page), para aqui
+    if (!carouselContainer && !gamesGrid) return;
+
+    // Coloca loadings
+    if(gamesGrid) gamesGrid.innerHTML = '<div class="loader"></div>';
+
+    // 1. Busca os dados reais do Firebase (via data-manager.js)
+    const games = await getPublicGames(); 
+
+    // 2. Limpa os containers
+    if(carouselContainer) carouselContainer.innerHTML = '';
+    if(gamesGrid) gamesGrid.innerHTML = '';
+
+    if (games.length === 0) {
+        if(gamesGrid) gamesGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center;">Nenhum jogo disponível no momento.</p>';
+        return;
     }
 
-    // Lógica do botão Voltar ao Topo
+    // 3. Popula o Carrossel (Pega os 5 primeiros jogos como destaque)
+    if (carouselContainer) {
+        const featuredGames = games.slice(0, 5); 
+        featuredGames.forEach(game => {
+            const slide = createCarouselSlide(game);
+            carouselContainer.appendChild(slide);
+        });
+        initCarouselControls(); // Ativa os botões de passar slide
+    }
+
+    // 4. Popula a Grade de Jogos (Todos os jogos públicos)
+    if (gamesGrid) {
+        games.forEach(game => {
+            const card = createGameCard(game);
+            gamesGrid.appendChild(card);
+        });
+    }
+}
+
+/**
+ * Cria o HTML de um Slide do Carrossel
+ */
+function createCarouselSlide(game) {
+    const slide = document.createElement('div');
+    slide.className = 'carousel-slide';
+    
+    const imageSrc = game.coverImage || 'assets/images/logo.png';
+    // Usa o slug se existir, senão usa o ID (para compatibilidade com jogos antigos)
+    const gameIdentifier = game.slug || game.id;
+    const gameUrl = `jogo/${gameIdentifier}`; // URL Limpa
+
+    slide.innerHTML = `
+        <a href="${gameUrl}" class="carousel-img-link" title="Ver detalhes do jogo">
+            <img src="${imageSrc}" alt="${game.name}">
+        </a>
+        <div class="slide-info">
+            <h3>${game.name}</h3>
+            <p>${game.shortDescription || 'Uma aventura incrível espera por você.'}</p>
+        </div>
+    `;
+    return slide;
+}
+
+/**
+ * Cria o HTML de um Card de Jogo
+ */
+function createGameCard(game) {
+    // ... código anterior ...
+    const imageSrc = game.coverImage || 'assets/images/logo.png';
+    
+    // Usa o slug se existir, senão usa o ID
+    const gameIdentifier = game.slug || game.id;
+    const gameUrl = `jogo/${gameIdentifier}`; // URL Limpa
+
+    // ... resto da lógica do badge ...
+
+    card.innerHTML = `
+        <div style="position:relative;">
+            <img src="${imageSrc}" alt="${game.name}" class="game-card-img">
+            ${pausedBadge}
+        </div>
+        <div class="game-card-content">
+            <h3>${game.name}</h3>
+            <p>${game.shortDescription || 'Sem descrição.'}</p>
+            <div style="margin-top:auto; display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:0.8rem; opacity:0.7;">⏱ ${game.sessionDuration || 'N/A'}</span>
+                <a href="${gameUrl}" class="submit-btn small-btn">Ver Detalhes</a>
+            </div>
+        </div>
+    `;
+    return card;
+}
+
+// --- Funções Auxiliares (UI) ---
+
+function initApp() {
+    initTheme(); // Inicia a lógica do tema
+    
+    // Back to top
     const backToTop = document.getElementById('back-to-top');
     if(backToTop) {
         window.addEventListener('scroll', () => {
             backToTop.classList.toggle('visible', window.scrollY > 300);
         });
     }
-
-    // NOTA: A lógica dos botões "Entrar como Jogador/Host" foi removida 
-    // pois o acesso agora é exclusivo via Dashboard/Admin.
 }
 
-/**
- * Carrega o conteúdo dinâmico (jogos) do Firestore
- * e preenche o carrossel e a grade de jogos.
- */
-async function loadDynamicContent() {
-    // Busca os jogos usando o novo data-manager
-    const games = await getAllGames(); 
+// --- Lógica de Tema (Dark/Light) ---
+function initTheme() {
+    const themeToggle = document.getElementById('theme-toggle');
+    const html = document.documentElement;
+    
+    // 1. Recupera tema salvo ou usa 'dark' como padrão
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    html.setAttribute('data-theme', savedTheme);
+    updateThemeIcon(savedTheme);
 
-    if (!games || games.length === 0) {
-        console.warn('Nenhum jogo retornado pelo data-manager.');
-        return;
+    // 2. Event Listener do botão
+    if (themeToggle) {
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+
+            // Aplica no HTML e Salva no Storage
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            
+            // Atualiza o ícone
+            updateThemeIcon(newTheme);
+        });
     }
-
-    // Popula o carrossel (ex: 5 primeiros jogos)
-    populateCarousel(games.slice(0, 5));
-    
-    // Popula a grade principal de jogos
-    populateGamesGrid(games);
 }
 
-/**
- * Preenche o carrossel de destaque
- * @param {Array<Object>} featuredGames Array de jogos para o carrossel
- */
-function populateCarousel(featuredGames) {
-    const container = document.querySelector('.carousel-container');
-    if (!container) return;
-
-    container.innerHTML = ''; // Limpa o loader (se houver)
-    
-    featuredGames.forEach(game => {
-        const slide = document.createElement('div');
-        slide.className = 'carousel-slide';
-        // Note: Assumindo que o 'thumbnailUrl' foi salvo no host-panel
-        slide.innerHTML = `
-            <img src="${game.thumbnailUrl || 'assets/images/placeholder.png'}" alt="${game.title}">
-            <div class="carousel-caption">
-                <h3>${game.title}</h3>
-                <p>${game.description.substring(0, 100)}...</p>
-                <a href="dashboard.html" class="submit-btn small-btn">Agendar Agora</a>
-            </div>
-        `;
-        container.appendChild(slide);
-    });
-    
-    // Aqui você inicializaria a lógica do carrossel (prev/next)
-    // (A lógica de controle do carrossel em si não foi fornecida, 
-    //  mas este é o local para ativá-la)
-    console.log('Carrossel populado.');
-    initCarouselControls(); // Função de exemplo
+function updateThemeIcon(theme) {
+    const themeToggle = document.getElementById('theme-toggle');
+    if (themeToggle) {
+        // Se o tema for escuro, mostra o sol (para mudar pro claro)
+        // Se o tema for claro, mostra a lua (para mudar pro escuro)
+        const iconName = theme === 'dark' ? 'sunny-outline' : 'moon-outline';
+        themeToggle.setAttribute('name', iconName);
+    }
 }
 
-/**
- * Preenche a grade de jogos
- * @param {Array<Object>} allGames Array com todos os jogos
- */
-function populateGamesGrid(allGames) {
-    const grid = document.querySelector('.games-grid');
-    if (!grid) return;
-
-    grid.innerHTML = ''; // Limpa o loader
-
-    allGames.forEach(game => {
-        const card = document.createElement('div');
-        card.className = 'game-card'; // Reutilizando a classe do dashboard
-        card.innerHTML = `
-            <img src="${game.thumbnailUrl || 'assets/images/placeholder.png'}" alt="${game.title}" class="game-card-img">
-            <div class="game-card-content">
-                <h3>${game.title}</h3>
-                <p>${game.description.substring(0, 100)}...</p>
-                <a href="dashboard.html" class="submit-btn">Ver Agendamentos</a>
-            </div>
-        `;
-        grid.appendChild(card);
-    });
-    console.log('Grade de jogos populada.');
-}
-
-// Função de exemplo para a lógica do carrossel
 function initCarouselControls() {
     const container = document.querySelector('.carousel-container');
     const prevBtn = document.getElementById('prev-btn');
@@ -128,9 +164,17 @@ function initCarouselControls() {
     const slides = container.children;
     const totalSlides = slides.length;
 
+    // Mostra o primeiro slide
+    slides[0].classList.add('active');
+
     function updateCarousel() {
-        const offset = -currentIndex * 100;
-        container.style.transform = `translateX(${offset}%)`;
+        slides[currentIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+        
+        // Atualiza classe active (opcional, dependendo do CSS)
+        Array.from(slides).forEach((slide, index) => {
+            if (index === currentIndex) slide.classList.add('active');
+            else slide.classList.remove('active');
+        });
     }
 
     prevBtn.addEventListener('click', () => {
