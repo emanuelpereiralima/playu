@@ -22,11 +22,10 @@
         <div class="header-container">
             <h1 class="logo">PlayU Dashboard</h1>
             <div class="user-menu">
-                <div class="user-profile-trigger" id="edit-profile-btn" title="Clique para alterar seu nome">
+                <div class="user-profile-trigger" id="edit-profile-btn" title="Alterar nome">
                     <span id="user-greeting">Carregando...</span>
                     <ion-icon name="pencil-outline"></ion-icon>
                 </div>
-                
                 <a href="index.html" class="submit-btn small-btn">Voltar ao Site</a>
                 <button id="logout-btn" class="submit-btn small-btn danger">Sair</button>
             </div>
@@ -35,9 +34,10 @@
 
     <main class="dashboard-main">
         
-        <div id="admin-tabs" class="dashboard-tabs hidden">
+        <div class="dashboard-tabs">
             <button class="tab-btn active" data-target="my-bookings">Meus Agendamentos</button>
-            <button class="tab-btn" data-target="manage-games">Gerenciar Jogos</button>
+            <button class="tab-btn" data-target="courses-area">Cursos</button>
+            <button class="tab-btn hidden" id="admin-tab-btn" data-target="manage-games">Gerenciar Jogos</button>
         </div>
 
         <section id="my-bookings" class="dashboard-section active-section">
@@ -47,36 +47,102 @@
             </div>
         </section>
 
+        <section id="courses-area" class="dashboard-section hidden-section">
+            <h2>Meus Cursos</h2>
+            <p class="page-subtitle">Acesse conteúdos exclusivos para melhorar sua jogabilidade.</p>
+            <div id="user-course-list" class="game-grid"></div>
+        </section>
+
         <section id="manage-games" class="dashboard-section hidden-section">
             <div class="section-header">
                 <h2>Jogos Disponíveis</h2>
-                <div id="admin-actions-container">
-                    </div>
+                <div id="admin-actions-container"></div>
             </div>
-            
-            <div id="game-list-container" class="game-grid">
-                </div>
+            <div id="game-list-container" class="game-grid"></div>
         </section>
 
     </main>
 
-    <div id="profile-modal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <button id="close-profile-modal" class="close-overlay-btn">&times;</button>
-            <h3>Editar Perfil</h3>
-            <p>Como você gostaria de ser chamado?</p>
+    <div id="profile-modal" class="modal-overlay hidden"><div class="modal-content"><button id="close-profile-modal" class="close-overlay-btn">&times;</button><h3>Editar Perfil</h3><form id="profile-form"><div class="form-group"><label>Nome de Exibição</label><input type="text" id="profile-name-input" required></div><div class="form-group"><label>Email</label><input type="email" id="profile-email-display" disabled style="opacity:0.7"></div><button type="submit" class="submit-btn">Salvar</button></form></div></div>
+
+    <div id="course-viewer-modal" class="modal-overlay hidden"><div class="modal-content large-modal" style="max-width: 900px;"><button id="close-course-viewer" class="close-overlay-btn">&times;</button><div id="course-player-container" style="display: grid; grid-template-columns: 250px 1fr; gap: 20px; height: 100%;"><div id="course-modules-list" style="border-right: 1px solid var(--border-color); overflow-y: auto; padding-right: 10px;"></div><div id="course-video-area" style="display: flex; flex-direction: column;"><h3 id="current-video-title" style="margin-bottom: 1rem;">Selecione uma aula</h3><div id="video-embed-wrapper" class="trailer-wrapper" style="background: #000; border-radius: 10px; flex-grow: 1;"></div></div></div></div></div>
+
+    <div id="create-game-modal" class="modal-overlay hidden">
+        <div class="modal-content large-modal">
+            <button id="close-create-game-modal" class="close-overlay-btn">&times;</button>
+            <h3 id="game-modal-title">Criar Novo Jogo</h3>
             
-            <form id="profile-form">
-                <div class="form-group">
-                    <label for="profile-name-input">Nome de Exibição</label>
-                    <input type="text" id="profile-name-input" required minlength="2">
+            <form id="create-game-form" class="scrollable-form">
+                <input type="hidden" id="game-id-hidden">
+
+                <div class="form-section">
+                    <h4>Informações do Jogo</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nome do Jogo *</label>
+                            <input type="text" id="new-game-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Status *</label>
+                            <select id="new-game-status" required>
+                                <option value="available">Disponível</option>
+                                <option value="paused">Pausado</option>
+                                <option value="draft">Rascunho</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Duração *</label>
+                            <input type="text" id="new-game-duration" required placeholder="Ex: 60 minutos">
+                        </div>
+                        <div class="form-group">
+                            <label>Tags *</label>
+                            <input type="text" id="new-game-tags" required placeholder="Ex: Terror, RPG">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Descrição Curta *</label>
+                        <input type="text" id="new-game-short-desc" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Descrição Completa *</label>
+                        <textarea id="new-game-full-desc" rows="4" required></textarea>
+                    </div>
+                    <div class="form-group" style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+                        <label>Imagem de Capa *</label>
+                        <label for="admin-cover-upload" class="upload-label">
+                            <ion-icon name="cloud-upload-outline"></ion-icon> <span>Enviar Imagem</span>
+                        </label>
+                        <input type="file" id="admin-cover-upload" accept="image/*" style="display: none;">
+                        <p id="upload-status" class="form-hint" style="display: none;">Enviando...</p>
+                        <label class="form-label-or" style="margin-top: 0.5rem; font-size: 0.9rem;">Ou cole a URL:</label>
+                        <input type="url" id="new-game-cover" required placeholder="https://..." style="margin-top: 0.2rem;">
+                        <img id="admin-cover-preview" src="" style="max-height: 150px; margin-top: 10px; border-radius: 5px; display: none;">
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" id="profile-email-display" disabled style="opacity: 0.7; cursor: not-allowed;">
+
+                <div id="game-media-section" class="form-section hidden" style="margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+                    <h4>Mídia Adicional</h4>
+                    <div class="form-group">
+                        <label>Galeria (URLs separadas por vírgula)</label>
+                        <textarea id="new-game-gallery" rows="2"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Trailer (URL)</label>
+                        <input type="url" id="new-game-trailer">
+                    </div>
                 </div>
-                
-                <button type="submit" class="submit-btn">Salvar Alterações</button>
+
+                <div class="modal-footer">
+                    <button type="button" id="delete-game-btn" class="submit-btn danger-btn hidden">
+                        <ion-icon name="trash-outline"></ion-icon> Excluir Jogo
+                    </button>
+                    <div class="right-buttons">
+                        <button type="button" id="cancel-create-game-btn" class="submit-btn secondary-btn">Cancelar</button>
+                        <button type="submit" id="save-game-submit-btn" class="submit-btn primary-btn">Criar Jogo</button>
+                    </div>
+                </div>
             </form>
         </div>
     </div>

@@ -1,15 +1,18 @@
+// playu/assets/js/sala.js
+
 document.addEventListener('DOMContentLoaded', () => {
-    // --- ELEMENTOS DE VÍDEO E ESTADO ---
+    // Elementos e Variáveis Globais
     const localVideo = document.getElementById('local-video');
     const remoteVideo = document.getElementById('remote-video');
+    const accessMsgContainer = document.getElementById('access-message-container');
     
     let localStream = null;
-    let pc = null; // RTCPeerConnection
+    let pc = null; 
     let roomRef = null;
     let timerInterval = null;
-    let isAnswerSent = false; // Flag para evitar criar múltiplas respostas
+    let isAnswerSent = false;
 
-    // --- CONFIGURAÇÃO DO WEBRTC ---
+    // Configuração WebRTC
     const servers = {
         iceServers: [
             { urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'] },
@@ -17,150 +20,118 @@ document.addEventListener('DOMContentLoaded', () => {
         iceCandidatePoolSize: 10,
     };
 
-    // --- DADOS DA SESSÃO ---
-// --- DADOS DA SESSÃO E CONTROLE DE ACESSO (Assíncrono) ---
-const urlParams = new URLSearchParams(window.location.search);
-const bookingId = urlParams.get('bookingId');
-const loggedInUser = JSON.parse(sessionStorage.getItem('loggedInUser'));
-const accessMsgContainer = document.getElementById('access-message-container');
-const allGames = getGames(); // Do gamedata.js
+    // Dados da URL e Sessão
+    const urlParams = new URLSearchParams(window.location.search);
+    const bookingId = urlParams.get('bookingId');
+    const loggedInUser = JSON.parse(sessionStorage.getItem('loggedInUser'));
+    const db = window.db || firebase.firestore();
 
-let session = null;
-let gameForSession = null;
+    let session = null;
 
-// Esta função assíncrona irá bloquear o carregamento da sala
-// até que tenhamos os dados da sessão e verifiquemos o acesso.
-async function verifyAccessAndLoadData() {
-    if (!bookingId) {
-        showAccessError('<h1>Sessão Inválida</h1><p>O link de agendamento não foi encontrado.</p>');
-        return false;
-    }
-    if (!loggedInUser) {
-        showAccessError('<h1>Acesso Negado</h1><p>Você precisa estar logado para acessar esta sala.</p><a href="login.html" class="submit-btn" style="text-decoration:none; margin-top:1rem;">Fazer Login</a>');
-        return false;
-    }
-
-    // Busca o agendamento no Firestore
-    try {
-        const bookingRef = db.collection('bookings').doc(bookingId);
-        const bookingDoc = await bookingRef.get();
-
-        if (!bookingDoc.exists) {
-            showAccessError('<h1>Sessão Inválida</h1><p>Este agendamento não existe ou foi excluído.</p>');
+    // --- VERIFICAÇÃO DE ACESSO ---
+    async function verifyAccessAndLoadData() {
+        if (!bookingId) {
+            showAccessError('<h1>Sessão Inválida</h1><p>Link não encontrado.</p>');
+            return false;
+        }
+        if (!loggedInUser) {
+            showAccessError('<h1>Acesso Negado</h1><p>Faça login para continuar.</p><a href="login.html" class="submit-btn">Login</a>');
             return false;
         }
 
-        session = bookingDoc.data();
-        gameForSession = allGames.find(g => g.id === session.gameId);
+        try {
+            const bookingDoc = await db.collection('bookings').doc(bookingId).get();
 
-        if (!gameForSession) {
-            showAccessError('<h1>Erro no Jogo</h1><p>O jogo associado a este agendamento não foi encontrado.</p>');
+            if (!bookingDoc.exists) {
+                showAccessError('<h1>Sessão Inexistente</h1><p>Este agendamento não existe.</p>');
+                return false;
+            }
+
+            session = bookingDoc.data();
+
+            // 1. Verifica se é o dono do agendamento
+            if (session.userId !== loggedInUser.username) {
+                showAccessError('<h1>Acesso Negado</h1><p>Você não é o jogador agendado.</p>');
+                return false;
+            }
+
+            // 2. VERIFICAÇÃO DE HORÁRIO (REGRA DOS 10 MINUTOS)
+            if (!checkTimeRestriction(session.date, session.time)) {
+                return false; // Bloqueia se ainda não for a hora
+            }
+
+            return true;
+
+        } catch (error) {
+            console.error("Erro verificação:", error);
+            showAccessError('<h1>Erro</h1><p>Falha ao verificar sessão.</p>');
             return false;
         }
-
-        // --- VERIFICAÇÃO DE ACESSO ESPECÍFICA ---
-        // (Isso é um pouco diferente entre os dois arquivos, ajuste conforme abaixo)
-        
-        // =====================================================================
-        // NO ARQUIVO sala-host.js, use esta verificação:
-        if (loggedInUser.role !== 'admin' && loggedInUser.username !== gameForSession.ownerId) {
-            showAccessError('<h1>Acesso Negado</h1><p>Você não tem permissão para acessar esta sala como host.</p>');
-            return false;
-        }
-        // =====================================================================
-
-        // =====================================================================
-        // NO ARQUIVO sala-jogador.js, use esta verificação:
-        if (session.userId !== loggedInUser.username) {
-            showAccessError('<h1>Acesso Negado</h1><p>Você não é o jogador agendado para esta sessão.</p>');
-            return false;
-        }
-        // =====================================================================
-
-        // Se chegou até aqui, o acesso é permitido
-        return true; 
-        
-    } catch (error) {
-        console.error("Erro ao verificar acesso:", error);
-        showAccessError('<h1>Erro de Conexão</h1><p>Não foi possível verificar os dados da sessão. Tente novamente.</p>');
-        return false;
     }
-}
 
-function showAccessError(message) {
-    accessMsgContainer.innerHTML = message;
-    accessMsgContainer.style.display = 'flex';
-    document.getElementById('host-view')?.classList.add('hidden'); // Esconde a view
-    document.getElementById('player-view')?.classList.add('hidden'); // Esconde a view
-}
+    // --- FUNÇÃO DE RESTRIÇÃO DE TEMPO ---
+    function checkTimeRestriction(dateStr, timeStr) {
+        // Cria a data do agendamento (Ex: "2025-12-01T14:30:00")
+        const scheduledDate = new Date(`${dateStr}T${timeStr}:00`);
+        const now = new Date();
 
-// --- INICIALIZAÇÃO DA SALA ---
-// roomRef = db.collection('sessions').doc(bookingId); // Esta linha já deve existir
-// initHostView(); // Esta linha já deve existir
+        // Calcula a diferença em minutos
+        const diffMs = scheduledDate - now;
+        const diffMinutes = Math.floor(diffMs / 1000 / 60);
 
-// SUBSTITUA a chamada direta (ex: initHostView()) por esta lógica:
-verifyAccessAndLoadData().then(accessGranted => {
-    if (accessGranted) {
-        console.log('Acesso concedido. Carregando sala...');
-        // Referência do Firestore para a SESSÃO DE VÍDEO (diferente do agendamento)
-        roomRef = db.collection('sessions').doc(bookingId); 
-        
-        // Chame a função de inicialização que já existia
-        // Em sala-host.js:
-        initHostView();
-        // Em sala-jogador.js:
-        // initPlayerView();
+        // Se faltam mais de 10 minutos (ex: 15, 60, 1000 minutos positivos)
+        if (diffMinutes > 10) {
+            showAccessError(`
+                <h1>Sala Fechada</h1>
+                <p>Sua sessão está agendada para <strong>${dateStr.split('-').reverse().join('/')} às ${timeStr}</strong>.</p>
+                <p>A sala será liberada 10 minutos antes do início.</p>
+                <div style="margin-top:1rem; padding:1rem; background:rgba(255,255,255,0.1); border-radius:8px;">
+                    Faltam aproximadamente <strong>${diffMinutes} minutos</strong>.
+                </div>
+                <a href="dashboard.html" class="submit-btn" style="margin-top:1rem; text-decoration:none;">Voltar ao Dashboard</a>
+            `);
+            return false;
+        }
+
+        // Se já passou muito tempo (ex: 2 horas depois), opcionalmente bloquear também
+        // if (diffMinutes < -120) { ... "Sessão expirada" ... }
+
+        return true;
     }
-});
 
-    if (!bookingId || !session) {
-        accessMsgContainer.innerHTML = '<h1>Sessão Inválida</h1><p>Este link de agendamento não é válido ou expirou.</p>';
+    function showAccessError(html) {
+        accessMsgContainer.innerHTML = html;
         accessMsgContainer.style.display = 'flex';
-        return;
-    }
-    if (!loggedInUser || session.userId !== loggedInUser.username) {
-        accessMsgContainer.innerHTML = '<h1>Acesso Negado</h1><p>Você não tem permissão para entrar nesta sessão. Este convite é válido apenas para o usuário que fez o agendamento.</p><a href="login.html" class="submit-btn" style="text-decoration:none; margin-top:1rem;">Fazer Login</a>';
-        accessMsgContainer.style.display = 'flex';
-        return;
+        document.getElementById('player-view')?.classList.add('hidden');
     }
 
-    // --- INICIALIZAÇÃO DA SALA ---
-    // Referência do Firestore para esta sala de jogo
-    roomRef = db.collection('sessions').doc(bookingId);
+    // --- INICIALIZAÇÃO ---
+    verifyAccessAndLoadData().then(accessGranted => {
+        if (accessGranted) {
+            console.log('Acesso concedido. Entrando na sala...');
+            accessMsgContainer.style.display = 'none';
+            roomRef = db.collection('sessions').doc(bookingId);
+            initPlayerView();
+        }
+    });
 
-    initPlayerView();
-
-    // --- FUNÇÃO PRINCIPAL DE INICIALIZAÇÃO ---
+    // --- FUNÇÃO PRINCIPAL ---
     async function initPlayerView() {
         document.getElementById('player-view').classList.remove('hidden');
-        
-        // Inicia o WebRTC para "atender" a chamada
         await setupWebRTC();
-        
-        // Configura os ouvintes de botões e de estado do jogo (dicas, timer)
         setupPlayerListeners();
     }
 
-    // --- LÓGICA DO WEBRTC (PASSO 3) ---
+    // ... (O resto do código WebRTC, setupMediaControls, etc. permanece idêntico) ...
+    // ... Mantenha as funções setupWebRTC, setupLocalMedia, answerOffer, setupPlayerListeners abaixo ...
 
     async function setupWebRTC() {
         pc = new RTCPeerConnection(servers);
-
-        // 1. Pega a câmera/mic do jogador
         await setupLocalMedia();
-
-        // 2. O que fazer quando o stream do host chegar
         pc.ontrack = event => {
-            console.log('Recebendo stream remoto do host...');
-            if (event.streams && event.streams[0]) {
-                remoteVideo.srcObject = event.streams[0];
-            } else {
-                let inboundStream = new MediaStream(event.track);
-                remoteVideo.srcObject = inboundStream;
-            }
+            if (event.streams && event.streams[0]) remoteVideo.srcObject = event.streams[0];
+            else remoteVideo.srcObject = new MediaStream(event.track);
         };
-
-        // 3. Responde à "Oferta" do host
         await answerOffer();
     }
 
@@ -168,17 +139,11 @@ verifyAccessAndLoadData().then(accessGranted => {
         try {
             localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
             localVideo.srcObject = localStream;
-
-            // Adiciona as trilhas (áudio/vídeo) à conexão
-            localStream.getTracks().forEach(track => {
-                pc.addTrack(track, localStream);
-            });
-            
-            // Habilita os botões de mic/câmera
+            localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
             setupMediaControls(true, 'player');
         } catch (err) {
-            console.error("Erro ao acessar a câmera/microfone:", err);
-            alert("Não foi possível acessar sua câmera e microfone. Verifique as permissões do navegador.");
+            console.error("Erro mídia:", err);
+            alert("Erro ao acessar câmera/microfone.");
         }
     }
 
@@ -186,255 +151,122 @@ verifyAccessAndLoadData().then(accessGranted => {
         const offerCandidates = roomRef.collection('offerCandidates');
         const answerCandidates = roomRef.collection('answerCandidates');
 
-        // 1. Ouve os candidates ICE locais e salva no Firebase
         pc.onicecandidate = event => {
-            if (event.candidate) {
-                console.log('Jogador: Enviando candidate ICE:', event.candidate.toJSON());
-                answerCandidates.add(event.candidate.toJSON());
-            }
+            if (event.candidate) answerCandidates.add(event.candidate.toJSON());
         };
 
-        // 2. Ouve a "Oferta" do host
         roomRef.onSnapshot(async (snapshot) => {
             const data = snapshot.data();
-            // Se a oferta chegar E ainda não respondemos
             if (data?.offer && !isAnswerSent) {
-                isAnswerSent = true; // Marca que já estamos respondendo
-                console.log('Jogador: Recebendo oferta do host...');
-                
-                // 3. Define a oferta do host como descrição remota
+                isAnswerSent = true;
                 await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
-
-                // 4. Cria a "Resposta"
                 const answerDescription = await pc.createAnswer();
                 await pc.setLocalDescription(answerDescription);
-
-                const answer = {
-                    type: answerDescription.type,
-                    sdp: answerDescription.sdp,
-                };
-
-                // 5. Salva a resposta no Firebase para o host ver
-                await roomRef.update({ answer });
-                console.log('Jogador: Resposta enviada ao Firebase');
+                await roomRef.update({ answer: { type: answerDescription.type, sdp: answerDescription.sdp } });
             }
         });
 
-        // 6. Ouve os candidates ICE do host e adiciona à conexão
         offerCandidates.onSnapshot(snapshot => {
             snapshot.docChanges().forEach(change => {
-                if (change.type === 'added') {
-                    const candidate = new RTCIceCandidate(change.doc.data());
-                    console.log('Jogador: Adicionando offer candidate do host');
-                    pc.addIceCandidate(candidate);
-                }
+                if (change.type === 'added') pc.addIceCandidate(new RTCIceCandidate(change.doc.data()));
             });
         });
     }
 
-    // --- CONTROLES DE MÍDIA (Função antiga, mantida) ---
     function setupMediaControls(enable, prefix) {
         const micBtn = document.getElementById(`${prefix}-mic-btn`);
         const camBtn = document.getElementById(`${prefix}-cam-btn`);
-        if (!micBtn || !camBtn) return;
-        
-        micBtn.disabled = !enable;
-        camBtn.disabled = !enable;
-
-        if (enable) {
-            micBtn.classList.add('active');
-            camBtn.classList.add('active');
-            micBtn.querySelector('ion-icon').setAttribute('name', 'mic-outline');
-            camBtn.querySelector('ion-icon').setAttribute('name', 'videocam-outline');
-        }
+        if (!micBtn) return;
+        micBtn.disabled = !enable; camBtn.disabled = !enable;
+        if (enable) { micBtn.classList.add('active'); camBtn.classList.add('active'); }
 
         micBtn.onclick = () => {
-            if (!localStream) return;
-            const audioTrack = localStream.getAudioTracks()[0];
-            audioTrack.enabled = !audioTrack.enabled;
-            micBtn.classList.toggle('active', audioTrack.enabled);
-            micBtn.classList.toggle('control-btn-toggled', !audioTrack.enabled);
-            micBtn.querySelector('ion-icon').setAttribute('name', audioTrack.enabled ? 'mic-outline' : 'mic-off-outline');
+            const track = localStream.getAudioTracks()[0];
+            track.enabled = !track.enabled;
+            micBtn.classList.toggle('active', track.enabled);
+            micBtn.querySelector('ion-icon').setAttribute('name', track.enabled ? 'mic-outline' : 'mic-off-outline');
         };
         camBtn.onclick = () => {
-            if (!localStream) return;
-            const videoTrack = localStream.getVideoTracks()[0];
-            videoTrack.enabled = !videoTrack.enabled;
-            camBtn.classList.toggle('active', videoTrack.enabled);
-            camBtn.classList.toggle('control-btn-toggled', !videoTrack.enabled);
-            camBtn.querySelector('ion-icon').setAttribute('name', videoTrack.enabled ? 'videocam-outline' : 'videocam-off-outline');
+            const track = localStream.getVideoTracks()[0];
+            track.enabled = !track.enabled;
+            camBtn.classList.toggle('active', track.enabled);
+            camBtn.querySelector('ion-icon').setAttribute('name', track.enabled ? 'videocam-outline' : 'videocam-off-outline');
         };
     }
 
-    // --- LÓGICA DOS OUYINTES DO JOGADOR (Refatorado para Firebase) ---
     function setupPlayerListeners() {
-        // Configura botões de UI
-        document.getElementById('player-hints-btn').onclick = () => {
-            document.getElementById('player-hints-overlay').classList.toggle('hidden');
-        };
-        document.getElementById('close-hints-btn').onclick = () => {
-            document.getElementById('player-hints-overlay').classList.add('hidden');
-        };
-        document.getElementById('player-exit-btn').onclick = () => {
-            window.location.href = 'dashboard.html';
-        };
+        document.getElementById('player-hints-btn').onclick = () => document.getElementById('player-hints-overlay').classList.toggle('hidden');
+        document.getElementById('close-hints-btn').onclick = () => document.getElementById('player-hints-overlay').classList.add('hidden');
+        document.getElementById('player-exit-btn').onclick = () => window.location.href = 'dashboard.html';
 
-        // OUVINTE PRINCIPAL: Ouve todas as mudanças de estado do jogo vindas do host
         roomRef.onSnapshot(snapshot => {
             const data = snapshot.data();
             if (!data) return;
-
-            // 1. Sincronizar Timer
-            if (data.startTime && !timerInterval) {
-                startTimer(data.startTime.toDate());
-            }
-
-            // 2. Sincronizar Dicas
+            if (data.startTime && !timerInterval) startTimer(data.startTime.toDate());
+            
             if (data.hints) {
-                document.querySelector('[data-hint-id="1"]').textContent = data.hints['1'] || '(Aguardando host...)';
-                document.querySelector('[data-hint-id="2"]').textContent = data.hints['2'] || '(Aguardando host...)';
-                document.querySelector('[data-hint-id="3"]').textContent = data.hints['3'] || '(Aguardando host...)';
+                document.querySelector('[data-hint-id="1"]').textContent = data.hints['1'] || '...';
+                document.querySelector('[data-hint-id="2"]').textContent = data.hints['2'] || '...';
+                document.querySelector('[data-hint-id="3"]').textContent = data.hints['3'] || '...';
             }
-            
-            // 3. Sincronizar Estilo do Timer
-            if (data.timerStyle) {
-                applyTimerStyles(data.timerStyle);
-            }
-
-            // 4. Receber Decisões
-            if (data.liveDecision) {
-                // O host enviou uma decisão, vamos renderizá-la
-                renderLiveDecision(data.liveDecision, data.decisions || []);
-            }
-            
-            // 5. Receber Mídia
+            if (data.liveDecision) renderLiveDecision(data.liveDecision, data.decisions || []);
             if (data.liveMedia) {
                 showMediaInOverlay(data.liveMedia.src, data.liveMedia.type);
-                // Limpa a mídia para não mostrar de novo
                 roomRef.update({ liveMedia: null });
             }
         });
     }
 
-    // --- RENDERIZAÇÃO DE DECISÕES (Refatorado para Firebase) ---
     function renderLiveDecision(decisionId, allDecisions) {
         const activeDecision = allDecisions.find(d => d.id === decisionId);
         if (!activeDecision) return;
-        
         const overlay = document.getElementById('player-decision-overlay');
-        const titleEl = document.getElementById('decision-title');
-        const optionsContainer = document.getElementById('decision-options-container');
-
-        titleEl.textContent = activeDecision.title;
-        optionsContainer.innerHTML = ''; // Limpa opções antigas
-
-        activeDecision.options.forEach(optionText => {
-            const button = document.createElement('button');
-            button.className = 'submit-btn';
-            button.textContent = optionText;
-            button.onclick = () => {
-                // NOVO: Envia a escolha para o Firebase
-                roomRef.update({
-                    playerChoice: optionText,
-                    liveDecision: null // Limpa a decisão ativa
-                });
-                overlay.classList.add('hidden'); // Esconde o overlay
+        document.getElementById('decision-title').textContent = activeDecision.title;
+        const container = document.getElementById('decision-options-container');
+        container.innerHTML = '';
+        activeDecision.options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'submit-btn';
+            btn.textContent = opt;
+            btn.onclick = () => {
+                roomRef.update({ playerChoice: opt, liveDecision: null });
+                overlay.classList.add('hidden');
             };
-            optionsContainer.appendChild(button);
+            container.appendChild(btn);
         });
-
         overlay.classList.remove('hidden');
     }
 
-function showMediaInOverlay(src, type) {
-    const mediaOverlay = document.getElementById('player-media-overlay');
-    const mediaContent = document.getElementById('media-content');
-    if (!mediaOverlay || !mediaContent) return;
-
-    mediaContent.innerHTML = ''; // Limpa mídia anterior
-    
-    let media;
-    
-    if (type.startsWith('image')) {
-        media = document.createElement('img');
-        media.src = src;
-        mediaContent.appendChild(media);
-        mediaOverlay.classList.remove('hidden'); // Mostra overlay para imagem
-    } 
-    else if (type.startsWith('video')) {
-        media = document.createElement('video');
-        media.src = src;
-        media.autoplay = true;
-        media.controls = true;
-        mediaContent.appendChild(media);
-        mediaOverlay.classList.remove('hidden'); // Mostra overlay para vídeo
-    }
-    else if (type.startsWith('audio')) {
-        media = document.createElement('audio');
-        media.src = src;
-        media.autoplay = true;
-        media.controls = false; // Sons de "efeito" não precisam de controle
-        mediaContent.appendChild(media);
-        // NÃO mostra o overlay para áudio, apenas toca
-        mediaOverlay.classList.add('hidden'); 
-        console.log('Tocando áudio enviado pelo host...');
-        return; // Sai da função mais cedo
-    }
-
-    // Botão de fechar só se aplica a imagem/vídeo
-    document.getElementById('close-media-btn').onclick = () => {
-        mediaOverlay.classList.add('hidden');
-        mediaContent.innerHTML = '';
-    };
-}
-    
-    // --- LÓGICA DO TIMER (Copiada do host) ---
-    function startTimer(startTime) {
-        if (timerInterval) return;
-
-        let mainTime = 21 * 60;
-        let extraTime = 7 * 60;
-        let isExtraTime = false;
-        
-        const timerDisplay = document.getElementById('player-timer-overlay');
-
-        timerInterval = setInterval(() => {
-            const elapsedSeconds = Math.floor((Date.now() - startTime.getTime()) / 1000);
-            const totalDuration = (21 * 60) + (7 * 60);
-            let currentTime;
-
-            if (elapsedSeconds >= totalDuration) {
-                currentTime = 0;
-                clearInterval(timerInterval);
-            } else {
-                const remainingTotalSeconds = totalDuration - elapsedSeconds;
-                if (remainingTotalSeconds > (7 * 60)) {
-                    isExtraTime = false;
-                    currentTime = remainingTotalSeconds - (7 * 60);
-                } else {
-                    isExtraTime = true;
-                    currentTime = remainingTotalSeconds;
-                    if(timerDisplay) timerDisplay.classList.add('extra-time');
-                }
-            }
-            updateTimerDisplay(currentTime, 'player-timer-overlay');
-        }, 1000);
-    }
-    
-    function updateTimerDisplay(timeInSeconds, elementId) {
-        const element = document.getElementById(elementId);
-        if (!element) return;
-        const minutes = Math.floor(timeInSeconds / 60);
-        const seconds = timeInSeconds % 60;
-        element.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-    }
-    
-    function applyTimerStyles(styleData) {
-        const timerElement = document.getElementById('player-timer-overlay');
-        if (styleData && timerElement) {
-            timerElement.style.color = styleData.color || 'white';
-            timerElement.style.borderColor = styleData.color || 'white';
-            timerElement.style.fontFamily = styleData.font || "'Poppins', sans-serif";
+    function showMediaInOverlay(src, type) {
+        const overlay = document.getElementById('player-media-overlay');
+        const content = document.getElementById('media-content');
+        content.innerHTML = '';
+        if (type.startsWith('audio')) {
+            const audio = document.createElement('audio');
+            audio.src = src; audio.autoplay = true; content.appendChild(audio);
+            return;
         }
+        const media = type.startsWith('video') ? document.createElement('video') : document.createElement('img');
+        media.src = src;
+        if(type.startsWith('video')) { media.autoplay = true; media.controls = true; }
+        content.appendChild(media);
+        overlay.classList.remove('hidden');
+        document.getElementById('close-media-btn').onclick = () => { overlay.classList.add('hidden'); content.innerHTML = ''; };
+    }
+
+    function startTimer(startTime) {
+        const display = document.getElementById('player-timer-overlay');
+        timerInterval = setInterval(() => {
+            const elapsed = Math.floor((Date.now() - startTime.getTime()) / 1000);
+            const total = (21 * 60) + (7 * 60);
+            let current = total - elapsed;
+            if (elapsed >= total) { current = 0; clearInterval(timerInterval); }
+            if (current <= (7 * 60)) display.classList.add('extra-time');
+            else current -= (7 * 60);
+            
+            const m = Math.floor(current / 60);
+            const s = current % 60;
+            display.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+        }, 1000);
     }
 });

@@ -1,5 +1,6 @@
 /* ===================================================================
    ARQUIVO DE ESTILO PRINCIPAL - PLAY.U LIVE ENTERTAINMENT
+   Versão Otimizada e Organizada
    =================================================================== */
 
 /* =========================================
@@ -287,6 +288,40 @@ img, video {
     pointer-events: none;
 }
 
+/* --- Tags (Cápsulas) --- */
+.tags-input-container {
+    display: flex; flex-wrap: wrap; gap: 0.5rem;
+    padding: 0.5rem; border: 1px solid var(--border-color);
+    border-radius: 5px; background-color: var(--bg-color);
+    cursor: text; position: relative;
+}
+.tags-input-container:focus-within { border-color: var(--secondary-color); box-shadow: 0 0 5px rgba(233, 69, 96, 0.3); }
+.tag-capsule {
+    background-color: var(--secondary-color); color: white;
+    padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.85rem;
+    display: flex; align-items: center; gap: 0.5rem; animation: fadeIn 0.2s;
+}
+.tag-capsule .close-tag { cursor: pointer; font-weight: bold; font-size: 1rem; line-height: 1; opacity: 0.8; }
+.tag-capsule .close-tag:hover { opacity: 1; }
+.tag-input-field {
+    flex-grow: 1; border: none; background: transparent;
+    color: var(--text-color); outline: none; min-width: 100px;
+    padding: 0.3rem; font-family: var(--body-font);
+}
+.tags-suggestions-list {
+    position: absolute; top: 100%; left: 0; width: 100%;
+    background-color: var(--card-bg-color); border: 1px solid var(--border-color);
+    border-top: none; border-radius: 0 0 5px 5px; max-height: 150px;
+    overflow-y: auto; z-index: 50; list-style: none; display: none;
+}
+.tags-suggestions-list.active { display: block; }
+.tags-suggestions-list li {
+    padding: 0.6rem 1rem; cursor: pointer; color: var(--text-color-light);
+    transition: background 0.2s;
+}
+.tags-suggestions-list li:hover { background-color: rgba(233, 69, 96, 0.1); color: var(--text-color); }
+.tags-suggestions-list li strong { color: var(--secondary-color); }
+
 /* Toggle Switch */
 .switch { position: relative; display: inline-block; width: 60px; height: 34px; }
 .switch input { opacity: 0; width: 0; height: 0; }
@@ -329,6 +364,28 @@ input:checked + .slider:before { transform: translateX(26px); }
     max-height: 90vh;
     display: flex; flex-direction: column;
 }
+
+/* Modal Extra Largo (Lado a Lado) */
+.modal-content.xl-modal {
+    max-width: 1300px; width: 95%;
+    height: 90vh; padding: 0;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+}
+.modal-split-layout { display: flex; flex: 1; height: 100%; overflow: hidden; }
+.modal-col-left {
+    flex: 1; min-width: 400px; padding: 2rem;
+    overflow-y: auto; border-right: 1px solid var(--border-color);
+}
+.modal-col-right {
+    flex: 1.2; padding: 2rem;
+    overflow-y: auto; background-color: rgba(0, 0, 0, 0.15);
+    display: flex; flex-direction: column;
+}
+/* Modo Schedule Only */
+.modal-content.xl-modal.mode-schedule .modal-col-left { display: none !important; }
+.modal-content.xl-modal.mode-schedule .modal-col-right { flex: 1; border-left: none; background-color: var(--card-bg-color); padding: 1rem 2rem; }
+.modal-content.xl-modal .close-overlay-btn { top: 10px; right: 10px; z-index: 20; background-color: var(--primary-color); }
 
 .scrollable-form {
     overflow-y: auto; padding-right: 10px; margin-top: 1rem;
@@ -412,19 +469,26 @@ input:checked + .slider:before { transform: translateX(26px); }
 .carousel-container { display: flex; align-items: center; }
 
 .carousel-slide {
-    position: relative; flex: 0 0 65%; margin: 0 1rem;
-    border-radius: 10px; overflow: hidden;
+    position: relative; flex: 0 0 65%; margin: 0 1rem; height: 450px;
+    border-radius: 10px; overflow: hidden; background-color: #000;
     transition: transform 0.4s ease-in-out; scroll-snap-align: center;
+    display: flex; justify-content: center; align-items: center;
 }
-.carousel-slide img { width: 100%; display: block; aspect-ratio: 16/9; object-fit: cover; }
+.carousel-slide img {
+    width: 100%; height: 100%; display: block; object-fit: contain;
+}
 
-.carousel-img-link { display: block; cursor: pointer; width: 100%; height: 100%; }
+.carousel-img-link {
+    display: flex; justify-content: center; align-items: center;
+    width: 100%; height: 100%; cursor: pointer;
+}
 .carousel-slide .carousel-img-link img { pointer-events: auto !important; }
 
 .carousel-caption, .slide-info {
     position: absolute; bottom: 0; left: 0; width: 100%;
-    background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
-    padding: 2rem 1.5rem 1.5rem; color: white; pointer-events: none;
+    background: linear-gradient(to top, rgba(0,0,0,0.95), transparent);
+    padding: 3rem 1.5rem 1.5rem; color: white; pointer-events: none;
+    text-align: center;
 }
 
 .carousel-nav {
@@ -514,7 +578,7 @@ input:checked + .slider:before { transform: translateX(26px); }
 .user-profile-trigger:hover { background-color: rgba(255, 255, 255, 0.1); }
 
 .dashboard-tabs {
-    display: flex; gap: 10px; margin-bottom: 20px;
+    display: flex; gap: 10px; margin-bottom: 3rem; /* Espaçamento Aumentado */
     border-bottom: 1px solid var(--border-color); padding-bottom: 10px;
 }
 .tab-btn {
@@ -557,6 +621,12 @@ input:checked + .slider:before { transform: translateX(26px); }
 }
 .item-actions .edit-btn:hover { background-color: #3b82f6; border-color: #3b82f6; }
 .item-actions .remove-btn:hover { background-color: var(--secondary-color); border-color: var(--secondary-color); }
+
+/* ESPAÇAMENTO DO HEADER DA SEÇÃO */
+.section-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 3rem; /* Espaçamento Aumentado */
+}
 
 /* --- Game Details (Template) --- */
 .game-carousel-wrapper {
@@ -660,6 +730,72 @@ input:checked + .slider:before { transform: translateX(26px); }
 .remove-time-btn { background: none; border: none; color: var(--secondary-color); cursor: pointer; }
 
 /* =========================================
+   ESTILOS DA PÁGINA DO JOGO (ATUALIZADO)
+   ========================================= */
+
+/* Imagem de Capa (Hero) */
+.game-hero-container {
+    width: 100%;
+    height: 400px;
+    position: relative;
+    margin-bottom: 2rem;
+    border-radius: 0 0 12px 12px;
+    overflow: hidden;
+}
+
+.game-hero-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* Adiciona um gradiente escuro na parte inferior para o título */
+    mask-image: linear-gradient(to bottom, black 70%, transparent 100%); 
+}
+
+/* Ajuste no layout de Agendamento para suportar o Overlay */
+.booking-section {
+    position: relative; /* Necessário para o overlay absoluto */
+    margin-top: 4rem;
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 3rem;
+    transition: filter 0.3s;
+}
+
+/* Camada de Bloqueio (Pausado) */
+.booking-blocked-overlay {
+    position: absolute;
+    top: -10px; left: -10px; 
+    width: calc(100% + 20px); 
+    height: calc(100% + 20px);
+    background-color: rgba(22, 22, 37, 0.85); /* Fundo escuro semi-transparente */
+    backdrop-filter: blur(4px); /* Desfoque no fundo */
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    text-align: center;
+    padding: 2rem;
+}
+
+.booking-blocked-overlay h2 {
+    font-size: 3rem;
+    color: var(--secondary-color);
+    margin-bottom: 1rem;
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+.booking-blocked-overlay p {
+    font-size: 1.2rem;
+    color: var(--text-color);
+    max-width: 600px;
+}
+
+/* =========================================
    6. MEDIA QUERIES
    ========================================= */
 @media screen and (max-width: 992px) {
@@ -669,6 +805,12 @@ input:checked + .slider:before { transform: translateX(26px); }
     .nav__logo img { width: 150px; }
     .about-grid, .contact-grid, .booking-section, .availability-editor { grid-template-columns: 1fr; }
     .about-image { order: -1; }
+}
+
+@media screen and (max-width: 1024px) {
+    .modal-content.xl-modal { height: auto; max-height: 95vh; overflow-y: auto; }
+    .modal-split-layout { flex-direction: column; overflow: visible; }
+    .modal-col-left, .modal-col-right { width: 100%; border-right: none; border-bottom: 1px solid var(--border-color); overflow-y: visible; flex: none; }
 }
 
 @media screen and (max-width: 768px) {

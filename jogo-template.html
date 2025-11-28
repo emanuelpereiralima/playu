@@ -3,96 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Carregando Jogo...</title>
-    <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="icon" href="assets/images/logo.png" type="image/png">
+    <title>Carregando Jogo... | PlayU</title>
+    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="icon" href="/assets/images/logo.png" type="image/png">
 </head>
 <body>
 
     <header id="header" class="header">
         <nav class="nav container">
-            <a href="index.html#home" class="nav__logo"><img src="assets/images/logo.png" alt="play.u Logo"></a>
+            <a href="/index.html" class="nav__logo">
+                <img src="/assets/images/logo.png" alt="play.u Logo">
+            </a>
             <div class="nav__right-group">
                 <div class="nav__controls">
-                    <a href="index.html" class="control-btn">Voltar ao Início</a>
-                    <div class="theme-switcher"><ion-icon name="sunny-outline" id="theme-toggle"></ion-icon></div>
+                    <a href="/index.html" class="control-btn">
+                        <ion-icon name="arrow-back-outline"></ion-icon> Voltar ao Início
+                    </a>
+                    <div class="theme-switcher">
+                        <ion-icon name="sunny-outline" id="theme-toggle"></ion-icon>
+                    </div>
                 </div>
             </div>
         </nav>
     </header>
 
-    <main class="main-content">
-        
-        <div id="paused-message" class="container paused-notice" style="display: none;">
-            <h3><ion-icon name="pause-circle-outline"></ion-icon> Jogo Pausado</h3>
-            <p>Este jogo está temporariamente indisponível pois não há datas disponíveis no momento. Aguarde o Host adicionar novos horários.</p>
-        </div>
+    <div id="game-hero" class="game-hero-container">
+        <img id="game-cover-image" src="" alt="Capa do Jogo" class="game-hero-img">
+    </div>
 
+    <main class="main-content" style="padding-top: 0;">
         <div class="container" id="game-details-container">
-            <h1 id="game-title" class="page-title"></h1>
             
-            <div id="carousel-container" class="game-carousel-wrapper hidden">
-                <div class="game-carousel-track" id="game-carousel-track">
-                    </div>
-                <button class="carousel-btn prev-slide" id="btn-prev-photo">&#10094;</button>
-                <button class="carousel-btn next-slide" id="btn-next-photo">&#10095;</button>
+            <div style="text-align: center; margin-bottom: 3rem;">
+                <h1 id="game-title" class="page-title" style="margin-bottom: 0.5rem; font-size: 3rem;"></h1>
+                <div style="display: flex; justify-content: center; gap: 2rem; opacity: 0.8; font-size: 1.1rem;">
+                    <span><ion-icon name="time-outline" style="vertical-align: middle;"></ion-icon> <span id="session-duration"></span></span>
+                    <span id="game-genre-tags"></span>
+                </div>
+                <div style="max-width: 800px; margin: 2rem auto; text-align: center;">
+                    <p id="game-description" style="line-height: 1.8; font-size: 1.1rem; opacity: 0.9; white-space: pre-wrap;"></p>
+                </div>
+            </div>
+            
+            <div id="carousel-section" class="hidden">
+                <h2 class="section-title" style="text-align:center; border:none; margin-bottom:1rem;">Galeria</h2>
+                <div id="carousel-container" class="game-carousel-wrapper">
+                    <div class="game-carousel-track" id="game-carousel-track"></div>
+                    <button class="carousel-btn prev-slide" id="btn-prev-photo">&#10094;</button>
+                    <button class="carousel-btn next-slide" id="btn-next-photo">&#10095;</button>
+                </div>
             </div>
 
-            <div style="max-width: 800px; margin: 2rem auto;">
-                <p id="game-description" style="line-height: 1.8; font-size: 1.1rem;"></p>
-                <p style="margin-top: 1rem; opacity: 0.8;">
-                    <strong><ion-icon name="time-outline" style="vertical-align: middle;"></ion-icon> Duração:</strong> 
-                    <span id="session-duration"></span>
-                </p>
+            <div id="game-trailer-section" class="trailer-container hidden" style="margin-top: 4rem;">
+                <h2 class="section-title" style="text-align:center; border:none;">Trailer Oficial</h2>
+                <div class="trailer-wrapper" id="trailer-embed-wrapper"></div>
             </div>
 
-            <div id="game-trailer-section" class="trailer-container hidden">
-                <h2 class="section-title">Trailer</h2>
-                <div class="trailer-wrapper" id="trailer-embed-wrapper">
-                    </div>
-            </div>
+            <hr class="form-divider" style="margin: 4rem 0;">
 
             <div id="booking-section-wrapper" class="booking-section">
+                
+                <div id="booking-blocked-overlay" class="booking-blocked-overlay hidden">
+                    <ion-icon name="lock-closed-outline" style="font-size: 4rem; color: var(--secondary-color); margin-bottom: 1rem;"></ion-icon>
+                    <h2>PAUSADO</h2>
+                    <p>No momento, não há datas disponíveis para agendamento deste jogo. Por favor, aguarde novas datas ou entre em contato com o suporte.</p>
+                </div>
+
                 <div class="calendar-container">
-                    <h2 class="section-title" data-lang-key="calendarTitle">Datas Disponíveis</h2>
+                    <h2 class="section-title" data-lang-key="calendarTitle">Escolha uma Data</h2>
                     <div class="calendar-header">
-                        <button id="prev-month-btn" class="month-nav-btn">&lt;</button>
-                        <h3 id="month-year-header"></h3>
-                        <button id="next-month-btn" class="month-nav-btn">&gt;</button>
+                        <button id="prev-month-btn" class="month-nav-btn"><ion-icon name="chevron-back-outline"></ion-icon></button>
+                        <h3 id="month-year-header" style="text-transform: capitalize;"></h3>
+                        <button id="next-month-btn" class="month-nav-btn"><ion-icon name="chevron-forward-outline"></ion-icon></button>
                     </div>
                     <div class="calendar-weekdays">
                         <div>Dom</div><div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div>
                     </div>
-                    <div class="calendar-grid" id="calendar-grid"></div>
+                    <div class="calendar-grid" id="calendar-grid">
+                        </div>
                 </div>
                 
                 <div class="booking-details">
-                    <h2 class="section-title">Horários</h2>
-                    <p class="instruction" id="instruction-text">Selecione um dia no calendário.</p>
+                    <h2 class="section-title">Horários Disponíveis</h2>
+                    <p class="instruction" id="instruction-text" style="opacity: 0.7;">Selecione um dia no calendário para ver os horários.</p>
+                    
                     <div class="time-slots-container" id="time-slots-container"></div>
                     
-                    <div class="confirmation-section" id="confirmation-section" style="display: none;">
-                        <p id="selection-summary"></p>
-                        <button id="confirm-booking-btn" class="submit-btn">Confirmar Agendamento</button>
+                    <div class="confirmation-section hidden" id="confirmation-section" style="margin-top: 2rem; padding: 1.5rem; background: var(--primary-color-dark); border-radius: 8px; border: 1px solid var(--border-color);">
+                        <h4 style="margin-bottom: 0.5rem; color: var(--secondary-color);">Resumo do Agendamento</h4>
+                        <p id="selection-summary" style="margin-bottom: 1.5rem; font-size: 1.1rem;"></p>
+                        <button id="confirm-booking-btn" class="submit-btn" style="width: 100%;">
+                            Confirmar Agendamento <ion-icon name="checkmark-circle-outline" style="margin-left:5px"></ion-icon>
+                        </button>
                     </div>
                 </div>
             </div>
 
         </div>
 
-        <div class="container" id="game-not-found" style="display: none; text-align: center; margin-top: 5rem;">
-            <h1>Jogo não encontrado!</h1>
-            <p>O jogo que você procura não existe ou foi removido.</p>
-            <a href="index.html" class="submit-btn" style="margin-top: 2rem;">Voltar</a>
+        <div class="container hidden" id="game-not-found" style="text-align: center; margin-top: 8rem;">
+            <h1>Jogo não encontrado</h1>
+            <a href="/index.html" class="submit-btn" style="margin-top: 2rem;">Voltar para Home</a>
         </div>
+
     </main>
+
+    <footer class="main-footer">
+        <p>&copy; 2025 play.u Live Entertainment. Todos os direitos reservados.</p>
+    </footer>
     
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="/assets/js/firebase-config.js"></script>
+
     <script>
-        // Scripts auxiliares de carregamento
         const version = new Date().getTime();
-        document.write(`<script src="assets/js/gamedata.js?v=${version}"><\/script>`);
-        document.write(`<script src="assets/js/data-manager.js?v=${version}"><\/script>`);
-        document.write(`<script src="assets/js/game-page.js?v=${version}"><\/script>`);
+        document.write(`<script src="/assets/js/data-manager.js?v=${version}"><\/script>`);
+        document.write(`<script src="/assets/js/game-page.js?v=${version}"><\/script>`);
+        document.write(`<script src="/assets/js/main.js?v=${version}"><\/script>`); 
     </script>
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
 </body>
