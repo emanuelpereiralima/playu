@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel Admin - PlayU</title>
-    <script src="assets/js/version.9fd9b626.js"></script>
+    <script src="assets/js/version.4135f6c6.js"></script>
     <script>
         function loadAsset(path) {
             const version = typeof SITE_VERSION !== 'undefined' ? SITE_VERSION : new Date().getTime();
@@ -23,212 +23,139 @@
             <h1 class="logo">Painel Admin</h1>
             <div class="user-menu">
                 <span id="user-greeting">Olá, Admin</span>
-                <a href="dashboard.html" class="submit-btn small-btn">Ir para Dashboard</a>
+                <a href="index.html" class="submit-btn small-btn">Voltar para Início</a>
                 <button id="logout-btn" class="submit-btn small-btn danger">Sair</button>
             </div>
+        </div>
+        
+        <div class="container dashboard-tabs" style="margin-top: 1rem; border-bottom: none;">
+            <button class="tab-btn active" onclick="switchAdminTab('user-management')">Usuários</button>
+            <button class="tab-btn" onclick="switchAdminTab('game-management')">Jogos</button>
+            <button class="tab-btn" onclick="switchAdminTab('content-management')">Conteúdo</button>
+            <button class="tab-btn" onclick="switchAdminTab('course-management')">Cursos</button>
         </div>
     </header>
 
     <main class="dashboard-main">
-
-        <section id="content-management" class="dashboard-section hidden-section">
+        
+        <section id="user-management" class="dashboard-section">
             <div class="section-header">
-                <h2>Gerenciamento de Conteúdo</h2>
-                <div class="dashboard-tabs">
-                <button class="tab-btn active" onclick="switchAdminTab('user-management')">Usuários</button>
-                <button class="tab-btn" onclick="switchAdminTab('content-management')">Conteúdo (FAQ/Sobre)</button>
-                <button class="tab-btn" onclick="switchAdminTab('game-management')">Jogos</button>
+                <h2>Gerenciamento de Usuários</h2>
+                <div class="search-box">
+                    <ion-icon name="search-outline"></ion-icon>
+                    <input type="text" id="user-search-input" placeholder="Buscar...">
+                </div>
             </div>
-            </div>
-
-            <div id="edit-faq" class="content-sub-section active-section">
-                <h3>Perguntas Frequentes</h3>
-                <div id="faq-list-admin" class="bookings-list">
-                    </div>
-                <button id="add-faq-btn" class="submit-btn" style="margin-top: 1rem;">
-                    <ion-icon name="add-circle-outline"></ion-icon> Adicionar Nova Pergunta
-                </button>
-            </div>
-
-            <div id="edit-about" class="content-sub-section hidden-section">
-                <h3>Sobre a PlayU</h3>
-                <form id="about-form">
-                    <div class="form-group">
-                        <label for="about-history">Nossa História (Texto Longo)</label>
-                        <textarea id="about-history" rows="10" required></textarea>
-                    </div>
-                    <button type="submit" class="submit-btn">Salvar Alterações</button>
-                </form>
+            <div class="table-container">
+                <table class="admin-table">
+                    <thead><tr><th>Nome</th><th>Email</th><th>Cargo</th><th>Ações</th></tr></thead>
+                    <tbody id="user-table-body"><tr><td colspan="4"><div class="loader"></div></td></tr></tbody>
+                </table>
             </div>
         </section>
 
-    <div id="faq-modal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <button id="close-faq-modal" class="close-overlay-btn">&times;</button>
-            <h3 id="faq-modal-title">Editar Pergunta</h3>
-            <form id="faq-form">
-                <input type="hidden" id="faq-id">
-                <div class="form-group">
-                    <label for="faq-question">Pergunta</label>
-                    <input type="text" id="faq-question" required>
-                </div>
-                <div class="form-group">
-                    <label for="faq-answer">Resposta</label>
-                    <textarea id="faq-answer" rows="4" required></textarea>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" id="delete-faq-btn" class="submit-btn danger-btn hidden">Excluir</button>
-                    <div class="right-buttons">
-                        <button type="button" id="cancel-faq-btn" class="submit-btn secondary-btn">Cancelar</button>
-                        <button type="submit" class="submit-btn">Salvar</button>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
-        
-        <section id="user-management" class="dashboard-section">
-    <div class="section-header">
-        <h2>Gerenciamento de Usuários</h2>
-        
-        <div class="search-box">
-            <ion-icon name="search-outline"></ion-icon>
-            <input type="text" id="user-search-input" placeholder="Buscar por nome ou email...">
-        </div>
-    </div>
-
-    <div class="table-container">
-        <table class="admin-table">
-            <thead>
-                <tr>
-                    <th>Nome</th>
-                    <th>Email</th>
-                    <th>Cargo (Role)</th>
-                    <th>Ações</th>
-                </tr>
-            </thead>
-            <tbody id="user-table-body">
-                <tr><td colspan="4"><div class="loader"></div></td></tr>
-            </tbody>
-        </table>
-    </div>
-</section>
-
-        <section id="game-management" class="dashboard-section">
+        <section id="game-management" class="dashboard-section hidden-section">
             <div class="section-header">
                 <h2>Gerenciamento de Jogos</h2>
-                <button id="open-create-game-modal-btn" class="submit-btn">
-                    <ion-icon name="add-circle-outline"></ion-icon> Adicionar Novo Jogo
-                </button>
+                <button id="open-create-game-modal-btn" class="submit-btn"><ion-icon name="add-circle-outline"></ion-icon> Novo Jogo</button>
             </div>
             <div id="game-list-container" class="bookings-list"></div>
         </section>
 
+        <section id="content-management" class="dashboard-section hidden-section">
+            <div class="section-header">
+                <h2>Gerenciamento de Conteúdo</h2>
+                <div class="content-tabs">
+                    <button class="tab-btn active" data-target="edit-faq">FAQ</button>
+                    <button class="tab-btn" data-target="edit-about">Sobre</button>
+                </div>
+            </div>
+            <div id="edit-faq" class="content-sub-section active-section">
+                <div id="faq-list-admin" class="bookings-list"></div>
+                <button id="add-faq-btn" class="submit-btn" style="margin-top: 1rem;">Nova Pergunta</button>
+            </div>
+            <div id="edit-about" class="content-sub-section hidden-section">
+                <form id="about-form">
+                    <div class="form-group"><label>História</label><textarea id="about-history" rows="10"></textarea></div>
+                    <button type="submit" class="submit-btn">Salvar</button>
+                </form>
+            </div>
+        </section>
+
+        <section id="course-management" class="dashboard-section hidden-section">
+            <div class="section-header">
+                <h2>Cursos Online</h2>
+                <button id="add-course-btn" class="submit-btn"><ion-icon name="school-outline"></ion-icon> Criar Curso</button>
+            </div>
+            <div id="course-list-admin" class="game-grid"></div>
+        </section>
+
     </main>
 
-    <div id="edit-user-modal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <button id="close-user-modal" class="close-overlay-btn">&times;</button>
-            <h3>Editar Usuário</h3>
-            <form id="edit-user-form">
-                <input type="hidden" id="edit-user-id">
-                <div class="form-group">
-                    <label for="edit-user-name">Nome de Exibição</label>
-                    <input type="text" id="edit-user-name" required>
-                </div>
-                <div class="form-group">
-                    <label for="edit-user-role">Cargo</label>
-                    <select id="edit-user-role" class="role-select" style="width: 100%">
-                        <option value="user">Jogador</option>
-                        <option value="host">Host</option>
-                        <option value="admin">Admin</option>
-                    </select>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" id="delete-user-btn" class="submit-btn danger-btn">
-                        <ion-icon name="trash-outline"></ion-icon> Excluir
-                    </button>
-                    <div class="right-buttons">
-                        <button type="button" id="cancel-edit-btn" class="submit-btn secondary-btn">Cancelar</button>
-                        <button type="submit" class="submit-btn primary-btn">Salvar</button>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
+    <div id="edit-user-modal" class="modal-overlay hidden"><div class="modal-content"><button id="close-user-modal" class="close-overlay-btn">&times;</button><h3>Editar Usuário</h3><form id="edit-user-form"><input type="hidden" id="edit-user-id"><div class="form-group"><label>Nome</label><input type="text" id="edit-user-name" required></div><div class="form-group"><label>Cargo</label><select id="edit-user-role" class="role-select" style="width:100%"><option value="user">Jogador</option><option value="host">Host</option><option value="admin">Admin</option></select></div><div class="modal-footer"><button type="button" id="delete-user-btn" class="submit-btn danger-btn">Excluir</button><div class="right-buttons"><button type="button" id="cancel-edit-btn" class="submit-btn secondary-btn">Cancelar</button><button type="submit" class="submit-btn primary-btn">Salvar</button></div></div></form></div></div>
+    <div id="faq-modal" class="modal-overlay hidden"><div class="modal-content"><button id="close-faq-modal" class="close-overlay-btn">&times;</button><h3 id="faq-modal-title">Pergunta</h3><form id="faq-form"><input type="hidden" id="faq-id"><div class="form-group"><label>Pergunta</label><input type="text" id="faq-question" required></div><div class="form-group"><label>Resposta</label><textarea id="faq-answer" rows="4" required></textarea></div><div class="modal-footer"><button type="button" id="delete-faq-btn" class="submit-btn danger-btn hidden">Excluir</button><div class="right-buttons"><button type="button" id="cancel-faq-btn" class="submit-btn secondary-btn">Cancelar</button><button type="submit" class="submit-btn">Salvar</button></div></div></form></div></div>
+    <div id="course-modal" class="modal-overlay hidden"><div class="modal-content large-modal"><button id="close-course-modal" class="close-overlay-btn">&times;</button><h3 id="course-modal-title">Curso</h3><form id="course-form" class="scrollable-form"><input type="hidden" id="course-id"><div class="form-group"><label>Título</label><input type="text" id="course-title" required></div><div class="form-group"><label>Descrição</label><textarea id="course-desc" rows="3"></textarea></div><div class="form-group"><label>Capa (URL)</label><input type="url" id="course-cover"></div><hr class="form-divider"><div class="form-group"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;"><label style="margin:0">Módulos</label><button type="button" id="add-module-btn" class="submit-btn small-btn secondary-btn">+ Módulo</button></div><div id="modules-container"></div></div><div class="modal-footer"><button type="button" id="delete-course-btn" class="submit-btn danger-btn hidden">Excluir</button><div class="right-buttons"><button type="button" id="cancel-course-btn" class="submit-btn secondary-btn">Cancelar</button><button type="submit" class="submit-btn">Salvar</button></div></div></form></div></div>
 
     <div id="create-game-modal" class="modal-overlay hidden">
-        <div class="modal-content large-modal">
+        <div class="modal-content xl-modal">
             <button id="close-create-game-modal" class="close-overlay-btn">&times;</button>
             
-            <h3 id="game-modal-title">Criar Novo Jogo</h3>
-            <p id="game-modal-subtitle">Preencha as informações do jogo.</p>
-            
-            <form id="create-game-form" class="scrollable-form">
-                <input type="hidden" id="game-id-hidden">
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="new-game-name">Nome do Jogo *</label>
-                        <input type="text" id="new-game-name" required placeholder="Ex: A Lenda de PlayU">
-                    </div>
-                    <div class="form-group">
-                        <label for="new-game-status">Status *</label>
-                        <select id="new-game-status" required>
-                            <option value="available">Disponível</option>
-                            <option value="paused">Pausado (Manutenção/Cheio)</option>
-                            <option value="draft">Rascunho (Oculto)</option>
-                        </select>
-                    </div>
+            <div class="modal-split-layout">
+                <div class="modal-col-left">
+                    <h3 id="game-modal-title">Criar Novo Jogo</h3>
+                    <form id="create-game-form">
+                        <input type="hidden" id="game-id-hidden">
+                        <div class="form-section">
+                            <h4>Informações</h4>
+                            <div class="form-row"><div class="form-group"><label>Nome *</label><input type="text" id="new-game-name" required></div><div class="form-group"><label>Status *</label><select id="new-game-status" required><option value="available">Disponível</option><option value="paused">Pausado</option><option value="draft">Rascunho</option></select></div></div>
+                            <div class="form-row"><div class="form-group"><label>Duração *</label><input type="text" id="new-game-duration" required></div><div class="form-group" style="position:relative"><label>Tags *</label><div class="tags-input-container" id="tags-wrapper" onclick="document.getElementById('tag-input-field').focus()"><input type="text" id="tag-input-field" class="tag-input-field" placeholder="Digite..." autocomplete="off"></div><ul id="tags-suggestions" class="tags-suggestions-list"></ul></div></div>
+                            <div class="form-group"><label>Descrição Curta *</label><input type="text" id="new-game-short-desc" required></div>
+                            <div class="form-group"><label>Descrição Completa *</label><textarea id="new-game-full-desc" rows="4" required></textarea></div>
+                            <div class="form-group" style="background:rgba(0,0,0,0.2);padding:1rem;border-radius:8px;margin-top:1rem;"><label>Capa *</label><label for="admin-cover-upload" class="upload-label"><ion-icon name="cloud-upload-outline"></ion-icon><span>Enviar</span></label><input type="file" id="admin-cover-upload" accept="image/*" style="display:none;"><p id="upload-status" class="form-hint" style="display:none;">Enviando...</p><label class="form-label-or">Ou URL:</label><input type="url" id="new-game-cover" required><img id="admin-cover-preview" src="" style="max-height:150px;margin-top:10px;display:none;border-radius:5px;"></div>
+                        </div>
+                        <div id="game-media-section" class="form-section hidden" style="margin-top:1.5rem;border-top:1px solid var(--border-color);padding-top:1rem;"><h4>Mídia Adicional</h4><div class="form-group"><label>Galeria (URLs)</label><textarea id="new-game-gallery" rows="2"></textarea></div><div class="form-group"><label>Trailer (URL)</label><input type="url" id="new-game-trailer"></div></div>
+                        <div class="modal-footer"><button type="button" id="delete-game-btn" class="submit-btn danger-btn hidden"><ion-icon name="trash-outline"></ion-icon></button><div class="right-buttons"><button type="button" id="cancel-create-game-btn" class="submit-btn secondary-btn">Cancelar</button><button type="submit" id="save-game-submit-btn" class="submit-btn primary-btn">Criar Jogo</button></div></div>
+                    </form>
                 </div>
 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="new-game-duration">Duração Média *</label>
-                        <input type="text" id="new-game-duration" required placeholder="Ex: 90 minutos">
-                    </div>
-                    <div class="form-group">
-                        <label for="new-game-tags">Tags / Gênero *</label>
-                        <input type="text" id="new-game-tags" required placeholder="Ex: RPG, Terror (separados por vírgula)">
-                    </div>
-                </div>
+                <div class="modal-col-right" id="schedule-panel">
+                    <div id="schedule-placeholder" style="text-align:center;margin-top:50%;"><ion-icon name="calendar-outline" style="font-size:3rem;opacity:0.5;"></ion-icon><p style="opacity:0.7;">Salve para gerenciar horários.</p></div>
+                    <div id="schedule-content" class="hidden">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;"><h3>Horários</h3><div class="content-tabs" style="margin:0;font-size:0.9rem;"><button class="tab-btn active" id="tab-calendar-view" style="padding:5px 10px;">Calendário</button><button class="tab-btn" id="tab-bulk-add" style="padding:5px 10px;">Em Massa</button></div></div>
+                        
+                        <div id="schedule-view-calendar" class="schedule-tab-content">
+                            <div class="calendar-container" style="background:var(--card-bg-color);padding:1rem;border-radius:8px;">
+                                <div class="calendar-header"><button id="admin-prev-month" class="month-nav-btn small-btn"><</button><h4 id="admin-month-header" style="margin:0;"></h4><button id="admin-next-month" class="month-nav-btn small-btn">></button></div>
+                                <div class="calendar-weekdays" style="font-size:0.9rem;"><div>D</div><div>S</div><div>T</div><div>Q</div><div>Q</div><div>S</div><div>S</div></div>
+                                <div class="calendar-grid" id="admin-calendar-grid"></div>
+                            </div>
+                            <div id="single-day-editor" class="hidden" style="margin-top:1rem;background:var(--card-bg-color);padding:1rem;border-radius:8px;">
+                                <h4>Dia: <span id="editing-date-display" style="color:var(--secondary-color);"></span></h4>
+                                <div style="display:flex; gap:5px; margin-bottom:10px;">
+                                    <select id="single-time-input" style="flex:1; padding:0.5rem; border-radius:5px; border:1px solid var(--border-color); background:var(--bg-color); color:var(--text-color);"></select>
+                                    <button type="button" id="add-single-time-btn" class="submit-btn small-btn">+</button>
+                                </div>
+                                <div id="single-day-slots" style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:10px;"></div>
+                                <button id="save-single-day-btn" class="submit-btn small-btn" style="width:100%;">Salvar Dia</button>
+                            </div>
+                        </div>
 
-                <div class="form-group">
-                    <label for="new-game-short-desc">Descrição Curta (Vitrine) *</label>
-                    <input type="text" id="new-game-short-desc" required placeholder="Uma frase resumo">
-                </div>
-
-                <div class="form-group">
-                    <label for="new-game-full-desc">Descrição Completa *</label>
-                    <textarea id="new-game-full-desc" rows="4" required placeholder="Detalhes da história..."></textarea>
-                </div>
-
-                <div class="form-group">
-                    <label for="new-game-cover">Imagem de Capa (URL) *</label>
-                    <input type="url" id="new-game-cover" required placeholder="https://...">
-                </div>
-
-                <div class="form-group">
-                    <label for="new-game-gallery">Galeria (URLs separadas por vírgula)</label>
-                    <textarea id="new-game-gallery" rows="2" placeholder="https://img1.com, https://img2.com"></textarea>
-                </div>
-                
-                <div class="form-group">
-                    <label for="new-game-trailer">Trailer (URL Opcional)</label>
-                    <input type="url" id="new-game-trailer" placeholder="https://youtube.com/...">
-                </div>
-
-                <div class="modal-footer">
-                    <button type="button" id="go-to-media-btn" class="submit-btn secondary-btn hidden">
-                        <ion-icon name="images-outline"></ion-icon> Gerenciar Arquivos de Mídia
-                    </button>
-
-                    <div class="right-buttons">
-                        <button type="button" id="cancel-create-game-btn" class="submit-btn secondary-btn">Cancelar</button>
-                        <button type="submit" id="save-game-submit-btn" class="submit-btn primary-btn">Criar Jogo</button>
+                        <div id="schedule-view-bulk" class="schedule-tab-content hidden">
+                            <div style="background:var(--card-bg-color);padding:1rem;border-radius:8px;">
+                                <div class="form-group"><label>Período</label><div style="display:flex;gap:10px;"><input type="date" id="bulk-start-date"><input type="date" id="bulk-end-date"></div></div>
+                                <div class="form-group"><label>Dias</label><div style="display:flex;gap:5px;flex-wrap:wrap;font-size:0.9rem;"><label><input type="checkbox" value="0" checked> D</label><label><input type="checkbox" value="1" checked> S</label><label><input type="checkbox" value="2" checked> T</label><label><input type="checkbox" value="3" checked> Q</label><label><input type="checkbox" value="4" checked> Q</label><label><input type="checkbox" value="5" checked> S</label><label><input type="checkbox" value="6" checked> S</label></div></div>
+                                <hr class="form-divider">
+                                <div class="form-group"><label>Horários</label><div style="display:flex;gap:5px;">
+                                    <select id="bulk-time-input" style="flex:1; padding:0.5rem; border-radius:5px; border:1px solid var(--border-color); background:var(--bg-color); color:var(--text-color);"></select>
+                                    <button type="button" id="add-bulk-time-btn" class="submit-btn small-btn">Add</button>
+                                </div></div>
+                                <div id="bulk-times-list" style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:1rem;min-height:40px;border:1px dashed var(--border-color);padding:5px;"></div>
+                                <button type="button" id="apply-bulk-schedule-btn" class="submit-btn primary-btn" style="width:100%;">Aplicar</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
 
@@ -239,10 +166,10 @@
 
     <script src="assets/js/firebase-config.js"></script>
     <script>
-        loadAsset('assets/css/style.9fd9b626.css');
+        loadAsset('assets/css/style.4135f6c6.css');
         loadAsset('https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js');
         loadAsset('https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js');
-        loadAsset('assets/js/admin.9fd9b626.js');
+        loadAsset('assets/js/admin.4135f6c6.js');
     </script>
 </body>
 </html>

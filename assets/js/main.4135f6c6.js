@@ -1,8 +1,8 @@
-// assets/js/main.js
+// playu/assets/js/main.js
 
 document.addEventListener('DOMContentLoaded', () => {
-    initApp();       // Inicia tema, scroll e UI básica
-    loadGameContent(); // Inicia o carregamento dos jogos
+    initApp();       
+    loadGameContent(); 
 });
 
 /**
@@ -12,35 +12,60 @@ async function loadGameContent() {
     const carouselContainer = document.querySelector('.carousel-container');
     const gamesGrid = document.querySelector('.games-grid');
 
-    // Se não estiver na home (ex: login page), para aqui
     if (!carouselContainer && !gamesGrid) return;
 
-    // Coloca loadings
     if(gamesGrid) gamesGrid.innerHTML = '<div class="loader"></div>';
 
-    // 1. Busca os dados reais do Firebase (via data-manager.js)
-    const games = await getPublicGames(); 
+    // --- 1. BUSCA ROBUSTA DE DADOS ---
+    let games = [];
+    
+    try {
+        if (typeof getPublicGames === 'function') {
+            games = await getPublicGames();
+        } else {
+            console.warn("data-manager não encontrado, buscando direto do Firebase...");
+            const db = window.db || firebase.firestore();
+            const snapshot = await db.collection('games').get();
+            
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.status !== 'draft') {
+                    games.push({ id: doc.id, ...data });
+                }
+            });
+        }
 
-    // 2. Limpa os containers
+        if (games.length > 0) {
+            localStorage.setItem('games', JSON.stringify(games));
+        }
+
+    } catch (e) {
+        console.error("Erro crítico ao carregar jogos:", e);
+        if(gamesGrid) gamesGrid.innerHTML = '<p class="error-message">Erro ao carregar jogos. Verifique sua conexão.</p>';
+        return;
+    }
+
+    // --- 2. LIMPEZA E RENDERIZAÇÃO ---
     if(carouselContainer) carouselContainer.innerHTML = '';
     if(gamesGrid) gamesGrid.innerHTML = '';
 
     if (games.length === 0) {
-        if(gamesGrid) gamesGrid.innerHTML = '<p style="grid-column: 1/-1; text-align: center;">Nenhum jogo disponível no momento.</p>';
+        const emptyMsg = '<p style="grid-column: 1/-1; text-align: center; opacity: 0.7;">Nenhum jogo disponível no momento.</p>';
+        if(gamesGrid) gamesGrid.innerHTML = emptyMsg;
         return;
     }
 
-    // 3. Popula o Carrossel (Pega os 5 primeiros jogos como destaque)
+    // 3. Popula o Carrossel
     if (carouselContainer) {
         const featuredGames = games.slice(0, 5); 
         featuredGames.forEach(game => {
             const slide = createCarouselSlide(game);
             carouselContainer.appendChild(slide);
         });
-        initCarouselControls(); // Ativa os botões de passar slide
+        initCarouselControls(); 
     }
 
-    // 4. Popula a Grade de Jogos (Todos os jogos públicos)
+    // 4. Popula a Grade
     if (gamesGrid) {
         games.forEach(game => {
             const card = createGameCard(game);
@@ -50,16 +75,17 @@ async function loadGameContent() {
 }
 
 /**
- * Cria o HTML de um Slide do Carrossel
+ * Cria o HTML de um Slide do Carrossel (URL LIMPA)
  */
 function createCarouselSlide(game) {
     const slide = document.createElement('div');
     slide.className = 'carousel-slide';
     
     const imageSrc = game.coverImage || 'assets/images/logo.png';
-    // Usa o slug se existir, senão usa o ID (para compatibilidade com jogos antigos)
     const gameIdentifier = game.slug || game.id;
-    const gameUrl = `jogo/${gameIdentifier}`; // URL Limpa
+    
+    // URL LIMPA: /jogo/nome-do-jogo
+    const gameUrl = `jogo/${gameIdentifier}`;
 
     slide.innerHTML = `
         <a href="${gameUrl}" class="carousel-img-link" title="Ver detalhes do jogo">
@@ -74,17 +100,22 @@ function createCarouselSlide(game) {
 }
 
 /**
- * Cria o HTML de um Card de Jogo
+ * Cria o HTML de um Card de Jogo (URL LIMPA)
  */
 function createGameCard(game) {
-    // ... código anterior ...
-    const imageSrc = game.coverImage || 'assets/images/logo.png';
+    const card = document.createElement('div');
+    card.className = 'game-card';
     
-    // Usa o slug se existir, senão usa o ID
+    const imageSrc = game.coverImage || 'assets/images/logo.png';
     const gameIdentifier = game.slug || game.id;
-    const gameUrl = `jogo/${gameIdentifier}`; // URL Limpa
-
-    // ... resto da lógica do badge ...
+    
+    // URL LIMPA: /jogo/nome-do-jogo
+    const gameUrl = `jogo/${gameIdentifier}`;
+    
+    let pausedBadge = '';
+    if (game.status === 'paused') {
+        pausedBadge = `<div style="position:absolute; top:10px; right:10px; background:#ffbb00; color:#000; padding:2px 8px; border-radius:4px; font-weight:bold; font-size:0.8rem; z-index:5;">PAUSADO</div>`;
+    }
 
     card.innerHTML = `
         <div style="position:relative;">
@@ -106,9 +137,7 @@ function createGameCard(game) {
 // --- Funções Auxiliares (UI) ---
 
 function initApp() {
-    initTheme(); // Inicia a lógica do tema
-    
-    // Back to top
+    initTheme();
     const backToTop = document.getElementById('back-to-top');
     if(backToTop) {
         window.addEventListener('scroll', () => {
@@ -117,27 +146,19 @@ function initApp() {
     }
 }
 
-// --- Lógica de Tema (Dark/Light) ---
 function initTheme() {
     const themeToggle = document.getElementById('theme-toggle');
     const html = document.documentElement;
-    
-    // 1. Recupera tema salvo ou usa 'dark' como padrão
     const savedTheme = localStorage.getItem('theme') || 'dark';
     html.setAttribute('data-theme', savedTheme);
     updateThemeIcon(savedTheme);
 
-    // 2. Event Listener do botão
     if (themeToggle) {
         themeToggle.addEventListener('click', () => {
             const currentTheme = html.getAttribute('data-theme');
             const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-
-            // Aplica no HTML e Salva no Storage
             html.setAttribute('data-theme', newTheme);
             localStorage.setItem('theme', newTheme);
-            
-            // Atualiza o ícone
             updateThemeIcon(newTheme);
         });
     }
@@ -146,8 +167,6 @@ function initTheme() {
 function updateThemeIcon(theme) {
     const themeToggle = document.getElementById('theme-toggle');
     if (themeToggle) {
-        // Se o tema for escuro, mostra o sol (para mudar pro claro)
-        // Se o tema for claro, mostra a lua (para mudar pro escuro)
         const iconName = theme === 'dark' ? 'sunny-outline' : 'moon-outline';
         themeToggle.setAttribute('name', iconName);
     }
@@ -157,24 +176,15 @@ function initCarouselControls() {
     const container = document.querySelector('.carousel-container');
     const prevBtn = document.getElementById('prev-btn');
     const nextBtn = document.getElementById('next-btn');
-    
     if (!container || !prevBtn || !nextBtn || container.children.length === 0) return;
 
     let currentIndex = 0;
     const slides = container.children;
     const totalSlides = slides.length;
-
-    // Mostra o primeiro slide
-    slides[0].classList.add('active');
+    if(slides[0]) slides[0].classList.add('active');
 
     function updateCarousel() {
         slides[currentIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
-        
-        // Atualiza classe active (opcional, dependendo do CSS)
-        Array.from(slides).forEach((slide, index) => {
-            if (index === currentIndex) slide.classList.add('active');
-            else slide.classList.remove('active');
-        });
     }
 
     prevBtn.addEventListener('click', () => {
