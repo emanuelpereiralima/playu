@@ -34,6 +34,18 @@
 
     <main class="dashboard-main">
         
+        <div id="quick-actions-panel" class="dashboard-section hidden" style="margin-bottom: 2rem; background: var(--primary-color-dark); padding: 1.5rem; border-radius: 12px; border: 1px dashed var(--secondary-color);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h3 style="color: var(--secondary-color); margin-bottom: 0.5rem;"><ion-icon name="flask-outline"></ion-icon> Área de Testes</h3>
+                    <p style="opacity: 0.8; font-size: 0.9rem;">Crie uma sala instantânea para testar áudio, vídeo e conexão.</p>
+                </div>
+                <button id="create-test-room-btn" class="submit-btn">
+                    <ion-icon name="add-circle-outline"></ion-icon> Criar Sala de Teste
+                </button>
+            </div>
+        </div>
+        
         <div class="dashboard-tabs">
             <button class="tab-btn active" data-target="my-bookings">Meus Agendamentos</button>
             <button class="tab-btn" data-target="courses-area">Cursos</button>

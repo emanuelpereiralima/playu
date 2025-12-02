@@ -265,10 +265,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 gameId: cachedGameData.id,
                 gameName: cachedGameData.name,
                 coverImage: cachedGameData.coverImage,
+                hostId: cachedGameData.ownerId,
                 date: selectedDateStr,
                 time: selectedTimeStr,
-                price: "R$ 60,00" // Preço fixo por enquanto, ou pegue do gameData se tiver
+                price: cachedGameData.price ? `R$ ${cachedGameData.price}` : "Valor não definido"
             };
+
+            if (cachedGameData.price && cachedGameData.price.includes('R$')) {
+                 pendingBooking.price = cachedGameData.price;
+            }
             sessionStorage.setItem('pendingBooking', JSON.stringify(pendingBooking));
 
             // 3. Verifica Login
