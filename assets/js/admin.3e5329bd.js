@@ -355,6 +355,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const name = document.getElementById('new-game-name').value;
             const status = document.getElementById('new-game-status').value;
             const duration = document.getElementById('new-game-duration').value;
+            const price = document.getElementById('new-game-price').value;
             const tags = currentTags; 
             const shortDesc = document.getElementById('new-game-short-desc').value;
             const fullDesc = document.getElementById('new-game-full-desc').value;
@@ -372,7 +373,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 .replace(/^-|-$/g, '');
 
             const gameData = {
-                name, slug, status, sessionDuration: duration,
+                name, slug, status, sessionDuration: duration, price: price,
                 tags, shortDescription: shortDesc, fullDescription: fullDesc,
                 coverImage: coverUrl, galleryImages, videoPreview: trailerUrl,
                 isPaused
@@ -537,6 +538,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.getElementById('new-game-name').value = data.name || '';
                     document.getElementById('new-game-status').value = data.status || 'available';
                     document.getElementById('new-game-duration').value = data.sessionDuration || '';
+                    document.getElementById('new-game-price').value = data.price || '';
                     if (data.tags && Array.isArray(data.tags)) { currentTags = data.tags; renderTags(); }
                     document.getElementById('new-game-short-desc').value = data.shortDescription || '';
                     document.getElementById('new-game-full-desc').value = data.fullDescription || '';

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - PlayU</title>
-    <script src="assets/js/version.4135f6c6.js"></script>
+    <script src="assets/js/version.3e5329bd.js"></script>
     <script>
         function loadAsset(path) {
             const version = typeof SITE_VERSION !== 'undefined' ? SITE_VERSION : new Date().getTime();
@@ -33,6 +33,18 @@
     </header>
 
     <main class="dashboard-main">
+        
+        <div id="quick-actions-panel" class="dashboard-section hidden" style="margin-bottom: 2rem; background: var(--primary-color-dark); padding: 1.5rem; border-radius: 12px; border: 1px dashed var(--secondary-color);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h3 style="color: var(--secondary-color); margin-bottom: 0.5rem;"><ion-icon name="flask-outline"></ion-icon> Área de Testes</h3>
+                    <p style="opacity: 0.8; font-size: 0.9rem;">Crie uma sala instantânea para testar áudio, vídeo e conexão.</p>
+                </div>
+                <button id="create-test-room-btn" class="submit-btn">
+                    <ion-icon name="add-circle-outline"></ion-icon> Criar Sala de Teste
+                </button>
+            </div>
+        </div>
         
         <div class="dashboard-tabs">
             <button class="tab-btn active" data-target="my-bookings">Meus Agendamentos</button>
@@ -154,10 +166,10 @@
 
     <script src="assets/js/firebase-config.js"></script>
     <script>
-        loadAsset('assets/css/style.4135f6c6.css');
+        loadAsset('assets/css/style.3e5329bd.css');
         loadAsset('https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js');
         loadAsset('https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js');
-        loadAsset('assets/js/dashboard.4135f6c6.js');
+        loadAsset('assets/js/dashboard.3e5329bd.js');
     </script>
 </body>
 </html>

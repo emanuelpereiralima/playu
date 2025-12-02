@@ -42,6 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const finalBooking = {
                 gameId: bookingData.gameId,
                 gameName: bookingData.gameName,
+                hostId: bookingData.hostId,
                 userId: loggedInUser.username,
                 userName: loggedInUser.name,
                 userEmail: loggedInUser.email,

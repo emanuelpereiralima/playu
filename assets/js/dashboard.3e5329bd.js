@@ -393,13 +393,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // 6. CARREGAMENTO DE DADOS (AGENDAMENTOS E CURSOS)
     // =========================================================================
     
-    // ... loadMyBookings (igual ao anterior) ...
+// --- 4. CARREGAR AGENDAMENTOS (JOGADOR) ---
     async function loadMyBookings() {
         if(!myBookingsContainer) return;
         myBookingsContainer.innerHTML = '<div class="loader"></div>';
+        
         try {
             const snapshot = await db.collection('bookings')
                 .where('userId', '==', loggedInUser.username)
+                .orderBy('date', 'desc') // Ordena por data (mais recente primeiro)
                 .get();
 
             myBookingsContainer.innerHTML = '';
@@ -409,34 +411,58 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            const gamesSnapshot = await db.collection('games').get();
-            const gamesMap = {};
-            gamesSnapshot.forEach(doc => gamesMap[doc.id] = doc.data());
+            const now = new Date();
 
             snapshot.forEach(doc => {
                 const booking = doc.data();
-                const gameData = gamesMap[booking.gameId] || {};
-                const dateObj = booking.bookingDate ? booking.bookingDate.toDate() : new Date();
-                const dateDisplay = dateObj.toLocaleDateString() + ' às ' + (booking.time || '?');
+                
+                // Cria objetos de data para cálculo
+                // Formato esperado no banco: YYYY-MM-DD e HH:MM
+                const sessionStart = new Date(`${booking.date}T${booking.time}`);
+                const diffMs = sessionStart - now;
+                const diffMinutes = Math.floor(diffMs / 1000 / 60);
+                
+                // Regra dos 10 minutos
+                // Permite entrar se faltar 10 min ou menos (incluindo se já começou)
+                // Bloqueia se a sessão já passou há mais de 3 horas (opcional, para limpar a view)
+                const isTooEarly = diffMinutes > 10;
+                const isExpired = diffMinutes < -180; // 3 horas depois
+
+                let btnHtml = '';
+                
+                if (isExpired) {
+                    btnHtml = `<button class="submit-btn small-btn secondary-btn" disabled style="opacity:0.5">Finalizado</button>`;
+                } else if (isTooEarly) {
+                    btnHtml = `<button class="submit-btn small-btn secondary-btn" disabled title="Disponível 10 min antes">
+                                <ion-icon name="time-outline"></ion-icon> Em breve
+                               </button>`;
+                } else {
+                    btnHtml = `<a href="sala.html?bookingId=${doc.id}" class="submit-btn small-btn" style="background-color: #00ff88; color: #000;">
+                                <ion-icon name="play-outline"></ion-icon> Entrar Agora
+                               </a>`;
+                }
+
+                const dateDisplay = sessionStart.toLocaleDateString() + ' às ' + booking.time;
 
                 const item = document.createElement('div');
                 item.className = 'booking-item';
                 item.innerHTML = `
                     <div class="booking-item-info">
-                        <strong>${gameData.name || 'Jogo'}</strong>
+                        <strong>${booking.gameName}</strong>
                         <span>${dateDisplay}</span>
                     </div>
-                    <a href="sala-jogador.html?bookingId=${doc.id}" class="submit-btn small-btn">Sala</a>
+                    ${btnHtml}
                 `;
                 myBookingsContainer.appendChild(item);
             });
         } catch (error) {
-            console.error(error);
-            myBookingsContainer.innerHTML = '<p>Erro ao carregar.</p>';
+            console.error("Erro bookings:", error);
+            // Se der erro de índice no console, o Firebase pedirá para criar um link.
+            // Enquanto isso, tente remover o .orderBy se necessário.
+            myBookingsContainer.innerHTML = '<p>Erro ao carregar agendamentos.</p>';
         }
     }
-
-    // ... loadUserCourses & openCoursePlayer (igual ao anterior) ...
+    
     async function loadUserCourses() {
         if(!userCourseListContainer) return;
         userCourseListContainer.innerHTML = '<div class="loader"></div>';
@@ -514,6 +540,50 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('close-course-viewer').addEventListener('click', () => {
             document.getElementById('course-viewer-modal').classList.add('hidden');
             document.getElementById('video-embed-wrapper').innerHTML = '';
+        });
+    }
+
+    // --- LÓGICA DE SALA DE TESTE ---
+    const quickActionsPanel = document.getElementById('quick-actions-panel');
+    const createTestBtn = document.getElementById('create-test-room-btn');
+
+    // 1. Mostrar painel para Host/Admin
+    if (loggedInUser.role === 'admin' || loggedInUser.role === 'host') {
+        if(quickActionsPanel) quickActionsPanel.classList.remove('hidden');
+    }
+
+    // 2. Criar a Sala
+    if(createTestBtn) {
+        createTestBtn.addEventListener('click', async () => {
+            const originalText = createTestBtn.innerHTML;
+            createTestBtn.textContent = "Criando...";
+            createTestBtn.disabled = true;
+
+            try {
+                // Cria um agendamento especial do tipo 'test'
+                const testSession = {
+                    type: 'test', // Flag importante!
+                    gameName: "Sala de Teste e Calibragem",
+                    hostId: loggedInUser.username,
+                    hostName: loggedInUser.name,
+                    date: new Date().toISOString().split('T')[0],
+                    time: "Agora",
+                    status: 'confirmed',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    // Note que não tem 'userId' específico, pois é pública para quem tem o link
+                };
+
+                const docRef = await db.collection('bookings').add(testSession);
+                
+                // Redireciona o Host para a sala de controle
+                window.location.href = `sala-host.html?bookingId=${docRef.id}&mode=test`;
+
+            } catch (error) {
+                console.error("Erro ao criar teste:", error);
+                alert("Erro ao criar sala.");
+                createTestBtn.innerHTML = originalText;
+                createTestBtn.disabled = false;
+            }
         });
     }
 
