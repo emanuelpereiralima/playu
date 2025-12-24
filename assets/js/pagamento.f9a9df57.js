@@ -30,15 +30,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const imgEl = document.getElementById('summary-img');
     if(imgEl) imgEl.src = bookingData.coverImage || 'assets/images/logo.png';
 
-    // 3. Função para Finalizar o Agendamento (Salvar no Firebase)
+    // 3. Função para Finalizar o Agendamento
     async function finalizeBooking(method) {
-        // Mostra Loading (pode adicionar um overlay visual aqui)
         const btn = document.querySelector('button[type="submit"]') || document.getElementById('simulate-pix-btn');
+        const originalText = btn.textContent;
         btn.textContent = "Processando...";
         btn.disabled = true;
 
         try {
-            // Cria o objeto final para o banco
+            // A. Buscar o E-mail do Host (Baseado no hostId salvo anteriormente)
+            let hostEmail = "admin@playu.com"; // Fallback
+            
+            if (bookingData.hostId) {
+                const hostDoc = await db.collection('users').doc(bookingData.hostId).get();
+                if (hostDoc.exists) {
+                    hostEmail = hostDoc.data().email;
+                }
+            }
+
+            // B. Salvar Agendamento na coleção 'bookings'
             const finalBooking = {
                 gameId: bookingData.gameId,
                 gameName: bookingData.gameName,
@@ -55,45 +65,62 @@ document.addEventListener('DOMContentLoaded', () => {
                 bookingDate: firebase.firestore.FieldValue.serverTimestamp()
             };
 
-            // Salva na coleção 'bookings'
-            const docRef = await db.collection('bookings').add(finalBooking);
+            await db.collection('bookings').add(finalBooking);
 
-            // Limpa dados temporários
+            // C. Disparar Email via Extensão (Escrevendo na coleção 'mail')
+            // A extensão lê este documento e envia o email automaticamente
+            await db.collection('mail').add({
+                to: hostEmail, // Envia para o Host
+                cc: loggedInUser.email, // Cópia para o Jogador (opcional)
+                message: {
+                    subject: `Nova Sessão Confirmada: ${bookingData.gameName}`,
+                    html: `
+                        <div style="font-family: Arial, sans-serif; color: #333;">
+                            <h2 style="color: #E94560;">Novo Agendamento Recebido!</h2>
+                            <p>Olá Host, você tem uma nova sessão confirmada.</p>
+                            <hr>
+                            <p><strong>Jogo:</strong> ${bookingData.gameName}</p>
+                            <p><strong>Jogador:</strong> ${loggedInUser.name} (${loggedInUser.email})</p>
+                            <p><strong>Data:</strong> ${bookingData.date.split('-').reverse().join('/')}</p>
+                            <p><strong>Horário:</strong> ${bookingData.time}</p>
+                            <p><strong>Valor:</strong> ${bookingData.price}</p>
+                            <hr>
+                            <p>Acesse seu painel para iniciar a sala.</p>
+                        </div>
+                    `
+                }
+            });
+
+            console.log("Solicitação de email enviada para a fila.");
+
+            // D. Limpeza e Redirecionamento
             sessionStorage.removeItem('pendingBooking');
             sessionStorage.removeItem('redirectAfterLogin');
 
-            // Sucesso!
-            alert(`Pagamento aprovado!\nSeu jogo está agendado para ${finalBooking.date} às ${finalBooking.time}.`);
-            
-            // Redireciona para o Dashboard onde ele verá o agendamento
+            alert(`Pagamento aprovado!\n\nO agendamento foi confirmado e o e-mail enviado.`);
             window.location.href = 'dashboard.html';
 
         } catch (error) {
-            console.error("Erro ao salvar agendamento:", error);
-            alert("Houve um erro ao processar seu agendamento. O pagamento não foi cobrado. Tente novamente.");
-            btn.textContent = "Tentar Novamente";
+            console.error("Erro crítico:", error);
+            alert("Erro ao processar. Tente novamente.");
+            btn.textContent = originalText;
             btn.disabled = false;
         }
     }
 
-    // 4. Event Listeners dos botões de pagamento
-
-    // Cartão de Crédito
+    // 4. Event Listeners
     const paymentForm = document.getElementById('payment-form');
     if (paymentForm) {
         paymentForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            // Aqui entraria a integração real com Stripe/Pagar.me
-            // Simulamos um delay de 2 segundos
-            setTimeout(() => finalizeBooking('Credit Card'), 1500);
+            finalizeBooking('Credit Card');
         });
     }
 
-    // PIX
     const pixBtn = document.getElementById('simulate-pix-btn');
     if (pixBtn) {
         pixBtn.addEventListener('click', () => {
-            setTimeout(() => finalizeBooking('PIX'), 1500);
+            finalizeBooking('PIX');
         });
     }
 });

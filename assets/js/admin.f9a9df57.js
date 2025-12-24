@@ -257,7 +257,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Setup do Modal de Jogo ---
+    // --- Setup do Modal de Jogo ---
     function setupGameModalLogic() {
+        // CONSTANTES DE TAMANHO
+        const MAX_IMG_SIZE = 10 * 1024 * 1024; // 10MB
+        const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB
+
+        // Elementos de Upload e Aviso
+        const trailerUploadInput = document.getElementById('admin-trailer-upload');
+        const trailerStatus = document.getElementById('trailer-upload-status');
+        const warningBox = document.getElementById('file-size-warning');
+        const warningText = document.getElementById('warning-text');
+        const compressLink = document.getElementById('compression-tool-link');
+
         const closeModal = () => {
             createGameModal.classList.add('hidden');
             createGameForm.reset();
@@ -265,6 +277,7 @@ document.addEventListener('DOMContentLoaded', () => {
             coverPreview.style.display = 'none';
             currentTags = [];
             renderTags();
+            warningBox.classList.add('hidden'); // Esconde aviso ao fechar
             const modalContent = document.querySelector('#create-game-modal .modal-content');
             if(modalContent) modalContent.classList.remove('mode-schedule');
         };
@@ -278,6 +291,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if(id) deleteGame(id);
         });
 
+        // Preview da URL da Capa
         const urlInput = document.getElementById('new-game-cover');
         urlInput.addEventListener('input', (e) => {
             const url = e.target.value;
@@ -289,9 +303,42 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        // --- FUNÇÃO AUXILIAR: VALIDAÇÃO DE TAMANHO ---
+        function validateFile(file, type) {
+            const limit = type === 'image' ? MAX_IMG_SIZE : MAX_VIDEO_SIZE;
+            const limitMB = type === 'image' ? '10MB' : '100MB';
+            
+            if (file.size > limit) {
+                // Configura o aviso
+                warningText.textContent = `O arquivo selecionado (${(file.size/1024/1024).toFixed(1)}MB) excede o limite de ${limitMB}.`;
+                
+                if (type === 'image') {
+                    compressLink.href = "https://www.iloveimg.com/compress-image";
+                    compressLink.textContent = "Comprimir Imagem Online (Grátis) →";
+                } else {
+                    compressLink.href = "https://www.freeconvert.com/video-compressor";
+                    compressLink.textContent = "Comprimir Vídeo Online (Grátis) →";
+                }
+                
+                warningBox.classList.remove('hidden');
+                return false;
+            }
+            
+            warningBox.classList.add('hidden');
+            return true;
+        }
+
+        // --- UPLOAD DE CAPA (IMAGEM) ---
         coverUploadInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
+
+            // Validação 10MB
+            if (!validateFile(file, 'image')) {
+                coverUploadInput.value = ''; // Limpa o input
+                return;
+            }
+
             uploadStatus.textContent = "Enviando...";
             uploadStatus.style.display = "block";
             uploadStatus.style.color = "#ffbb00";
@@ -312,7 +359,58 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        // --- UPLOAD DE TRAILER (VÍDEO) ---
+        if(trailerUploadInput) {
+            trailerUploadInput.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                // Validação 100MB
+                if (!validateFile(file, 'video')) {
+                    trailerUploadInput.value = ''; // Limpa o input
+                    return;
+                }
+
+                trailerStatus.textContent = "Enviando vídeo (aguarde)...";
+                trailerStatus.style.display = "inline-block";
+                trailerStatus.style.color = "#ffbb00";
+
+                try {
+                    const storageRef = firebase.storage().ref();
+                    const fileRef = storageRef.child(`game-trailers/${Date.now()}_${file.name}`);
+                    
+                    // Upload com monitoramento simples
+                    const task = fileRef.put(file);
+                    
+                    task.on('state_changed', 
+                        (snapshot) => {
+                            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                            trailerStatus.textContent = `Enviando: ${Math.round(progress)}%`;
+                        },
+                        (error) => {
+                            console.error("Erro vídeo:", error);
+                            trailerStatus.textContent = "Erro no upload.";
+                            trailerStatus.style.color = "#ff3b3b";
+                        },
+                        async () => {
+                            const url = await task.snapshot.ref.getDownloadURL();
+                            document.getElementById('new-game-trailer').value = url;
+                            trailerStatus.textContent = "Vídeo carregado!";
+                            trailerStatus.style.color = "#00ff88";
+                        }
+                    );
+
+                } catch (error) {
+                    console.error("Erro upload:", error);
+                    trailerStatus.textContent = "Erro geral.";
+                }
+            });
+        }
+
+        // ... (O resto da função: Eventos de Tags, Submit Form, etc. continua IGUAL) ...
+        
         if (tagInput) {
+            // ... (código existente das tags) ...
             tagInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' || e.key === ',') {
                     e.preventDefault();
@@ -344,6 +442,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        // Submit do Jogo
         createGameForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             saveGameBtn.textContent = "Salvando...";
@@ -352,10 +451,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const gameId = gameIdHidden.value;
             const isEditMode = !!gameId;
 
+            // Dados
             const name = document.getElementById('new-game-name').value;
             const status = document.getElementById('new-game-status').value;
             const duration = document.getElementById('new-game-duration').value;
-            const price = document.getElementById('new-game-price').value;
+            const price = document.getElementById('new-game-price').value; 
             const tags = currentTags; 
             const shortDesc = document.getElementById('new-game-short-desc').value;
             const fullDesc = document.getElementById('new-game-full-desc').value;
@@ -373,7 +473,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 .replace(/^-|-$/g, '');
 
             const gameData = {
-                name, slug, status, sessionDuration: duration, price: price,
+                name, slug, status, 
+                sessionDuration: duration,
+                price: price,
                 tags, shortDescription: shortDesc, fullDescription: fullDesc,
                 coverImage: coverUrl, galleryImages, videoPreview: trailerUrl,
                 isPaused
@@ -420,6 +522,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        // Configuração de Abas da Agenda
         document.getElementById('tab-calendar-view').addEventListener('click', (e) => {
             document.getElementById('schedule-view-calendar').classList.remove('hidden');
             document.getElementById('schedule-view-bulk').classList.add('hidden');
@@ -437,6 +540,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // --- 5. CARREGAR LISTA DE JOGOS (COM NOVOS BOTÕES) ---
     async function loadAllGames() {
         if(!gameListContainer) return;
         gameListContainer.innerHTML = '<div class="loader"></div>';
@@ -457,31 +561,87 @@ document.addEventListener('DOMContentLoaded', () => {
                 const card = document.createElement('div');
                 card.className = 'game-card';
                 
+                // Badge de Status
                 let statusBadge = `<span style="font-size:0.8rem; color:#888;">${game.status}</span>`;
                 if(game.status === 'available') statusBadge = `<span style="font-size:0.8rem; color:#00ff88;">● Disponível</span>`;
                 if(game.status === 'paused') statusBadge = `<span style="font-size:0.8rem; color:#ffbb00;">● Pausado</span>`;
 
+                // Layout Atualizado dos Botões (Texto + Ícone)
                 card.innerHTML = `
                     <img src="${game.coverImage || 'assets/images/logo.png'}" class="game-card-img" style="height:150px">
                     <div class="game-card-content">
-                        <h3>${game.name}</h3>
-                        <p>${statusBadge}</p>
-                        <div style="margin-top:auto; display:flex; gap:10px;">
-                            <button class="submit-btn small-btn edit-game-trigger" data-id="${doc.id}" title="Editar Tudo"><ion-icon name="create-outline"></ion-icon></button>
-                            <button class="submit-btn small-btn schedule-game-trigger" style="background-color: var(--primary-color-dark); border: 1px solid var(--border-color);" data-id="${doc.id}" title="Apenas Agenda"><ion-icon name="calendar-outline"></ion-icon></button>
-                            <button class="submit-btn danger-btn small-btn delete-game-trigger" data-id="${doc.id}" title="Excluir"><ion-icon name="trash-outline"></ion-icon></button>
+                        <div style="margin-bottom: 1rem;">
+                            <h3 style="margin-bottom: 0.2rem;">${game.name}</h3>
+                            <p>${statusBadge}</p>
+                        </div>
+                        
+                        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: auto;">
+                            <button class="submit-btn small-btn edit-game-trigger" data-id="${doc.id}" style="width:100%; justify-content: flex-start;">
+                                <ion-icon name="create-outline"></ion-icon> Editar Detalhes
+                            </button>
+                            
+                            <button class="submit-btn small-btn schedule-game-trigger" data-id="${doc.id}" style="width:100%; justify-content: flex-start; background-color: var(--primary-color-dark); border: 1px solid var(--border-color);">
+                                <ion-icon name="calendar-outline"></ion-icon> Gerenciar Agenda
+                            </button>
+
+                            <button class="submit-btn small-btn test-room-trigger" data-id="${doc.id}" data-name="${game.name}" style="width:100%; justify-content: flex-start; background-color: rgba(0, 255, 136, 0.1); border: 1px solid #00ff88; color: #00ff88;">
+                                <ion-icon name="flask-outline"></ion-icon> Sala de Teste
+                            </button>
+                            
+                            <button class="submit-btn danger-btn small-btn delete-game-trigger" data-id="${doc.id}" style="width:100%; justify-content: flex-start; margin-top: 5px;">
+                                <ion-icon name="trash-outline"></ion-icon> Excluir Jogo
+                            </button>
                         </div>
                     </div>
                 `;
                 gameListContainer.appendChild(card);
             });
             
+            // Listeners
             document.querySelectorAll('.edit-game-trigger').forEach(btn => btn.addEventListener('click', (e) => openGameModal(e.currentTarget.dataset.id)));
-            document.querySelectorAll('.delete-game-trigger').forEach(btn => btn.addEventListener('click', (e) => deleteGame(e.currentTarget.dataset.id)));
             document.querySelectorAll('.schedule-game-trigger').forEach(btn => btn.addEventListener('click', (e) => openScheduleOnly(e.currentTarget.dataset.id)));
+            document.querySelectorAll('.delete-game-trigger').forEach(btn => btn.addEventListener('click', (e) => deleteGame(e.currentTarget.dataset.id)));
+            
+            // Listener da Sala de Teste
+            document.querySelectorAll('.test-room-trigger').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    // Pega o botão clicado (target ou closest) para garantir acesso ao dataset
+                    const target = e.currentTarget;
+                    createFixedTestRoom(target.dataset.id, target.dataset.name);
+                });
+            });
 
         } catch (error) { console.error("Erro games:", error); }
     }
+
+    // --- NOVA FUNÇÃO: SALA DE TESTE FIXA ---
+    window.createFixedTestRoom = async (gameId, gameName) => {
+        // Gera um ID fixo para o teste deste jogo
+        const fixedBookingId = `test-${gameId}`;
+        
+        try {
+            // Usa .set() com merge: true
+            // Isso cria se não existir, ou atualiza se já existir (sem duplicar)
+            await db.collection('bookings').doc(fixedBookingId).set({
+                type: 'test', // Flag para ignorar validações de horário
+                gameId: gameId,
+                gameName: gameName,
+                hostId: loggedInUser.username,
+                hostName: loggedInUser.name,
+                date: new Date().toISOString().split('T')[0], // Atualiza data para hoje
+                time: "Sessão de Teste",
+                status: 'confirmed',
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+
+            // Redireciona para a sala do host em modo teste
+            window.location.href = `sala-host.html?bookingId=${fixedBookingId}&mode=test`;
+
+        } catch (error) {
+            console.error("Erro ao criar sala de teste:", error);
+            alert("Erro ao iniciar teste.");
+        }
+    };
 
     window.deleteGame = async (gameId) => {
         if (!confirm("TEM CERTEZA? Isso apagará o jogo permanentemente.")) return;
