@@ -795,6 +795,44 @@ input:checked + .slider:before { transform: translateX(26px); }
     max-width: 600px;
 }
 
+/* Aviso de Arquivo Muito Grande */
+.compression-alert {
+    background-color: rgba(255, 187, 0, 0.15);
+    border: 1px solid #ffbb00;
+    color: #ffbb00;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    animation: fadeIn 0.3s;
+}
+
+.compression-alert strong {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.compression-link {
+    color: white;
+    text-decoration: underline;
+    font-weight: bold;
+    cursor: pointer;
+}
+.compression-link:hover {
+    color: var(--secondary-color);
+}
+
+/* Ajuste para botões com texto no card */
+.game-card-content .submit-btn {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0.6rem 1rem;
+}
+
 /* =========================================
    6. MEDIA QUERIES
    ========================================= */

@@ -114,7 +114,34 @@
                             <div class="form-group"><label>Descrição Completa *</label><textarea id="new-game-full-desc" rows="4" required></textarea></div>
                             <div class="form-group" style="background:rgba(0,0,0,0.2);padding:1rem;border-radius:8px;margin-top:1rem;"><label>Capa *</label><label for="admin-cover-upload" class="upload-label"><ion-icon name="cloud-upload-outline"></ion-icon><span>Enviar</span></label><input type="file" id="admin-cover-upload" accept="image/*" style="display:none;"><p id="upload-status" class="form-hint" style="display:none;">Enviando...</p><label class="form-label-or">Ou URL:</label><input type="url" id="new-game-cover" required><img id="admin-cover-preview" src="" style="max-height:150px;margin-top:10px;display:none;border-radius:5px;"></div>
                         </div>
-                        <div id="game-media-section" class="form-section hidden" style="margin-top:1.5rem;border-top:1px solid var(--border-color);padding-top:1rem;"><h4>Mídia Adicional</h4><div class="form-group"><label>Galeria (URLs)</label><textarea id="new-game-gallery" rows="2"></textarea></div><div class="form-group"><label>Trailer (URL)</label><input type="url" id="new-game-trailer"></div></div>
+                        <div id="game-media-section" class="form-section hidden" style="margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+                            <h4>Mídia Adicional</h4>
+                            
+                            <div id="file-size-warning" class="compression-alert hidden">
+                                <strong><ion-icon name="warning-outline"></ion-icon> Arquivo muito grande!</strong>
+                                <p id="warning-text">O limite é 10MB para fotos e 100MB para vídeos.</p>
+                                <a id="compression-tool-link" href="#" target="_blank" class="compression-link">Clique aqui para comprimir seu arquivo grátis &rarr;</a>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Galeria (URLs separadas por vírgula)</label>
+                                <textarea id="new-game-gallery" rows="2"></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Trailer</label>
+                                <div style="margin-bottom: 0.5rem;">
+                                    <label for="admin-trailer-upload" class="upload-label" style="display:inline-flex;">
+                                        <ion-icon name="videocam-outline"></ion-icon> <span>Enviar Vídeo (MP4)</span>
+                                    </label>
+                                    <input type="file" id="admin-trailer-upload" accept="video/mp4,video/webm" style="display: none;">
+                                    <span id="trailer-upload-status" class="form-hint" style="margin-left: 10px; display: none;">Enviando...</span>
+                                </div>
+                                
+                                <label class="form-label-or" style="font-size: 0.9rem;">Ou cole a URL (YouTube/Vimeo):</label>
+                                <input type="url" id="new-game-trailer" placeholder="https://youtube.com/...">
+                            </div>
+                        </div>
                         <div class="modal-footer"><button type="button" id="delete-game-btn" class="submit-btn danger-btn hidden"><ion-icon name="trash-outline"></ion-icon></button><div class="right-buttons"><button type="button" id="cancel-create-game-btn" class="submit-btn secondary-btn">Cancelar</button><button type="submit" id="save-game-submit-btn" class="submit-btn primary-btn">Criar Jogo</button></div></div>
                     </form>
                 </div>
