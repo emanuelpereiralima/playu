@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // =========================================================================
     // 1. VERIFICAÇÃO DE HOST
     // =========================================================================
+    // 1. Verifica se está logado
     if (!loggedInUser || (loggedInUser.role !== 'host' && loggedInUser.role !== 'admin')) {
         alert("Acesso restrito ao Host.");
         window.location.href = 'index.html';
@@ -35,12 +36,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!bookingId) {
         alert("ID da sessão não encontrado.");
-        window.location.href = 'host-panel.html';
+        window.location.href = 'admin.html'; // Volta pro admin
         return;
     }
 
-    // Inicializa Referência e UI
-    roomRef = db.collection('sessions').doc(bookingId);
+    // Inicializa Referência
+    roomRef = db.collection('sessions').doc(bookingId);;
+
+    async function ensureSessionExists() {
+        try {
+            const doc = await roomRef.get();
+            if (!doc.exists) {
+                // Cria documento vazio da sessão para sinalização WebRTC
+                await roomRef.set({
+                    created: firebase.firestore.FieldValue.serverTimestamp(),
+                    hostStatus: 'online'
+                });
+            }
+        } catch (e) {
+            console.error("Erro ao verificar sessão:", e);
+        }
+    }
+    
+    // Chama a garantia antes de iniciar
+    ensureSessionExists().then(() => {
+        // Inicia tudo
+        startHost();
+    });
     
     // --- LÓGICA DE MODO DE TESTE (LINK DE CONVITE) ---
     if (isTestMode) {
