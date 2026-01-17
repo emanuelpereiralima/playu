@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel Admin - PlayU</title>
-    <script src="assets/js/version.f9a9df57.js"></script>
+    <script src="assets/js/version.9d81c659.js"></script>
     <script>
         function loadAsset(path) {
             const version = typeof SITE_VERSION !== 'undefined' ? SITE_VERSION : new Date().getTime();
@@ -187,6 +187,28 @@
         </div>
     </div>
 
+    <div id="delete-confirm-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
+            <div style="margin-bottom: 1rem;">
+                <ion-icon name="warning-outline" style="font-size: 3rem; color: #ff4f4f;"></ion-icon>
+            </div>
+            <h3 style="color: #ff4f4f;">Excluir Jogo?</h3>
+            <p style="margin-bottom: 1rem; opacity: 0.8;">Esta ação é irreversível. Todas as sessões e dados deste jogo serão apagados.</p>
+            
+            <p style="margin-bottom: 0.5rem; font-size: 0.9rem;">Para confirmar, digite o nome do jogo abaixo:</p>
+            <div style="margin-bottom: 1.5rem;">
+                <span id="delete-game-name-display" class="delete-confirmation-highlight">NOME DO JOGO</span>
+            </div>
+
+            <input type="text" id="delete-verification-input" placeholder="Digite o nome do jogo aqui" class="form-group" style="width: 100%; text-align: center; border-color: #ff4f4f;">
+            
+            <div class="modal-footer" style="justify-content: center; gap: 10px; border-top: none; padding-top: 0;">
+                <button id="cancel-delete-modal-btn" class="submit-btn secondary-btn">Cancelar</button>
+                <button id="confirm-delete-action-btn" class="submit-btn danger-btn" disabled>Excluir Permanentemente</button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
@@ -194,10 +216,10 @@
 
     <script src="assets/js/firebase-config.js"></script>
     <script>
-        loadAsset('assets/css/style.f9a9df57.css');
+        loadAsset('assets/css/style.9d81c659.css');
         loadAsset('https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js');
         loadAsset('https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js');
-        loadAsset('assets/js/admin.f9a9df57.js');
+        loadAsset('assets/js/admin.9d81c659.js');
     </script>
 </body>
 </html>

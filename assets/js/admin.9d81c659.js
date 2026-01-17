@@ -540,7 +540,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- 5. CARREGAR LISTA DE JOGOS (COM NOVOS BOTÕES) ---
+   // --- 5. CARREGAR LISTA DE JOGOS (LAYOUT EM GRADE) ---
     async function loadAllGames() {
         if(!gameListContainer) return;
         gameListContainer.innerHTML = '<div class="loader"></div>';
@@ -561,35 +561,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 const card = document.createElement('div');
                 card.className = 'game-card';
                 
-                // Badge de Status
                 let statusBadge = `<span style="font-size:0.8rem; color:#888;">${game.status}</span>`;
                 if(game.status === 'available') statusBadge = `<span style="font-size:0.8rem; color:#00ff88;">● Disponível</span>`;
                 if(game.status === 'paused') statusBadge = `<span style="font-size:0.8rem; color:#ffbb00;">● Pausado</span>`;
 
-                // Layout Atualizado dos Botões (Texto + Ícone)
                 card.innerHTML = `
+                    <button class="delete-corner-btn delete-game-trigger" data-id="${doc.id}" data-name="${game.name}" title="Excluir Jogo">
+                        <ion-icon name="trash-outline"></ion-icon>
+                    </button>
+
                     <img src="${game.coverImage || 'assets/images/logo.png'}" class="game-card-img" style="height:150px">
+                    
                     <div class="game-card-content">
                         <div style="margin-bottom: 1rem;">
-                            <h3 style="margin-bottom: 0.2rem;">${game.name}</h3>
+                            <h3 style="margin-bottom: 0.2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${game.name}</h3>
                             <p>${statusBadge}</p>
                         </div>
                         
-                        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: auto;">
-                            <button class="submit-btn small-btn edit-game-trigger" data-id="${doc.id}" style="width:100%; justify-content: flex-start;">
-                                <ion-icon name="create-outline"></ion-icon> Editar Detalhes
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: auto;">
+                            
+                            <button class="submit-btn small-btn edit-game-trigger" data-id="${doc.id}" style="width:100%; justify-content: center; padding: 0.5rem; font-size: 0.85rem;" title="Editar">
+                                <ion-icon name="create-outline"></ion-icon> Editar
                             </button>
                             
-                            <button class="submit-btn small-btn schedule-game-trigger" data-id="${doc.id}" style="width:100%; justify-content: flex-start; background-color: var(--primary-color-dark); border: 1px solid var(--border-color);">
-                                <ion-icon name="calendar-outline"></ion-icon> Gerenciar Agenda
+                            <button class="submit-btn small-btn schedule-game-trigger" data-id="${doc.id}" style="width:100%; justify-content: center; background-color: var(--primary-color-dark); border: 1px solid var(--border-color); padding: 0.5rem; font-size: 0.85rem;" title="Agenda">
+                                <ion-icon name="calendar-outline"></ion-icon> Agenda
                             </button>
 
-                            <button class="submit-btn small-btn test-room-trigger" data-id="${doc.id}" data-name="${game.name}" style="width:100%; justify-content: flex-start; background-color: rgba(0, 255, 136, 0.1); border: 1px solid #00ff88; color: #00ff88;">
-                                <ion-icon name="flask-outline"></ion-icon> Sala de Teste
-                            </button>
-                            
-                            <button class="submit-btn danger-btn small-btn delete-game-trigger" data-id="${doc.id}" style="width:100%; justify-content: flex-start; margin-top: 5px;">
-                                <ion-icon name="trash-outline"></ion-icon> Excluir Jogo
+                            <button class="submit-btn small-btn test-room-trigger" data-id="${doc.id}" data-name="${game.name}" style="grid-column: span 2; width:100%; justify-content: center; background-color: rgba(0, 255, 136, 0.1); border: 1px solid #00ff88; color: #00ff88;">
+                                <ion-icon name="flask-outline"></ion-icon> Abrir Sala de Teste
                             </button>
                         </div>
                     </div>
@@ -600,18 +600,93 @@ document.addEventListener('DOMContentLoaded', () => {
             // Listeners
             document.querySelectorAll('.edit-game-trigger').forEach(btn => btn.addEventListener('click', (e) => openGameModal(e.currentTarget.dataset.id)));
             document.querySelectorAll('.schedule-game-trigger').forEach(btn => btn.addEventListener('click', (e) => openScheduleOnly(e.currentTarget.dataset.id)));
-            document.querySelectorAll('.delete-game-trigger').forEach(btn => btn.addEventListener('click', (e) => deleteGame(e.currentTarget.dataset.id)));
-            
-            // Listener da Sala de Teste
             document.querySelectorAll('.test-room-trigger').forEach(btn => {
                 btn.addEventListener('click', (e) => {
-                    // Pega o botão clicado (target ou closest) para garantir acesso ao dataset
                     const target = e.currentTarget;
                     createFixedTestRoom(target.dataset.id, target.dataset.name);
                 });
             });
 
+            // Listener de Exclusão
+            document.querySelectorAll('.delete-game-trigger').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const target = e.currentTarget; 
+                    openDeleteConfirmModal(target.dataset.id, target.dataset.name);
+                });
+            });
+
         } catch (error) { console.error("Erro games:", error); }
+    }
+
+    // --- LÓGICA DO MODAL DE EXCLUSÃO SEGURA ---
+    let gameToDeleteId = null;
+    let gameToDeleteName = null;
+    
+    const deleteModal = document.getElementById('delete-confirm-modal');
+    const deleteInput = document.getElementById('delete-verification-input');
+    const confirmDeleteBtn = document.getElementById('confirm-delete-action-btn');
+    const cancelDeleteBtn = document.getElementById('cancel-delete-modal-btn');
+    const gameNameDisplay = document.getElementById('delete-game-name-display');
+
+    window.openDeleteConfirmModal = (id, name) => {
+        gameToDeleteId = id;
+        gameToDeleteName = name;
+        
+        gameNameDisplay.textContent = name;
+        deleteInput.value = '';
+        confirmDeleteBtn.disabled = true;
+        confirmDeleteBtn.style.opacity = '0.5';
+        
+        deleteModal.classList.remove('hidden');
+        deleteInput.focus();
+    };
+
+    // Verifica o texto digitado
+    if (deleteInput) {
+        deleteInput.addEventListener('input', (e) => {
+            if (e.target.value === gameToDeleteName) {
+                confirmDeleteBtn.disabled = false;
+                confirmDeleteBtn.style.opacity = '1';
+            } else {
+                confirmDeleteBtn.disabled = true;
+                confirmDeleteBtn.style.opacity = '0.5';
+            }
+        });
+    }
+
+    if (cancelDeleteBtn) {
+        cancelDeleteBtn.addEventListener('click', () => {
+            deleteModal.classList.add('hidden');
+            gameToDeleteId = null;
+        });
+    }
+
+    if (confirmDeleteBtn) {
+        confirmDeleteBtn.addEventListener('click', async () => {
+            if (!gameToDeleteId) return;
+            
+            const originalText = confirmDeleteBtn.textContent;
+            confirmDeleteBtn.textContent = "Excluindo...";
+            
+            try {
+                // Deleta o jogo
+                await db.collection('games').doc(gameToDeleteId).delete();
+                
+                // (Opcional) Deletar agendamentos relacionados poderia ser feito via Cloud Functions
+                // ou manualmente aqui se quiser fazer uma varredura.
+                
+                alert(`O jogo "${gameToDeleteName}" foi excluído.`);
+                localStorage.removeItem('games');
+                
+                deleteModal.classList.add('hidden');
+                loadAllGames(); // Recarrega a lista
+            } catch (error) {
+                console.error(error);
+                alert("Erro ao excluir.");
+            } finally {
+                confirmDeleteBtn.textContent = originalText;
+            }
+        });
     }
 
     // --- NOVA FUNÇÃO: SALA DE TESTE FIXA ---
