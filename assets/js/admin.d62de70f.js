@@ -23,9 +23,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeCreateGameModal = document.getElementById('close-create-game-modal');
     const cancelCreateGameBtn = document.getElementById('cancel-create-game-btn');
     const saveGameBtn = document.getElementById('save-game-submit-btn');
-    const gameIdHidden = document.getElementById('game-id-hidden');
+    const gameIdHidden = document.getElementById('game-id'); // Corrigido ID
     const mediaSection = document.getElementById('game-media-section');
-    const deleteGameBtn = document.getElementById('delete-game-btn');
+    const deleteGameBtn = document.getElementById('delete-game-btn'); // Pode não existir no HTML atual, trataremos isso
     const coverUploadInput = document.getElementById('admin-cover-upload');
     const uploadStatus = document.getElementById('upload-status');
     const coverPreview = document.getElementById('admin-cover-preview');
@@ -86,7 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        userGreeting.textContent = `Olá, ${loggedInUser.name.split(' ')[0]}`;
+        if(userGreeting) userGreeting.textContent = `Olá, ${loggedInUser.name.split(' ')[0]}`;
         
         setupLogout();
         setupUserSearch();
@@ -97,7 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function setupLogout() {
-        logoutBtn.addEventListener('click', () => {
+        if(logoutBtn) logoutBtn.addEventListener('click', () => {
             sessionStorage.removeItem('loggedInUser');
             if(auth) auth.signOut();
             window.location.href = 'index.html';
@@ -106,7 +106,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.switchAdminTab = (tabId) => {
         document.querySelectorAll('.dashboard-section').forEach(s => s.classList.add('hidden-section'));
-        document.getElementById(tabId).classList.remove('hidden-section');
+        const target = document.getElementById(tabId);
+        if(target) target.classList.remove('hidden-section');
         
         document.querySelectorAll('.dashboard-tabs .tab-btn').forEach(b => b.classList.remove('active'));
         const btns = document.querySelectorAll('.dashboard-tabs .tab-btn');
@@ -168,10 +169,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function setupUserModalLogic() {
         const close = () => editUserModal.classList.add('hidden');
-        document.getElementById('close-user-modal').addEventListener('click', close);
-        document.getElementById('cancel-edit-btn').addEventListener('click', close);
+        if(document.getElementById('close-user-modal')) document.getElementById('close-user-modal').addEventListener('click', close);
+        if(document.getElementById('cancel-edit-btn')) document.getElementById('cancel-edit-btn').addEventListener('click', close);
 
-        editUserForm.addEventListener('submit', async (e) => {
+        if(editUserForm) editUserForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const uid = document.getElementById('edit-user-id').value;
             const newName = document.getElementById('edit-user-name').value;
@@ -184,7 +185,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (error) { alert("Erro ao atualizar."); }
         });
 
-        document.getElementById('delete-user-btn').addEventListener('click', async () => {
+        if(document.getElementById('delete-user-btn')) document.getElementById('delete-user-btn').addEventListener('click', async () => {
             const uid = document.getElementById('edit-user-id').value;
             if (uid === loggedInUser.username) return alert("Não pode excluir a si mesmo.");
             if (!confirm("Excluir este usuário permanentemente?")) return;
@@ -283,6 +284,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // --- FUNÇÃO PARA RENDERIZAR GALERIA ---
         window.renderGallery = () => {
+            if(!galleryGrid) return;
             galleryGrid.innerHTML = '';
             currentGalleryUrls.forEach((url, index) => {
                 const item = document.createElement('div');
@@ -296,17 +298,17 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         if(checkExtraLife) {
-        checkExtraLife.addEventListener('change', (e) => {
-            if (e.target.checked) {
-                extraLifeContainer.classList.remove('hidden');
-                extraLifeInput.required = true; // Torna obrigatório se marcado
-            } else {
-                extraLifeContainer.classList.add('hidden');
-                extraLifeInput.required = false;
-                extraLifeInput.value = ''; // Limpa valor
-            }
-        });
-    }
+            checkExtraLife.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    extraLifeContainer.classList.remove('hidden');
+                    extraLifeInput.required = true; // Torna obrigatório se marcado
+                } else {
+                    extraLifeContainer.classList.add('hidden');
+                    extraLifeInput.required = false;
+                    extraLifeInput.value = ''; // Limpa valor
+                }
+            });
+        }
 
         // Função global para remover item (precisa ser global para o onclick funcionar)
         window.removeGalleryItem = (index) => {
@@ -315,15 +317,11 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         // --- INTERCEPTAR A ABERTURA DO MODAL PARA CARREGAR GALERIA ---
-        const originalOpenGameModal = window.openGameModal;
-        window.openGameModal = (gameId) => {
-            // Chama a lógica original de preencher campos
-            // Precisamos duplicar parte da lógica aqui ou garantir que currentGalleryUrls seja preenchido
-            // Para simplificar, vou reinjetar a lógica de abrir modal aqui:
-            
+        // Definindo window.openGameModal aqui para fechar sobre o escopo de setupGameModalLogic
+        window.openGameModal = async (gameId) => {
             const modal = document.getElementById('create-game-modal');
             const title = document.getElementById('game-modal-title');
-            const btn = document.getElementById('save-game-btn');
+            const btn = document.getElementById('save-game-submit-btn');
             const form = document.getElementById('create-game-form');
             const hiddenId = document.getElementById('game-id');
             const mediaSection = document.getElementById('game-media-section');
@@ -332,27 +330,44 @@ document.addEventListener('DOMContentLoaded', () => {
             // Limpa estado
             form.reset();
             hiddenId.value = '';
-            coverPreview.style.display = 'none';
+            if(coverPreview) coverPreview.style.display = 'none';
+            if(uploadStatus) uploadStatus.style.display = 'none';
             currentTags = [];
             currentGalleryUrls = []; // Reseta galeria
             renderTags();
             window.renderGallery();
             
+            // Limpa agenda
+            if(singleDayEditor) singleDayEditor.classList.add('hidden');
+            bulkTimesArray = [];
+            if(bulkTimesList) bulkTimesList.innerHTML = '';
+            
             // Abas
-            document.getElementById('schedule-placeholder').classList.remove('hidden');
-            document.getElementById('schedule-content').classList.add('hidden');
-            warningBox.classList.add('hidden');
+            if(schedulePlaceholder) schedulePlaceholder.classList.remove('hidden');
+            if(scheduleContent) scheduleContent.classList.add('hidden');
+            if(warningBox) warningBox.classList.add('hidden');
+
+            document.getElementById('schedule-view-calendar').classList.remove('hidden');
+            document.getElementById('schedule-view-bulk').classList.add('hidden');
+            document.getElementById('tab-calendar-view').classList.add('active');
+            document.getElementById('tab-bulk-add').classList.remove('active');
+
+            // Reset Vida Extra
+            if(checkExtraLife) {
+                checkExtraLife.checked = false;
+                extraLifeContainer.classList.add('hidden');
+            }
 
             if (gameId) {
                 // Modo Edição
                 title.textContent = "Editar Jogo";
                 btn.textContent = "Salvar Alterações";
                 hiddenId.value = gameId;
-                mediaSection.classList.remove('hidden');
-                if(deleteBtn) deleteBtn.classList.remove('hidden'); // Botão inferior (se existir)
+                if(mediaSection) mediaSection.classList.remove('hidden');
+                if(deleteBtn) deleteBtn.classList.remove('hidden'); 
                 
-                // Busca dados
-                db.collection('games').doc(gameId).get().then(doc => {
+                try {
+                    const doc = await db.collection('games').doc(gameId).get();
                     if (doc.exists) {
                         const data = doc.data();
                         document.getElementById('new-game-name').value = data.name;
@@ -364,7 +379,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         document.getElementById('new-game-cover').value = data.coverImage || '';
                         document.getElementById('new-game-trailer').value = data.videoPreview || '';
                         
-                        if (data.coverImage) {
+                        if (data.coverImage && coverPreview) {
                             coverPreview.src = data.coverImage;
                             coverPreview.style.display = 'block';
                         }
@@ -377,18 +392,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             window.renderGallery();
                         }
 
-                        // Configura Agenda
-                        currentGameData = { id: doc.id, ...data };
-                        document.getElementById('schedule-placeholder').classList.add('hidden');
-                        document.getElementById('schedule-content').classList.remove('hidden');
-                        renderAdminCalendar();
-
-                        document.getElementById('new-game-name').value = data.name;
-                        
-                        // CARREGA DURAÇÃO E PREÇO
-                        document.getElementById('new-game-duration').value = data.sessionDuration || '';
-                        document.getElementById('new-game-price').value = data.price || ''; 
-                        
                         // CARREGA VIDA EXTRA
                         if (data.hasExtraLife) {
                             checkExtraLife.checked = true;
@@ -400,27 +403,41 @@ document.addEventListener('DOMContentLoaded', () => {
                             extraLifeInput.value = '';
                         }
 
+                        // Configura Agenda
+                        currentGameData = { id: doc.id, ...data };
+                        if(schedulePlaceholder) schedulePlaceholder.classList.add('hidden');
+                        if(scheduleContent) scheduleContent.classList.remove('hidden');
+                        renderAdminCalendar();
                     }
-                });
+                } catch (error) {
+                    console.error("Erro ao carregar jogo", error);
+                }
             } else {
                 // Modo Criação
                 title.textContent = "Criar Novo Jogo";
                 btn.textContent = "Criar Jogo";
-                mediaSection.classList.add('hidden');
+                if(mediaSection) mediaSection.classList.add('hidden');
                 if(deleteBtn) deleteBtn.classList.add('hidden');
+                currentGameData = null;
             }
             modal.classList.remove('hidden');
         };
 
+        // Função Schedule Only (Abre modal já na aba)
+        window.openScheduleOnly = async (gameId) => {
+            await window.openGameModal(gameId);
+            // Simula troca de aba se necessário ou foca
+        };
+
         const closeModal = () => {
             createGameModal.classList.add('hidden');
-            warningBox.classList.add('hidden');
+            if(warningBox) warningBox.classList.add('hidden');
         };
 
         // Listeners de Fechamento
         if (openCreateGameModalBtn) openCreateGameModalBtn.addEventListener('click', () => window.openGameModal(null));
-        closeCreateGameModal.addEventListener('click', closeModal);
-        cancelCreateGameBtn.addEventListener('click', closeModal);
+        if (closeCreateGameModal) closeCreateGameModal.addEventListener('click', closeModal);
+        if (cancelCreateGameBtn) cancelCreateGameBtn.addEventListener('click', closeModal);
 
         // --- VALIDAÇÃO DE TAMANHO ---
         function validateFile(file, type) {
@@ -442,26 +459,28 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // --- UPLOAD DE CAPA ---
-        coverUploadInput.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            if (!validateFile(file, 'image')) { coverUploadInput.value = ''; return; }
+        if(coverUploadInput) {
+            coverUploadInput.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                if (!validateFile(file, 'image')) { coverUploadInput.value = ''; return; }
 
-            uploadStatus.textContent = "Enviando...";
-            uploadStatus.style.display = "block";
-            try {
-                const ref = firebase.storage().ref().child(`game-covers/${Date.now()}_${file.name}`);
-                await ref.put(file);
-                const url = await ref.getDownloadURL();
-                document.getElementById('new-game-cover').value = url;
-                coverPreview.src = url;
-                coverPreview.style.display = 'block';
-                uploadStatus.textContent = "Upload concluído!";
-            } catch (error) {
-                console.error(error);
-                uploadStatus.textContent = "Erro upload.";
-            }
-        });
+                uploadStatus.textContent = "Enviando...";
+                uploadStatus.style.display = "block";
+                try {
+                    const ref = firebase.storage().ref().child(`game-covers/${Date.now()}_${file.name}`);
+                    await ref.put(file);
+                    const url = await ref.getDownloadURL();
+                    document.getElementById('new-game-cover').value = url;
+                    coverPreview.src = url;
+                    coverPreview.style.display = 'block';
+                    uploadStatus.textContent = "Upload concluído!";
+                } catch (error) {
+                    console.error(error);
+                    uploadStatus.textContent = "Erro upload.";
+                }
+            });
+        }
 
         // --- UPLOAD DE GALERIA (MÚLTIPLO) ---
         if (galleryInput) {
@@ -543,7 +562,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // --- TAGS (Código existente mantido simplificado aqui) ---
+        // --- TAGS ---
         if (tagInput) {
             tagInput.addEventListener('keydown', (e) => {
                 if ((e.key === 'Enter' || e.key === ',') && tagInput.value) {
@@ -551,14 +570,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 if (e.key === 'Backspace' && !tagInput.value && currentTags.length) removeTag(currentTags.length - 1);
             });
-            // ... (resto da lógica de sugestão de tags) ...
+            tagInput.addEventListener('input', (e) => {
+                const val = e.target.value.toLowerCase().trim();
+                suggestionsList.innerHTML = '';
+                if (val.length > 0) {
+                    const matches = Array.from(allKnownTags).filter(t => t.toLowerCase().includes(val) && !currentTags.includes(t));
+                    if (matches.length > 0) {
+                        matches.forEach(match => {
+                            const li = document.createElement('li');
+                            li.textContent = match;
+                            li.onclick = () => addTag(match);
+                            suggestionsList.appendChild(li);
+                        });
+                        suggestionsList.classList.add('active');
+                    } else suggestionsList.classList.remove('active');
+                } else suggestionsList.classList.remove('active');
+            });
         }
 
         // --- SUBMIT DO FORMULÁRIO ---
         createGameForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            saveGameBtn.textContent = "Salvando...";
-            saveGameBtn.disabled = true;
+            if(saveGameBtn) {
+                saveGameBtn.textContent = "Salvando...";
+                saveGameBtn.disabled = true;
+            }
 
             const gameId = gameIdHidden.value;
             const isEditMode = !!gameId;
@@ -573,7 +609,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const coverUrl = document.getElementById('new-game-cover').value;
             const trailerUrl = document.getElementById('new-game-trailer').value;
 
-            getElementById('new-game-duration').value; // Agora é number string            
             // CAPTURA DA VIDA EXTRA
             const hasExtraLife = checkExtraLife.checked;
             const extraLifeDuration = hasExtraLife ? document.getElementById('new-game-extra-life-time').value : 0;
@@ -593,7 +628,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 tags: currentTags, 
                 shortDescription: shortDesc, fullDescription: fullDesc,
                 coverImage: coverUrl, 
-                galleryImages: currentGalleryUrls, // <--- USA O ARRAY DA GALERIA
+                galleryImages: currentGalleryUrls, 
                 videoPreview: trailerUrl,
                 isPaused: (status === 'paused')
             };
@@ -621,8 +656,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error("Erro:", error);
                 alert("Erro ao salvar: " + error.message);
             } finally {
-                if(saveGameBtn.textContent !== "Salvar Alterações") saveGameBtn.textContent = isEditMode ? "Salvar Alterações" : "Criar Jogo";
-                saveGameBtn.disabled = false;
+                if(saveGameBtn) {
+                    saveGameBtn.textContent = isEditMode ? "Salvar Alterações" : "Criar Jogo";
+                    saveGameBtn.disabled = false;
+                }
             }
         });
     }
@@ -685,8 +722,8 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             
             // Listeners
-            document.querySelectorAll('.edit-game-trigger').forEach(btn => btn.addEventListener('click', (e) => openGameModal(e.currentTarget.dataset.id)));
-            document.querySelectorAll('.schedule-game-trigger').forEach(btn => btn.addEventListener('click', (e) => openScheduleOnly(e.currentTarget.dataset.id)));
+            document.querySelectorAll('.edit-game-trigger').forEach(btn => btn.addEventListener('click', (e) => window.openGameModal(e.currentTarget.dataset.id)));
+            document.querySelectorAll('.schedule-game-trigger').forEach(btn => btn.addEventListener('click', (e) => window.openScheduleOnly(e.currentTarget.dataset.id)));
             document.querySelectorAll('.test-room-trigger').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     const target = e.currentTarget;
@@ -826,88 +863,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    window.deleteGame = async (gameId) => {
-        if (!confirm("TEM CERTEZA? Isso apagará o jogo permanentemente.")) return;
-        try {
-            await db.collection('games').doc(gameId).delete();
-            alert("Jogo excluído.");
-            localStorage.removeItem('games');
-            createGameModal.classList.add('hidden');
-            loadAllGames();
-        } catch (error) { alert("Erro ao excluir."); }
-    };
-
-    window.openScheduleOnly = async (gameId) => {
-        await openGameModal(gameId);
-        const modalContent = document.querySelector('#create-game-modal .modal-content');
-        if(modalContent) modalContent.classList.add('mode-schedule');
-    };
-
-    window.openGameModal = async (gameId) => {
-        createGameForm.reset();
-        uploadStatus.style.display = 'none';
-        coverPreview.style.display = 'none';
-        currentTags = [];
-        renderTags();
-        singleDayEditor.classList.add('hidden');
-        bulkTimesArray = [];
-        bulkTimesList.innerHTML = '';
-
-        const modalContent = document.querySelector('#create-game-modal .modal-content');
-        if(modalContent) modalContent.classList.remove('mode-schedule');
-
-        document.getElementById('schedule-view-calendar').classList.remove('hidden');
-        document.getElementById('schedule-view-bulk').classList.add('hidden');
-        document.getElementById('tab-calendar-view').classList.add('active');
-        document.getElementById('tab-bulk-add').classList.remove('active');
-
-        if (gameId) {
-            document.getElementById('game-modal-title').textContent = "Gerenciar Jogo";
-            saveGameBtn.textContent = "Salvar Informações";
-            gameIdHidden.value = gameId;
-            
-            mediaSection.classList.remove('hidden');
-            deleteGameBtn.classList.remove('hidden');
-            
-            schedulePlaceholder.classList.add('hidden');
-            scheduleContent.classList.remove('hidden');
-            
-            try {
-                const doc = await db.collection('games').doc(gameId).get();
-                if (doc.exists) {
-                    const data = doc.data();
-                    currentGameData = { id: doc.id, ...data };
-                    
-                    document.getElementById('new-game-name').value = data.name || '';
-                    document.getElementById('new-game-status').value = data.status || 'available';
-                    document.getElementById('new-game-duration').value = data.sessionDuration || '';
-                    document.getElementById('new-game-price').value = data.price || '';
-                    if (data.tags && Array.isArray(data.tags)) { currentTags = data.tags; renderTags(); }
-                    document.getElementById('new-game-short-desc').value = data.shortDescription || '';
-                    document.getElementById('new-game-full-desc').value = data.fullDescription || '';
-                    document.getElementById('new-game-cover').value = data.coverImage || '';
-                    if(data.coverImage) { coverPreview.src = data.coverImage; coverPreview.style.display = 'block'; }
-                    document.getElementById('new-game-gallery').value = (data.galleryImages || []).join(', ');
-                    document.getElementById('new-game-trailer').value = data.videoPreview || '';
-
-                    renderAdminCalendar();
-                }
-            } catch (e) { console.error(e); }
-
-        } else {
-            document.getElementById('game-modal-title').textContent = "Criar Novo Jogo";
-            saveGameBtn.textContent = "Criar Jogo (Libera Agenda)";
-            gameIdHidden.value = "";
-            mediaSection.classList.add('hidden');
-            deleteGameBtn.classList.add('hidden');
-            schedulePlaceholder.classList.remove('hidden');
-            scheduleContent.classList.add('hidden');
-            currentGameData = null;
-        }
-
-        createGameModal.classList.remove('hidden');
-    };
-
     // --- LÓGICA DA AGENDA ---
     
     function renderAdminCalendar() {
@@ -945,8 +900,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    document.getElementById('admin-prev-month').addEventListener('click', () => { currentAdminDate.setMonth(currentAdminDate.getMonth() - 1); renderAdminCalendar(); });
-    document.getElementById('admin-next-month').addEventListener('click', () => { currentAdminDate.setMonth(currentAdminDate.getMonth() + 1); renderAdminCalendar(); });
+    if(document.getElementById('admin-prev-month')) document.getElementById('admin-prev-month').addEventListener('click', () => { currentAdminDate.setMonth(currentAdminDate.getMonth() - 1); renderAdminCalendar(); });
+    if(document.getElementById('admin-next-month')) document.getElementById('admin-next-month').addEventListener('click', () => { currentAdminDate.setMonth(currentAdminDate.getMonth() + 1); renderAdminCalendar(); });
 
     function openSingleDayEditor(dateStr) {
         editingDateStr = dateStr;
@@ -995,7 +950,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    document.getElementById('add-single-time-btn').addEventListener('click', () => {
+    if(document.getElementById('add-single-time-btn')) document.getElementById('add-single-time-btn').addEventListener('click', () => {
         const timeVal = document.getElementById('single-time-input').value;
         if (timeVal) {
             let currentTimes = [];
@@ -1011,7 +966,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderSingleDaySlots(currentTimes);
     };
 
-    document.getElementById('save-single-day-btn').addEventListener('click', async () => {
+    if(document.getElementById('save-single-day-btn')) document.getElementById('save-single-day-btn').addEventListener('click', async () => {
         if (!editingDateStr || !currentGameData) return;
         let newTimes = [];
         singleDaySlots.querySelectorAll('.tag-capsule span:first-child').forEach(el => newTimes.push(el.textContent));
@@ -1029,7 +984,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Bulk
-    document.getElementById('add-bulk-time-btn').addEventListener('click', () => {
+    if(document.getElementById('add-bulk-time-btn')) document.getElementById('add-bulk-time-btn').addEventListener('click', () => {
         const timeVal = document.getElementById('bulk-time-input').value;
         if (timeVal && !bulkTimesArray.includes(timeVal)) { bulkTimesArray.push(timeVal); bulkTimesArray.sort(); renderBulkTimes(); }
     });
@@ -1046,8 +1001,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.removeBulkTime = (index) => { bulkTimesArray.splice(index, 1); renderBulkTimes(); };
 
-    // APLICAR AGENDAMENTO EM MASSA (CORRIGIDO)
-    document.getElementById('apply-bulk-schedule-btn').addEventListener('click', async () => {
+    // APLICAR AGENDAMENTO EM MASSA
+    if(document.getElementById('apply-bulk-schedule-btn')) document.getElementById('apply-bulk-schedule-btn').addEventListener('click', async () => {
         const startStr = bulkStartDate.value;
         const endStr = bulkEndDate.value;
         
@@ -1056,9 +1011,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // CORREÇÃO DE FUSO HORÁRIO:
-        // Cria as datas considerando o fuso local (adicionando T00:00:00)
-        // Isso evita que o dia "volte" um dia ao converter
+        // CORREÇÃO DE FUSO HORÁRIO
         const startDate = new Date(startStr + 'T00:00:00');
         const endDate = new Date(endStr + 'T00:00:00');
         
@@ -1078,23 +1031,20 @@ document.addEventListener('DOMContentLoaded', () => {
         let countChanges = 0;
 
         while (loopDate <= endDate) {
-            const dayOfWeek = loopDate.getDay(); // 0 = Dom, 6 = Sáb
+            const dayOfWeek = loopDate.getDay(); 
             
             if (selectedWeekdays.includes(dayOfWeek)) {
-                // Gera a chave YYYY-MM-DD usando métodos locais para garantir a data correta
                 const year = loopDate.getFullYear();
                 const month = String(loopDate.getMonth() + 1).padStart(2, '0');
                 const day = String(loopDate.getDate()).padStart(2, '0');
                 const dateKey = `${year}-${month}-${day}`;
                 
-                // Mescla horários
                 const existing = currentGameData.availability[dateKey] || [];
                 const merged = [...new Set([...existing, ...bulkTimesArray])].sort();
                 
                 currentGameData.availability[dateKey] = merged;
                 countChanges++;
             }
-            // Avança um dia
             loopDate.setDate(loopDate.getDate() + 1);
         }
 
@@ -1103,12 +1053,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 availability: currentGameData.availability
             });
             alert(`Sucesso! Agenda atualizada em ${countChanges} datas.`);
-            // Volta para calendário para ver o resultado
             document.getElementById('tab-calendar-view').click();
         } catch (e) { 
             console.error(e); 
             alert("Erro ao salvar em massa."); 
         }
+    });
+
+    // --- Abas da Agenda ---
+    const tabCalendar = document.getElementById('tab-calendar-view');
+    const tabBulk = document.getElementById('tab-bulk-add');
+
+    if(tabCalendar) tabCalendar.addEventListener('click', (e) => {
+        document.getElementById('schedule-view-calendar').classList.remove('hidden');
+        document.getElementById('schedule-view-bulk').classList.add('hidden');
+        e.target.classList.add('active');
+        if(tabBulk) tabBulk.classList.remove('active');
+        renderAdminCalendar();
+    });
+
+    if(tabBulk) tabBulk.addEventListener('click', (e) => {
+        document.getElementById('schedule-view-calendar').classList.add('hidden');
+        document.getElementById('schedule-view-bulk').classList.remove('hidden');
+        e.target.classList.add('active');
+        if(tabCalendar) tabCalendar.classList.remove('active');
     });
 
     // =========================================================================
@@ -1165,11 +1133,11 @@ document.addEventListener('DOMContentLoaded', () => {
         faqModal.classList.remove('hidden');
     };
 
-    addFaqBtn.addEventListener('click', () => openFaqModal(null));
-    document.getElementById('close-faq-modal').addEventListener('click', () => faqModal.classList.add('hidden'));
-    document.getElementById('cancel-faq-btn').addEventListener('click', () => faqModal.classList.add('hidden'));
+    if(addFaqBtn) addFaqBtn.addEventListener('click', () => openFaqModal(null));
+    if(document.getElementById('close-faq-modal')) document.getElementById('close-faq-modal').addEventListener('click', () => faqModal.classList.add('hidden'));
+    if(document.getElementById('cancel-faq-btn')) document.getElementById('cancel-faq-btn').addEventListener('click', () => faqModal.classList.add('hidden'));
 
-    faqForm.addEventListener('submit', async (e) => {
+    if(faqForm) faqForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const index = document.getElementById('faq-id').value;
         const newFaq = { 
@@ -1205,7 +1173,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) { console.error(error); }
     }
 
-    aboutForm.addEventListener('submit', async (e) => {
+    if(aboutForm) aboutForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         try {
             await db.collection('siteContent').doc('about').set({ text: document.getElementById('about-history').value });

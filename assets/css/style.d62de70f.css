@@ -915,6 +915,51 @@ input:checked + .slider:before { transform: translateX(26px); }
     padding: 0.6rem 1rem;
 }
 
+/* Lista de Assets de Sessão no Admin */
+.assets-list-container {
+    max-height: 200px;
+    overflow-y: auto;
+    background: rgba(0,0,0,0.2);
+    padding: 10px;
+    border-radius: 6px;
+}
+
+.asset-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--input-bg);
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+}
+
+.asset-thumb {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 4px;
+    background: #000;
+}
+
+.asset-info {
+    flex: 1;
+    overflow: hidden;
+}
+
+.asset-name {
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.asset-type {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
 /* =========================================
    6. MEDIA QUERIES
    ========================================= */
