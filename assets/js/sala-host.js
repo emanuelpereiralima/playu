@@ -46,6 +46,11 @@ document.addEventListener('DOMContentLoaded', () => {
     async function ensureSessionExists() {
         try {
             const doc = await roomRef.get();
+            if(doc.exists) {
+            if (bookingData && bookingData.gameId) {
+                loadGameAssets(bookingData.gameId);
+            }
+        }
             if (!doc.exists) {
                 // Cria documento vazio da sessão para sinalização WebRTC
                 await roomRef.set({
@@ -99,6 +104,61 @@ document.addEventListener('DOMContentLoaded', () => {
             document.execCommand('copy');
             alert("Link copiado para a área de transferência!");
         };
+    }
+
+    async function loadGameAssets(gameId) {
+        const container = document.getElementById('game-assets-container');
+        if(!container) return;
+
+        try {
+            const gameDoc = await db.collection('games').doc(gameId).get();
+            if(!gameDoc.exists) return;
+
+            const assets = gameDoc.data().sessionAssets || [];
+            container.innerHTML = '';
+
+            if(assets.length === 0) {
+                container.innerHTML = '<p style="font-size:0.8rem; opacity:0.5; text-align:center;">Sem mídias cadastradas.</p>';
+                return;
+            }
+
+            assets.forEach(asset => {
+                const btn = document.createElement('div');
+                btn.style.cssText = "display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px; cursor: pointer; border: 1px solid transparent; transition: 0.2s;";
+                
+                // Ícone baseado no tipo
+                let icon = asset.type === 'image' ? 'image-outline' : 'videocam-outline';
+                
+                btn.innerHTML = `
+                    <ion-icon name="${icon}" style="font-size: 1.2rem; color: var(--secondary-color);"></ion-icon>
+                    <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.85rem;">${asset.name}</div>
+                    <ion-icon name="arrow-forward-circle-outline" style="margin-left: auto;"></ion-icon>
+                `;
+
+                // Ação de Clique: Enviar para Tela
+                btn.onclick = () => {
+                    // Feedback visual
+                    btn.style.borderColor = "var(--secondary-color)";
+                    setTimeout(() => btn.style.borderColor = "transparent", 500);
+                    
+                    // Atualiza Firebase
+                    roomRef.update({
+                        liveMedia: {
+                            type: asset.type,
+                            src: asset.url,
+                            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                        }
+                    }).then(() => {
+                        console.log("Mídia enviada:", asset.name);
+                    });
+                };
+
+                container.appendChild(btn);
+            });
+
+        } catch (error) {
+            console.error("Erro carregando assets:", error);
+        }
     }
 
     // =========================================================================
