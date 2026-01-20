@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel Admin - PlayU</title>
-    <script src="assets/js/version.d62de70f.js"></script>
+    <script src="assets/js/version.70fc2d9a.js"></script>
     <script>
         function loadAsset(path) {
             const version = typeof SITE_VERSION !== 'undefined' ? SITE_VERSION : new Date().getTime();
@@ -29,8 +29,8 @@
         </div>
         
         <div class="container dashboard-tabs" style="margin-top: 1rem; border-bottom: none;">
-            <button class="tab-btn active" onclick="switchAdminTab('user-management')">Usuários</button>
-            <button class="tab-btn" onclick="switchAdminTab('game-management')">Jogos</button>
+            <button class="tab-btn" onclick="switchAdminTab('user-management')">Usuários</button>
+            <button class="tab-btn active" onclick="switchAdminTab('game-management')">Jogos</button>
             <button class="tab-btn" onclick="switchAdminTab('content-management')">Conteúdo</button>
             <button class="tab-btn" onclick="switchAdminTab('course-management')">Cursos</button>
         </div>
@@ -38,7 +38,7 @@
 
     <main class="dashboard-main">
         
-        <section id="user-management" class="dashboard-section">
+        <section id="user-management" class="dashboard-section hidden-section">
             <div class="section-header">
                 <h2>Gerenciamento de Usuários</h2>
                 <div class="search-box">
@@ -54,12 +54,12 @@
             </div>
         </section>
 
-        <section id="game-management" class="dashboard-section hidden-section">
+        <section id="game-management" class="dashboard-section">
             <div class="section-header">
                 <h2>Gerenciamento de Jogos</h2>
                 <button id="open-create-game-modal-btn" class="submit-btn"><ion-icon name="add-circle-outline"></ion-icon> Novo Jogo</button>
             </div>
-            <div id="game-list-container" class="bookings-list"></div>
+            <div id="game-list-container" class="game-grid"></div>
         </section>
 
         <section id="content-management" class="dashboard-section hidden-section">
@@ -93,180 +93,176 @@
     </main>
 
     <div id="edit-user-modal" class="modal-overlay hidden"><div class="modal-content"><button id="close-user-modal" class="close-overlay-btn">&times;</button><h3>Editar Usuário</h3><form id="edit-user-form"><input type="hidden" id="edit-user-id"><div class="form-group"><label>Nome</label><input type="text" id="edit-user-name" required></div><div class="form-group"><label>Cargo</label><select id="edit-user-role" class="role-select" style="width:100%"><option value="user">Jogador</option><option value="host">Host</option><option value="admin">Admin</option></select></div><div class="modal-footer"><button type="button" id="delete-user-btn" class="submit-btn danger-btn">Excluir</button><div class="right-buttons"><button type="button" id="cancel-edit-btn" class="submit-btn secondary-btn">Cancelar</button><button type="submit" class="submit-btn primary-btn">Salvar</button></div></div></form></div></div>
+    
     <div id="faq-modal" class="modal-overlay hidden"><div class="modal-content"><button id="close-faq-modal" class="close-overlay-btn">&times;</button><h3 id="faq-modal-title">Pergunta</h3><form id="faq-form"><input type="hidden" id="faq-id"><div class="form-group"><label>Pergunta</label><input type="text" id="faq-question" required></div><div class="form-group"><label>Resposta</label><textarea id="faq-answer" rows="4" required></textarea></div><div class="modal-footer"><button type="button" id="delete-faq-btn" class="submit-btn danger-btn hidden">Excluir</button><div class="right-buttons"><button type="button" id="cancel-faq-btn" class="submit-btn secondary-btn">Cancelar</button><button type="submit" class="submit-btn">Salvar</button></div></div></form></div></div>
+    
     <div id="course-modal" class="modal-overlay hidden"><div class="modal-content large-modal"><button id="close-course-modal" class="close-overlay-btn">&times;</button><h3 id="course-modal-title">Curso</h3><form id="course-form" class="scrollable-form"><input type="hidden" id="course-id"><div class="form-group"><label>Título</label><input type="text" id="course-title" required></div><div class="form-group"><label>Descrição</label><textarea id="course-desc" rows="3"></textarea></div><div class="form-group"><label>Capa (URL)</label><input type="url" id="course-cover"></div><hr class="form-divider"><div class="form-group"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;"><label style="margin:0">Módulos</label><button type="button" id="add-module-btn" class="submit-btn small-btn secondary-btn">+ Módulo</button></div><div id="modules-container"></div></div><div class="modal-footer"><button type="button" id="delete-course-btn" class="submit-btn danger-btn hidden">Excluir</button><div class="right-buttons"><button type="button" id="cancel-course-btn" class="submit-btn secondary-btn">Cancelar</button><button type="submit" class="submit-btn">Salvar</button></div></div></form></div></div>
 
     <div id="create-game-modal" class="modal-overlay hidden">
-        <div class="modal-content xl-modal">
-            <button id="close-create-game-modal" class="close-overlay-btn">&times;</button>
+        <div class="modal-content xl-modal" style="width: 1200px; max-width: 98vw; height: 90vh; display: flex; flex-direction: column;">
             
-            <div class="modal-split-layout">
-                <div class="modal-col-left">
-                    <h2 id="game-modal-title">Criar Novo Jogo</h2>
-                    <form id="create-game-form">
-                        <input type="hidden" id="game-id">
-                        <div class="form-section">
-                            <h4>Informações</h4>
-                            <div class="form-row"><div class="form-group"><label>Nome *</label><input type="text" id="new-game-name" required></div><div class="form-group"><label>Status *</label><select id="new-game-status" required><option value="available">Disponível</option><option value="paused">Pausado</option><option value="draft">Rascunho</option></select></div></div>
-                            <div class="form-row" style="align-items: flex-start;">
-                                <div class="form-group" style="flex: 1;">
-                                    <label>Duração (Minutos) *</label>
-                                    <input type="number" id="new-game-duration" required placeholder="Ex: 60" min="0" step="1">
-                                    <span class="form-hint">Apenas números.</span>
-                                </div>
+            <div class="modal-header">
+                <h2 id="game-modal-title">Criar Novo Jogo</h2>
+                <button id="close-create-game-modal" class="close-overlay-btn">&times;</button>
+            </div>
 
-                                <div class="form-group" style="flex: 1;">
-                                    <label>Valor (R$) *</label>
-                                    <input type="number" id="new-game-price" required placeholder="Ex: 60.00" min="0" step="0.01">
-                                    <span class="form-hint">Use ponto para centavos.</span>
-                                </div>
-
-                                <div class="form-group" style="flex: 1; display: flex; flex-direction: column; justify-content: center; padding-top: 10px;">
-                                    <label class="upload-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; border: 1px solid var(--border-color); padding: 8px; border-radius: 6px; justify-content: center;">
-                                        <input type="checkbox" id="check-extra-life" style="width: auto; margin: 0;">
-                                        <span style="font-size: 0.9rem;">Possui Vida Extra?</span>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div id="extra-life-config-container" class="form-row hidden" style="background: rgba(0, 255, 136, 0.05); padding: 10px; border-radius: 8px; border: 1px dashed #00ff88; margin-bottom: 1rem;">
-                                <div class="form-group" style="width: 100%;">
-                                    <label style="color: #00ff88;">Tempo de Vida Extra (Minutos)</label>
-                                    <input type="number" id="new-game-extra-life-time" placeholder="Ex: 15" min="0" step="1">
-                                    <span class="form-hint">Esse tempo será somado à duração principal na página do jogo.</span>
-                                </div>
-                            </div>
-
-                            <div class="form-group" style="position: relative;">
-                                <label>Tags *</label>
-                                <div class="tags-input-container" id="tags-wrapper" onclick="document.getElementById('tag-input-field').focus()">
-                                    <input type="text" id="tag-input-field" class="tag-input-field" placeholder="Digite e pressione Enter..." autocomplete="off">
-                                </div>
-                                <ul id="tags-suggestions" class="tags-suggestions-list"></ul>
-                            </div>
-                            <div class="form-group"><label>Descrição Curta *</label><input type="text" id="new-game-short-desc" required></div>
-                            <div class="form-group"><label>Descrição Completa *</label><textarea id="new-game-full-desc" rows="4" required></textarea></div>
-                            <div class="form-group" style="background:rgba(0,0,0,0.2);padding:1rem;border-radius:8px;margin-top:1rem;"><label>Capa *</label><label for="admin-cover-upload" class="upload-label"><ion-icon name="cloud-upload-outline"></ion-icon><span>Enviar</span></label><input type="file" id="admin-cover-upload" accept="image/*" style="display:none;"><p id="upload-status" class="form-hint" style="display:none;">Enviando...</p><label class="form-label-or">Ou URL:</label><input type="url" id="new-game-cover" required><img id="admin-cover-preview" src="" style="max-height:150px;margin-top:10px;display:none;border-radius:5px;"></div>
-                        </div>
-                        <div id="game-media-section" class="form-section hidden" style="margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
-                            <h4>Mídia Adicional</h4>
-                            
-                            <div id="file-size-warning" class="compression-alert hidden">
-                                <strong><ion-icon name="warning-outline"></ion-icon> Arquivo muito grande!</strong>
-                                <p id="warning-text">O limite é 10MB para fotos e 100MB para vídeos.</p>
-                                <a id="compression-tool-link" href="#" target="_blank" class="compression-link">Clique aqui para comprimir seu arquivo grátis &rarr;</a>
-                            </div>
-
-                            <div class="form-group">
-                                <label>Galeria de Imagens</label>
-                                
-                                <div style="margin-bottom: 0.5rem;">
-                                    <label for="gallery-upload-input" class="upload-label" style="display:inline-flex; width: 100%; justify-content: center; border: 1px dashed var(--border-color); background: rgba(255,255,255,0.05);">
-                                        <ion-icon name="images-outline"></ion-icon> <span>Adicionar Fotos (Múltiplas)</span>
-                                    </label>
-                                    <input type="file" id="gallery-upload-input" multiple accept="image/png, image/jpeg, image/jpg" style="display: none;">
-                                    <span id="gallery-upload-status" class="form-hint" style="display: block; text-align: center; margin-top: 5px;"></span>
-                                </div>
-
-                                <div id="gallery-preview-grid" class="gallery-grid"></div>
-                                
-                                <div style="display: flex; gap: 5px;">
-                                    <input type="text" id="manual-gallery-url" placeholder="Ou cole uma URL externa e clique em +" style="font-size: 0.8rem;">
-                                    <button type="button" id="add-manual-url-btn" class="submit-btn small-btn" style="width: auto;">+</button>
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label>Teaser</label>
-                                <div style="margin-bottom: 0.5rem;">
-                                    <label for="admin-trailer-upload" class="upload-label" style="display:inline-flex;">
-                                        <ion-icon name="videocam-outline"></ion-icon> <span>Enviar Vídeo (MP4)</span>
-                                    </label>
-                                    <input type="file" id="admin-trailer-upload" accept="video/mp4,video/webm" style="display: none;">
-                                    <span id="trailer-upload-status" class="form-hint" style="margin-left: 10px; display: none;">Enviando...</span>
-                                </div>
-                                
-                                <label class="form-label-or" style="font-size: 0.9rem;">Ou cole a URL (YouTube/Vimeo):</label>
-                                <input type="url" id="new-game-trailer" placeholder="https://youtube.com/...">
-                            </div>
-                            <div class="form-group" style="border-top: 1px dashed var(--border-color); margin-top: 1.5rem; padding-top: 1rem;">
-                                <label style="color: var(--secondary-color);">📂 Arquivos da Sessão (Pistas & Conteúdo)</label>
-                                <p class="form-hint">Arquivos que o Host poderá enviar para a tela dos jogadores durante a partida.</p>
-                                
-                                <div style="margin-bottom: 0.5rem;">
-                                    <label for="assets-upload-input" class="upload-label" style="display:inline-flex; width: 100%; justify-content: center; border: 1px dashed var(--secondary-color); background: rgba(0, 255, 136, 0.05);">
-                                        <ion-icon name="folder-open-outline"></ion-icon> <span>Adicionar Mídias do Jogo</span>
-                                    </label>
-                                    <input type="file" id="assets-upload-input" multiple accept="image/*,video/*" style="display: none;">
-                                    <span id="assets-upload-status" class="form-hint" style="display: block; text-align: center; margin-top: 5px;"></span>
-                                </div>
-
-                                <div id="assets-preview-list" class="assets-list-container" style="display: flex; flex-direction: column; gap: 8px;"></div>
-                            </div>
-                        </div>
-                        <div class="modal-footer"><div class="right-buttons"><button type="button" id="cancel-create-game-btn" class="submit-btn secondary-btn">Cancelar</button><button type="submit" id="save-game-submit-btn" class="submit-btn primary-btn">Criar Jogo</button></div></div>
-                    </form>
-                </div>
-
-                <div class="modal-col-right" id="schedule-panel">
-                    <div id="schedule-placeholder" style="text-align:center;margin-top:50%;"><ion-icon name="calendar-outline" style="font-size:3rem;opacity:0.5;"></ion-icon><p style="opacity:0.7;">Salve para gerenciar horários.</p></div>
-                    <div id="schedule-content" class="hidden">
-                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;"><h3>Horários</h3><div class="content-tabs" style="margin:0;font-size:0.9rem;"><button class="tab-btn active" id="tab-calendar-view" style="padding:5px 10px;">Calendário</button><button class="tab-btn" id="tab-bulk-add" style="padding:5px 10px;">Em Massa</button></div></div>
+            <form id="create-game-form" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+                <input type="hidden" id="game-id">
+                
+                <div class="modal-body-scroll" style="flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; overflow-y: auto; padding: 1rem;">
+                    
+                    <div class="modal-col-left">
+                        <h4 style="color: var(--secondary-color); border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 15px;">Informações Principais</h4>
                         
-                        <div id="schedule-view-calendar" class="schedule-tab-content">
-                            <div class="calendar-container" style="background:var(--card-bg-color);padding:1rem;border-radius:8px;">
-                                <div class="calendar-header"><button id="admin-prev-month" class="month-nav-btn small-btn"><</button><h4 id="admin-month-header" style="margin:0;"></h4><button id="admin-next-month" class="month-nav-btn small-btn">></button></div>
-                                <div class="calendar-weekdays" style="font-size:0.9rem;"><div>D</div><div>S</div><div>T</div><div>Q</div><div>Q</div><div>S</div><div>S</div></div>
-                                <div class="calendar-grid" id="admin-calendar-grid"></div>
-                            </div>
-                            <div id="single-day-editor" class="hidden" style="margin-top:1rem;background:var(--card-bg-color);padding:1rem;border-radius:8px;">
-                                <h4>Dia: <span id="editing-date-display" style="color:var(--secondary-color);"></span></h4>
-                                <div style="display:flex; gap:5px; margin-bottom:10px;">
-                                    <select id="single-time-input" style="flex:1; padding:0.5rem; border-radius:5px; border:1px solid var(--border-color); background:var(--bg-color); color:var(--text-color);"></select>
-                                    <button type="button" id="add-single-time-btn" class="submit-btn small-btn">+</button>
-                                </div>
-                                <div id="single-day-slots" style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:10px;"></div>
-                                <button id="save-single-day-btn" class="submit-btn small-btn" style="width:100%;">Salvar Dia</button>
+                        <div class="form-row">
+                            <div class="form-group"><label>Nome *</label><input type="text" id="new-game-name" required></div>
+                            <div class="form-group"><label>Status</label><select id="new-game-status"><option value="available">Disponível</option><option value="paused">Pausado</option></select></div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group"><label>Duração (Min)</label><input type="number" id="new-game-duration" required></div>
+                            <div class="form-group"><label>Valor (R$)</label><input type="number" id="new-game-price" step="0.01" required></div>
+                        </div>
+
+                        <div class="form-group" style="padding: 10px; background: rgba(255,255,255,0.02); border-radius: 6px;">
+                            <label class="upload-label" style="justify-content:flex-start; padding:0; border:none; background:transparent;">
+                                <input type="checkbox" id="check-extra-life" style="width:auto; margin-right:10px;"> Possui Vida Extra?
+                            </label>
+                            <div id="extra-life-config-container" class="hidden" style="margin-top: 10px;">
+                                <label style="font-size: 0.85rem; color: #aaa;">Tempo Extra (Minutos)</label>
+                                <input type="number" id="new-game-extra-life-time" placeholder="Ex: 15">
                             </div>
                         </div>
 
-                        <div id="schedule-view-bulk" class="schedule-tab-content hidden">
-                            <div style="background:var(--card-bg-color);padding:1rem;border-radius:8px;">
-                                <div class="form-group"><label>Período</label><div style="display:flex;gap:10px;"><input type="date" id="bulk-start-date"><input type="date" id="bulk-end-date"></div></div>
-                                <div class="form-group"><label>Dias</label><div style="display:flex;gap:5px;flex-wrap:wrap;font-size:0.9rem;"><label><input type="checkbox" value="0" checked> D</label><label><input type="checkbox" value="1" checked> S</label><label><input type="checkbox" value="2" checked> T</label><label><input type="checkbox" value="3" checked> Q</label><label><input type="checkbox" value="4" checked> Q</label><label><input type="checkbox" value="5" checked> S</label><label><input type="checkbox" value="6" checked> S</label></div></div>
-                                <hr class="form-divider">
-                                <div class="form-group"><label>Horários</label><div style="display:flex;gap:5px;">
-                                    <select id="bulk-time-input" style="flex:1; padding:0.5rem; border-radius:5px; border:1px solid var(--border-color); background:var(--bg-color); color:var(--text-color);"></select>
-                                    <button type="button" id="add-bulk-time-btn" class="submit-btn small-btn">Add</button>
-                                </div></div>
-                                <div id="bulk-times-list" style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-bottom:1rem;min-height:40px;border:1px dashed var(--border-color);padding:5px;"></div>
-                                <button type="button" id="apply-bulk-schedule-btn" class="submit-btn primary-btn" style="width:100%;">Aplicar</button>
+                        <div class="form-group" style="position: relative;">
+                            <label>Tags</label>
+                            <div class="tags-input-container" id="tags-wrapper" onclick="document.getElementById('tag-input-field').focus()">
+                                <input type="text" id="tag-input-field" class="tag-input-field" placeholder="Digite..." autocomplete="off">
+                            </div>
+                            <ul id="tags-suggestions" class="tags-suggestions-list"></ul>
+                        </div>
+
+                        <div class="form-group"><label>Descrição Curta</label><input type="text" id="new-game-short-desc"></div>
+                        <div class="form-group"><label>Descrição Completa</label><textarea id="new-game-full-desc" rows="3"></textarea></div>
+
+                        <h4 style="color: var(--secondary-color); border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 15px; margin-top: 20px;">Marketing (Loja)</h4>
+                        
+                        <div class="form-group">
+                            <label>Capa</label>
+                            <div style="display:flex;gap:10px;">
+                                <div style="flex:1;">
+                                    <input type="file" id="admin-cover-upload" accept="image/*" style="display:none;">
+                                    <label for="admin-cover-upload" class="upload-label small-btn">Upload Capa</label>
+                                    <input type="text" id="new-game-cover" placeholder="URL da imagem" style="margin-top:5px; font-size:0.8rem;">
+                                </div>
+                                <img id="admin-cover-preview" src="" style="width:60px;height:60px;object-fit:cover;border-radius:4px;display:none;background:#000;">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Galeria</label>
+                            <input type="file" id="gallery-upload-input" multiple accept="image/*" style="display:none;">
+                            <label for="gallery-upload-input" class="upload-label small-btn">Adicionar Fotos</label>
+                            <div id="gallery-preview-grid" class="gallery-grid" style="margin-top: 5px;"></div>
+                        </div>
+                    </div>
+
+                    <div class="modal-col-right" style="background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: 8px; border: 1px solid var(--border-color); display: flex; flex-direction: column;">
+                        <h4 style="color: var(--secondary-color); border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 15px;">
+                            <ion-icon name="folder-open"></ion-icon> Mídias da Sessão (In-Game)
+                        </h4>
+                        <p class="form-hint" style="margin-bottom: 1rem;">Arquivos (Pistas, Áudios, Vídeos) que o Host usará durante a partida.</p>
+
+                        <div style="background: var(--sidebar-bg); padding: 1rem; border-radius: 6px; border: 1px dashed #444; margin-bottom: 1rem;">
+                            <div class="form-group">
+                                <label>Nome da Mídia</label>
+                                <input type="text" id="asset-name-input" placeholder="Ex: Carta Misteriosa">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Arquivo</label>
+                                <input type="file" id="assets-upload-input" style="display: none;">
+                                <div style="display: flex; gap: 5px;">
+                                    <label for="assets-upload-input" class="upload-label small-btn" style="flex: 1; text-align: center;">Escolher Arquivo</label>
+                                    <button type="button" id="add-asset-btn" class="submit-btn small-btn secondary-btn" style="flex: 0 0 auto;">Adicionar</button>
+                                </div>
+                                <span id="assets-upload-status" class="form-hint"></span>
+                            </div>
+                        </div>
+
+                        <div style="flex: 1; overflow-y: auto; border: 1px solid #333; border-radius: 6px; background: var(--sidebar-bg);">
+                            <div id="assets-crud-list" class="crud-list">
+                                <p style="padding: 10px; text-align: center; opacity: 0.5; font-size: 0.9rem;">Nenhuma mídia adicionada.</p>
                             </div>
                         </div>
                     </div>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" id="delete-game-btn" class="submit-btn danger-btn hidden">Excluir Jogo</button>
+                    <div class="right-buttons">
+                        <button type="button" id="cancel-create-game-btn" class="submit-btn secondary-btn">Cancelar</button>
+                        <button type="submit" id="save-game-submit-btn" class="submit-btn">Salvar Alterações</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="agenda-modal" class="modal-overlay hidden">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Agenda: <span id="agenda-game-name" style="color:var(--secondary-color)"></span></h2>
+                <button id="close-agenda-modal" class="close-modal-btn">&times;</button>
+            </div>
+            <div class="modal-body-scroll">
+                <div class="tab-buttons" style="margin-bottom: 1rem;">
+                    <button type="button" class="tab-btn active" id="tab-calendar-view">Calendário</button>
+                    <button type="button" class="tab-btn" id="tab-bulk-add">Em Massa</button>
+                </div>
+
+                <div id="schedule-view-calendar">
+                    <div class="calendar-header">
+                        <button type="button" id="admin-prev-month" class="month-nav-btn small-btn"><</button>
+                        <h4 id="admin-month-header" style="margin:0;"></h4>
+                        <button type="button" id="admin-next-month" class="month-nav-btn small-btn">></button>
+                    </div>
+                    <div class="calendar-grid-header"><div>D</div><div>S</div><div>T</div><div>Q</div><div>Q</div><div>S</div><div>S</div></div>
+                    <div id="admin-calendar-grid" class="calendar-grid"></div>
+                </div>
+
+                <div id="schedule-view-bulk" class="hidden">
+                    <div class="form-group"><label>Período</label><div style="display:flex;gap:10px;"><input type="date" id="bulk-start-date"><input type="date" id="bulk-end-date"></div></div>
+                    <div class="form-group"><label>Dias</label><div style="display:flex;gap:5px;flex-wrap:wrap;"><label><input type="checkbox" value="0" checked> Dom</label><label><input type="checkbox" value="1" checked> Seg</label><label><input type="checkbox" value="2" checked> Ter</label><label><input type="checkbox" value="3" checked> Qua</label><label><input type="checkbox" value="4" checked> Qui</label><label><input type="checkbox" value="5" checked> Sex</label><label><input type="checkbox" value="6" checked> Sáb</label></div></div>
+                    <div class="form-group"><label>Horários</label><div style="display:flex;gap:5px;"><select id="bulk-time-input" style="flex:1;padding:5px;border-radius:5px;background:var(--bg-color);color:#fff;border:1px solid #444;"></select><button type="button" id="add-bulk-time-btn" class="submit-btn small-btn">Add</button></div></div>
+                    <div id="bulk-times-list" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:1rem;"></div>
+                    <button type="button" id="apply-bulk-schedule-btn" class="submit-btn primary-btn" style="width:100%">Aplicar Agenda</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="delete-confirm-modal" class="modal-overlay hidden">
-        <div class="modal-content" style="max-width: 400px; text-align: center;">
-            <div style="margin-bottom: 1rem;">
-                <ion-icon name="warning-outline" style="font-size: 3rem; color: #ff4f4f;"></ion-icon>
-            </div>
-            <h3 style="color: #ff4f4f;">Excluir Jogo?</h3>
-            <p style="margin-bottom: 1rem; opacity: 0.8;">Esta ação é irreversível. Todas as sessões e dados deste jogo serão apagados.</p>
-            
-            <p style="margin-bottom: 0.5rem; font-size: 0.9rem;">Para confirmar, digite o nome do jogo abaixo:</p>
-            <div style="margin-bottom: 1.5rem;">
-                <span id="delete-game-name-display" class="delete-confirmation-highlight">NOME DO JOGO</span>
-            </div>
+    <div id="single-day-editor" class="modal-overlay hidden" style="z-index: 2000;">
+        <div class="modal-content" style="max-width: 400px;">
+            <h3>Horários: <span id="editing-date-display" style="color:var(--secondary-color)"></span></h3>
+            <div id="single-day-slots" class="slots-list"></div>
+            <div style="display:flex;gap:5px;margin-top:10px;"><select id="single-time-input" style="flex:1;padding:5px;border-radius:5px;background:var(--bg-color);color:#fff;border:1px solid #444;"></select><button id="add-single-time-btn" class="submit-btn small-btn">+</button></div>
+            <div style="display:flex;gap:10px;margin-top:15px;"><button id="clear-day-btn" class="submit-btn danger-btn small-btn" style="flex:1;">Limpar</button><button id="save-single-day-btn" class="submit-btn" style="flex:1;">Salvar</button></div>
+            <button id="close-day-editor-btn" class="submit-btn secondary-btn" style="width:100%;margin-top:10px;">Fechar</button>
+        </div>
+    </div>
 
-            <input type="text" id="delete-verification-input" placeholder="Digite o nome do jogo aqui" class="form-group" style="width: 100%; text-align: center; border-color: #ff4f4f;">
-            
-            <div class="modal-footer" style="justify-content: center; gap: 10px; border-top: none; padding-top: 0;">
+    <div id="delete-confirm-modal" class="modal-overlay hidden" style="z-index: 3000;">
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
+            <ion-icon name="warning-outline" style="font-size: 3rem; color: #ff4f4f;"></ion-icon>
+            <h3 style="color: #ff4f4f;">Excluir Jogo?</h3>
+            <p>Digite o nome do jogo para confirmar:</p>
+            <strong id="delete-game-name-display" class="delete-confirmation-highlight"></strong>
+            <input type="text" id="delete-verification-input" class="form-group" style="width: 100%; margin-top: 10px;">
+            <div class="modal-footer" style="justify-content: center;">
                 <button id="cancel-delete-modal-btn" class="submit-btn secondary-btn">Cancelar</button>
-                <button id="confirm-delete-action-btn" class="submit-btn danger-btn" disabled>Excluir Permanentemente</button>
+                <button id="confirm-delete-action-btn" class="submit-btn danger-btn" disabled>Excluir</button>
             </div>
         </div>
     </div>
@@ -275,13 +271,12 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
-
     <script src="assets/js/firebase-config.js"></script>
     <script>
-        loadAsset('assets/css/style.d62de70f.css');
+        loadAsset('assets/css/style.70fc2d9a.css');
         loadAsset('https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js');
         loadAsset('https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js');
-        loadAsset('assets/js/admin.d62de70f.js');
+        loadAsset('assets/js/admin.70fc2d9a.js');
     </script>
 </body>
 </html>
