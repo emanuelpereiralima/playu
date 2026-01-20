@@ -340,52 +340,130 @@ input:checked + .slider:before { transform: translateX(26px); }
 .slider.round { border-radius: 34px; }
 .slider.round:before { border-radius: 50%; }
 
-/* --- Modais --- */
+/* =========================================
+   5. MODAL (SCROLL INTELIGENTE E RESPONSIVO)
+   ========================================= */
+
+/* Fundo Escuro */
 .modal-overlay {
-    position: fixed; top: 0; left: 0;
+    position: fixed;
+    top: 0; left: 0;
     width: 100%; height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(3px);
-    display: flex; justify-content: center; align-items: center;
+    background-color: rgba(0, 0, 0, 0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center; /* Centraliza na tela */
     z-index: 1000;
+    backdrop-filter: blur(4px);
+    padding: 10px; /* Garante margem em celulares */
 }
 
+/* Caixa do Modal */
 .modal-content {
-    background-color: var(--primary-color);
-    padding: 2rem; border-radius: 12px;
-    width: 90%; max-width: 450px;
-    position: relative;
+    background-color: var(--sidebar-bg);
     border: 1px solid var(--border-color);
-    box-shadow: 0 0 50px rgba(0,0,0,0.5);
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+    
+    /* DEFINIÇÃO DE TAMANHO MÁXIMO E LAYOUT FLEXÍVEL */
+    width: 500px;
+    max-width: 100%;
+    max-height: 90vh; /* O modal nunca será maior que 90% da altura da tela */
+    
+    display: flex;
+    flex-direction: column; /* Organiza: Topo -> Meio -> Rodapé */
+    position: relative;
 }
 
-.modal-content.large-modal {
-    max-width: 700px; width: 95%;
-    max-height: 90vh;
-    display: flex; flex-direction: column;
+/* Tamanhos Específicos */
+.modal-large { width: 800px; max-width: 95vw; }
+.xl-modal { width: 1100px; max-width: 98vw; }
+
+/* 1. Cabeçalho (Fixo) */
+.modal-header {
+    padding: 1.5rem 1.5rem 1rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0; /* Não deixa o cabeçalho encolher/sumir */
 }
 
-/* Modal Extra Largo (Lado a Lado) */
-.modal-content.xl-modal {
-    max-width: 1300px; width: 95%;
-    height: 90vh; padding: 0;
-    display: flex; flex-direction: column;
-    overflow: hidden;
+.modal-header h2 { margin: 0; font-size: 1.4rem; }
+
+/* 2. CORPO COM SCROLL (A Mágica acontece aqui) */
+.modal-body-scroll {
+    padding: 1.5rem;
+    overflow-y: auto;       /* Cria barra de rolagem se o conteúdo for grande */
+    overflow-x: hidden;
+    flex-grow: 1;           /* Ocupa todo o espaço disponível entre header e footer */
+    min-height: 0;          /* Correção para Firefox respeitar o scroll flex */
 }
-.modal-split-layout { display: flex; flex: 1; height: 100%; overflow: hidden; }
-.modal-col-left {
-    flex: 1; min-width: 400px; padding: 2rem;
-    overflow-y: auto; border-right: 1px solid var(--border-color);
+
+/* Custom Scrollbar (Estilo da barra de rolagem) */
+.modal-body-scroll::-webkit-scrollbar { width: 8px; }
+.modal-body-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
+.modal-body-scroll::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+.modal-body-scroll::-webkit-scrollbar-thumb:hover { background: var(--secondary-color); }
+
+/* 3. Rodapé (Fixo) */
+.modal-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--border-color);
+    background-color: var(--sidebar-bg); /* Garante que o texto rolando não apareça por trás */
+    border-radius: 0 0 12px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0; /* Não deixa o rodapé encolher/sumir */
 }
-.modal-col-right {
-    flex: 1.2; padding: 2rem;
-    overflow-y: auto; background-color: rgba(0, 0, 0, 0.15);
-    display: flex; flex-direction: column;
+
+.modal-footer .right-buttons {
+    display: flex;
+    gap: 10px;
+    margin-left: auto;
 }
-/* Modo Schedule Only */
-.modal-content.xl-modal.mode-schedule .modal-col-left { display: none !important; }
-.modal-content.xl-modal.mode-schedule .modal-col-right { flex: 1; border-left: none; background-color: var(--card-bg-color); padding: 1rem 2rem; }
-.modal-content.xl-modal .close-overlay-btn { top: 10px; right: 10px; z-index: 20; background-color: var(--primary-color); }
+
+/* Botão Fechar (X) */
+.close-overlay-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 2rem;
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.2s;
+}
+.close-overlay-btn:hover { color: #fff; }
+
+/* Classes Utilitárias */
+.hidden { display: none !important; }
+
+/* Responsividade para Celulares */
+@media (max-width: 600px) {
+    .modal-content {
+        max-height: 95vh; /* Aproveita mais a tela no celular */
+        height: auto;
+    }
+    
+    .modal-body-scroll {
+        padding: 1rem;
+    }
+
+    .modal-footer {
+        flex-direction: column-reverse;
+        gap: 10px;
+    }
+    
+    .modal-footer button, 
+    .modal-footer .right-buttons {
+        width: 100%;
+    }
+    
+    .modal-footer .right-buttons {
+        justify-content: space-between;
+    }
+}
 
 .scrollable-form {
     overflow-y: auto; padding-right: 10px; margin-top: 1rem;
@@ -405,11 +483,7 @@ input:checked + .slider:before { transform: translateX(26px); }
 }
 .close-overlay-btn:hover { background-color: rgba(255, 59, 59, 0.15); color: #ff3b3b; transform: rotate(90deg); }
 
-.modal-footer {
-    display: flex; justify-content: space-between; align-items: center;
-    margin-top: 2rem; border-top: 1px solid var(--border-color);
-    padding-top: 1rem;
-}
+
 .right-buttons { display: flex; gap: 10px; }
 
 /* Estilo da Galeria no Admin */
@@ -557,7 +631,7 @@ input:checked + .slider:before { transform: translateX(26px); }
     display: flex; justify-content: center; align-items: center;
 }
 .carousel-slide img {
-    width: 100%; height: 100%; display: block; object-fit: contain;
+    width: 100%; height: 100%; display: block; object-fit: cover;
 }
 
 .carousel-img-link {
@@ -960,6 +1034,64 @@ input:checked + .slider:before { transform: translateX(26px); }
     text-transform: uppercase;
 }
 
+/* Estilo da Lista CRUD de Assets */
+.crud-list .crud-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid var(--border-color);
+    background: rgba(255,255,255,0.02);
+    transition: background 0.2s;
+}
+
+.crud-list .crud-item:hover {
+    background: rgba(255,255,255,0.05);
+}
+
+.crud-item-thumb {
+    width: 40px;
+    height: 40px;
+    border-radius: 4px;
+    object-fit: cover;
+    background: #000;
+    margin-right: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+}
+
+.crud-item-info {
+    flex: 1;
+    overflow: hidden;
+}
+
+.crud-item-name {
+    font-weight: bold;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.crud-item-type {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+.crud-actions {
+    display: flex;
+    gap: 5px;
+}
+
+/* Responsividade do Modal Grid */
+@media (max-width: 850px) {
+    .modal-body-scroll {
+        grid-template-columns: 1fr !important; /* Vira 1 coluna no mobile */
+    }
+}
+
 /* =========================================
    6. MEDIA QUERIES
    ========================================= */
@@ -972,12 +1104,6 @@ input:checked + .slider:before { transform: translateX(26px); }
     .about-image { order: -1; }
 }
 
-@media screen and (max-width: 1024px) {
-    .modal-content.xl-modal { height: auto; max-height: 95vh; overflow-y: auto; }
-    .modal-split-layout { flex-direction: column; overflow: visible; }
-    .modal-col-left, .modal-col-right { width: 100%; border-right: none; border-bottom: 1px solid var(--border-color); overflow-y: visible; flex: none; }
-}
-
 @media screen and (max-width: 768px) {
     .nav__logo img { width: 120px; }
     .carousel-slide { flex-basis: 90%; }
@@ -986,9 +1112,7 @@ input:checked + .slider:before { transform: translateX(26px); }
     .host-tools-wrapper { position: fixed; right: 0; top: 0; height: 100%; z-index: 30; transform: translateX(100%); }
     .host-tools-wrapper.active { transform: translateX(0); }
     
-    .modal-content.large-modal { width: 95%; height: 95vh; padding: 1rem; margin: auto; }
     .form-row { flex-direction: column; gap: 0.5rem; }
-    .modal-footer { flex-direction: column-reverse; gap: 1rem; }
     .right-buttons { width: 100%; flex-direction: column; }
     .submit-btn { width: 100%; }
 }

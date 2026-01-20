@@ -1,120 +1,66 @@
-// playu/assets/js/admin.js
-
 document.addEventListener('DOMContentLoaded', () => {
-    // Referências Globais
-    const db = window.db;
+    // =========================================================================
+    // 1. CONFIGURAÇÃO E VARIÁVEIS GLOBAIS
+    // =========================================================================
+    const db = window.db || firebase.firestore();
     const auth = window.auth;
+    const storage = firebase.storage();
 
-    // --- ELEMENTOS UI GERAIS ---
-    const userGreeting = document.getElementById('user-greeting');
-    const logoutBtn = document.getElementById('logout-btn');
+    // --- ESTADO GLOBAL DO APLICATIVO ---
     
-    // --- ELEMENTOS DE USUÁRIOS ---
-    const userTableBody = document.getElementById('user-table-body');
-    const userSearchInput = document.getElementById('user-search-input');
-    const editUserModal = document.getElementById('edit-user-modal');
-    const editUserForm = document.getElementById('edit-user-form');
-
-    // --- ELEMENTOS DE JOGOS ---
-    const gameListContainer = document.getElementById('game-list-container');
-    const openCreateGameModalBtn = document.getElementById('open-create-game-modal-btn');
-    const createGameModal = document.getElementById('create-game-modal');
-    const createGameForm = document.getElementById('create-game-form');
-    const closeCreateGameModal = document.getElementById('close-create-game-modal');
-    const cancelCreateGameBtn = document.getElementById('cancel-create-game-btn');
-    const saveGameBtn = document.getElementById('save-game-submit-btn');
-    const gameIdHidden = document.getElementById('game-id'); // Corrigido ID
-    const mediaSection = document.getElementById('game-media-section');
-    const deleteGameBtn = document.getElementById('delete-game-btn'); // Pode não existir no HTML atual, trataremos isso
-    const coverUploadInput = document.getElementById('admin-cover-upload');
-    const uploadStatus = document.getElementById('upload-status');
-    const coverPreview = document.getElementById('admin-cover-preview');
+    // Jogos & Mídia
+    let currentGalleryUrls = []; 
+    let currentSessionAssets = []; 
+    let currentTags = [];
+    let allKnownTags = new Set(["Ação", "Aventura", "RPG", "Terror", "Estratégia"]);
     
-    // Elementos da Agenda
-    const schedulePlaceholder = document.getElementById('schedule-placeholder');
-    const scheduleContent = document.getElementById('schedule-content');
-    const adminCalendarGrid = document.getElementById('admin-calendar-grid');
-    const adminMonthHeader = document.getElementById('admin-month-header');
-    const singleDayEditor = document.getElementById('single-day-editor');
-    const singleDaySlots = document.getElementById('single-day-slots');
-    const bulkStartDate = document.getElementById('bulk-start-date');
-    const bulkEndDate = document.getElementById('bulk-end-date');
-    const bulkTimesList = document.getElementById('bulk-times-list');
-
-    // --- ELEMENTOS DE TAGS ---
-    const tagsWrapper = document.getElementById('tags-wrapper');
-    const tagInput = document.getElementById('tag-input-field');
-    const suggestionsList = document.getElementById('tags-suggestions');
-
-    // --- ELEMENTOS DE CONTEÚDO ---
-    const faqListAdmin = document.getElementById('faq-list-admin');
-    const addFaqBtn = document.getElementById('add-faq-btn');
-    const faqModal = document.getElementById('faq-modal');
-    const faqForm = document.getElementById('faq-form');
-    const aboutForm = document.getElementById('about-form');
-
-    // --- ELEMENTOS DE CURSOS ---
-    const courseListAdmin = document.getElementById('course-list-admin');
-    const addCourseBtn = document.getElementById('add-course-btn');
-    const courseModal = document.getElementById('course-modal');
-    const courseForm = document.getElementById('course-form');
-    const modulesContainer = document.getElementById('modules-container');
-    const addModuleBtn = document.getElementById('add-module-btn');
-
-    let loggedInUser = null;
-    let currentGameData = null; 
-    let currentAdminDate = new Date();
+    // Agenda (Separada)
+    let currentAgendaGameId = null; 
+    let currentAgendaData = {}; 
+    let currentAdminDate = new Date(); 
     currentAdminDate.setDate(1);
     let editingDateStr = null;
     let bulkTimesArray = [];
 
-    // =========================================================================
-    // 1. INICIALIZAÇÃO E AUTH
-    // =========================================================================
+    // Cursos & Conteúdo
+    let currentCourseModules = [];
+    let currentFaqs = [];
+
+    // Variáveis Temporárias de Upload
+    let tempAssetFile = null;
+
+    // --- VERIFICAÇÃO DE AUTENTICAÇÃO ---
+    const sessionData = sessionStorage.getItem('loggedInUser');
+    if (!sessionData) { window.location.href = 'login.html'; return; }
+    const loggedInUser = JSON.parse(sessionData);
+    if (loggedInUser.role !== 'admin' && loggedInUser.role !== 'host') {
+        alert("Acesso não autorizado."); 
+        window.location.href = 'index.html'; 
+        return;
+    }
+
+    // --- INTERFACE DO USUÁRIO GERAL ---
+    const userGreeting = document.getElementById('user-greeting');
+    if(userGreeting) userGreeting.textContent = `Olá, ${loggedInUser.name.split(' ')[0]}`;
     
-    function checkAuth() {
-        const userSession = sessionStorage.getItem('loggedInUser');
-        if (!userSession) {
-            window.location.href = 'login.html';
-            return;
-        }
-        loggedInUser = JSON.parse(userSession);
+    const logoutBtn = document.getElementById('logout-btn');
+    if(logoutBtn) logoutBtn.addEventListener('click', () => {
+        sessionStorage.removeItem('loggedInUser'); 
+        if(auth) auth.signOut(); 
+        window.location.href = 'index.html';
+    });
 
-        if (loggedInUser.role !== 'admin') {
-            alert("Acesso restrito a administradores.");
-            window.location.href = 'dashboard.html';
-            return;
-        }
-        
-        if(userGreeting) userGreeting.textContent = `Olá, ${loggedInUser.name.split(' ')[0]}`;
-        
-        setupLogout();
-        setupUserSearch();
-        setupUserModalLogic();
-        setupGameModalLogic(); 
-        
-        loadAllUsers();
-    }
-
-    function setupLogout() {
-        if(logoutBtn) logoutBtn.addEventListener('click', () => {
-            sessionStorage.removeItem('loggedInUser');
-            if(auth) auth.signOut();
-            window.location.href = 'index.html';
-        });
-    }
-
+    // --- NAVEGAÇÃO ENTRE ABAS DO DASHBOARD ---
     window.switchAdminTab = (tabId) => {
         document.querySelectorAll('.dashboard-section').forEach(s => s.classList.add('hidden-section'));
         const target = document.getElementById(tabId);
         if(target) target.classList.remove('hidden-section');
         
-        document.querySelectorAll('.dashboard-tabs .tab-btn').forEach(b => b.classList.remove('active'));
-        const btns = document.querySelectorAll('.dashboard-tabs .tab-btn');
-        btns.forEach(btn => {
-            if(btn.getAttribute('onclick').includes(tabId)) btn.classList.add('active');
-        });
+        document.querySelectorAll('.dashboard-tabs .tab-btn').forEach(btn => btn.classList.remove('active'));
+        const activeBtn = document.querySelector(`.dashboard-tabs .tab-btn[onclick*="${tabId}"]`);
+        if (activeBtn) activeBtn.classList.add('active');
 
+        // Carregamento Lazy (sob demanda)
         if (tabId === 'user-management') loadAllUsers();
         if (tabId === 'game-management') loadAllGames();
         if (tabId === 'content-management') { loadFAQs(); loadAboutText(); }
@@ -124,6 +70,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // =========================================================================
     // 2. GERENCIAMENTO DE USUÁRIOS
     // =========================================================================
+    const userTableBody = document.getElementById('user-table-body');
+    const userSearchInput = document.getElementById('user-search-input');
+    const editUserModal = document.getElementById('edit-user-modal');
+    const editUserForm = document.getElementById('edit-user-form');
 
     async function loadAllUsers() {
         if(!userTableBody) return;
@@ -131,71 +81,24 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const snapshot = await db.collection('users').get();
             userTableBody.innerHTML = '';
-            if (snapshot.empty) {
-                userTableBody.innerHTML = '<tr><td colspan="4">Nenhum usuário encontrado.</td></tr>';
-                return;
-            }
+            if (snapshot.empty) { userTableBody.innerHTML = '<tr><td colspan="4">Nenhum usuário encontrado.</td></tr>'; return; }
+            
             snapshot.forEach(doc => {
                 const user = doc.data();
                 const tr = document.createElement('tr');
                 let roleLabel = user.role === 'admin' ? '👑 Admin' : (user.role === 'host' ? '🎭 Host' : '👤 Jogador');
                 tr.innerHTML = `
-                    <td>${user.name || 'Sem Nome'}</td>
+                    <td>${user.name || '---'}</td>
                     <td>${user.email || '---'}</td>
                     <td>${roleLabel}</td>
                     <td><button class="submit-btn small-btn edit-user-trigger" data-id="${doc.id}" data-name="${user.name}" data-role="${user.role}"><ion-icon name="create-outline"></ion-icon> Editar</button></td>
                 `;
                 userTableBody.appendChild(tr);
             });
+            // Listeners locais
             document.querySelectorAll('.edit-user-trigger').forEach(btn => btn.addEventListener('click', openEditUserModal));
-            triggerSearchEvent();
-        } catch (error) { console.error(error); }
-    }
-
-    function setupUserSearch() {
-        if (userSearchInput) userSearchInput.addEventListener('input', triggerSearchEvent);
-    }
-
-    function triggerSearchEvent() {
-        const searchTerm = userSearchInput.value.toLowerCase();
-        const rows = userTableBody.querySelectorAll('tr');
-        rows.forEach(row => {
-            if(row.cells.length < 2) return;
-            const name = row.cells[0].textContent.toLowerCase();
-            const email = row.cells[1].textContent.toLowerCase();
-            row.style.display = (name.includes(searchTerm) || email.includes(searchTerm)) ? '' : 'none';
-        });
-    }
-
-    function setupUserModalLogic() {
-        const close = () => editUserModal.classList.add('hidden');
-        if(document.getElementById('close-user-modal')) document.getElementById('close-user-modal').addEventListener('click', close);
-        if(document.getElementById('cancel-edit-btn')) document.getElementById('cancel-edit-btn').addEventListener('click', close);
-
-        if(editUserForm) editUserForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const uid = document.getElementById('edit-user-id').value;
-            const newName = document.getElementById('edit-user-name').value;
-            const newRole = document.getElementById('edit-user-role').value;
-            try {
-                await db.collection('users').doc(uid).update({ name: newName, role: newRole });
-                alert("Usuário atualizado!");
-                close();
-                loadAllUsers();
-            } catch (error) { alert("Erro ao atualizar."); }
-        });
-
-        if(document.getElementById('delete-user-btn')) document.getElementById('delete-user-btn').addEventListener('click', async () => {
-            const uid = document.getElementById('edit-user-id').value;
-            if (uid === loggedInUser.username) return alert("Não pode excluir a si mesmo.");
-            if (!confirm("Excluir este usuário permanentemente?")) return;
-            try {
-                await db.collection('users').doc(uid).delete();
-                alert("Usuário excluído.");
-                close();
-                loadAllUsers();
-            } catch (error) { alert("Erro ao excluir."); }
-        });
+            if(userSearchInput) triggerUserSearch();
+        } catch (e) { console.error("Erro users:", e); }
     }
 
     function openEditUserModal(e) {
@@ -206,1121 +109,634 @@ document.addEventListener('DOMContentLoaded', () => {
         editUserModal.classList.remove('hidden');
     }
 
-    // =========================================================================
-    // 3. GERENCIAMENTO DE JOGOS (UNIFICADO COM AGENDA)
-    // =========================================================================
-
-    function populateTimeSelects() {
-        const selects = ['single-time-input', 'bulk-time-input'];
-        let options = '<option value="">Selecione...</option>';
-        for(let h = 0; h < 24; h++) {
-            for(let m = 0; m < 60; m += 30) {
-                const time = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
-                options += `<option value="${time}">${time}</option>`;
-            }
-        }
-        selects.forEach(id => {
-            const el = document.getElementById(id);
-            if(el) el.innerHTML = options;
+    if(userSearchInput) userSearchInput.addEventListener('input', triggerUserSearch);
+    function triggerUserSearch() {
+        const term = userSearchInput.value.toLowerCase();
+        userTableBody.querySelectorAll('tr').forEach(row => {
+            if(row.cells.length < 2) return;
+            const txt = row.innerText.toLowerCase();
+            row.style.display = txt.includes(term) ? '' : 'none';
         });
     }
 
-    // --- Lógica de Tags ---
-    let currentTags = []; 
-    const allKnownTags = new Set(["Ação", "Aventura", "RPG", "Estratégia", "Terror", "Esportes", "Corrida", "Puzzle"]); 
-
-    function renderTags() {
-        const existingCapsules = tagsWrapper.querySelectorAll('.tag-capsule');
-        existingCapsules.forEach(cap => cap.remove());
-        currentTags.forEach((tag, index) => {
-            const capsule = document.createElement('div');
-            capsule.className = 'tag-capsule';
-            capsule.innerHTML = `<span>${tag}</span><span class="close-tag" onclick="removeTag(${index})">&times;</span>`;
-            tagsWrapper.insertBefore(capsule, tagInput);
-        });
-    }
-
-    window.removeTag = (index) => {
-        currentTags.splice(index, 1);
-        renderTags();
+    if(editUserForm) editUserForm.onsubmit = async (e) => {
+        e.preventDefault();
+        try {
+            await db.collection('users').doc(document.getElementById('edit-user-id').value).update({
+                name: document.getElementById('edit-user-name').value,
+                role: document.getElementById('edit-user-role').value
+            });
+            alert("Usuário salvo!"); editUserModal.classList.add('hidden'); loadAllUsers();
+        } catch(e) { alert("Erro ao salvar usuário."); }
     };
 
-    function addTag(tag) {
-        const cleanTag = tag.trim();
-        if (cleanTag && !currentTags.includes(cleanTag)) {
-            currentTags.push(cleanTag);
-            allKnownTags.add(cleanTag);
-            renderTags();
+    if(document.getElementById('delete-user-btn')) document.getElementById('delete-user-btn').onclick = async () => {
+        const uid = document.getElementById('edit-user-id').value;
+        if(uid === loggedInUser.username) return alert("Não pode excluir a si mesmo.");
+        if(confirm("Excluir este usuário?")) {
+            await db.collection('users').doc(uid).delete();
+            editUserModal.classList.add('hidden'); loadAllUsers();
         }
-        tagInput.value = '';
-        suggestionsList.classList.remove('active');
-        tagInput.focus();
-    }
-
-   // --- Setup do Modal de Jogo (Lógica de Formulário e Uploads) ---
-    function setupGameModalLogic() {
-        // Variáveis de Estado
-        let currentGalleryUrls = []; // Armazena as URLs da galeria atual
-        const checkExtraLife = document.getElementById('check-extra-life');
-        const extraLifeContainer = document.getElementById('extra-life-config-container');
-        const extraLifeInput = document.getElementById('new-game-extra-life-time');
-
-        // CONSTANTES DE TAMANHO
-        const MAX_IMG_SIZE = 10 * 1024 * 1024; // 10MB
-        const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB
-
-        // Elementos
-        const trailerUploadInput = document.getElementById('admin-trailer-upload');
-        const trailerStatus = document.getElementById('trailer-upload-status');
-        const galleryInput = document.getElementById('gallery-upload-input');
-        const galleryStatus = document.getElementById('gallery-upload-status');
-        const galleryGrid = document.getElementById('gallery-preview-grid');
-        const manualGalleryInput = document.getElementById('manual-gallery-url');
-        const addManualBtn = document.getElementById('add-manual-url-btn');
-
-        const warningBox = document.getElementById('file-size-warning');
-        const warningText = document.getElementById('warning-text');
-        const compressLink = document.getElementById('compression-tool-link');
-
-        // --- FUNÇÃO PARA RENDERIZAR GALERIA ---
-        window.renderGallery = () => {
-            if(!galleryGrid) return;
-            galleryGrid.innerHTML = '';
-            currentGalleryUrls.forEach((url, index) => {
-                const item = document.createElement('div');
-                item.className = 'gallery-item';
-                item.innerHTML = `
-                    <img src="${url}">
-                    <button type="button" class="gallery-remove-btn" onclick="removeGalleryItem(${index})">✕</button>
-                `;
-                galleryGrid.appendChild(item);
-            });
-        };
-
-        if(checkExtraLife) {
-            checkExtraLife.addEventListener('change', (e) => {
-                if (e.target.checked) {
-                    extraLifeContainer.classList.remove('hidden');
-                    extraLifeInput.required = true; // Torna obrigatório se marcado
-                } else {
-                    extraLifeContainer.classList.add('hidden');
-                    extraLifeInput.required = false;
-                    extraLifeInput.value = ''; // Limpa valor
-                }
-            });
-        }
-
-        // Função global para remover item (precisa ser global para o onclick funcionar)
-        window.removeGalleryItem = (index) => {
-            currentGalleryUrls.splice(index, 1);
-            window.renderGallery();
-        };
-
-        // --- INTERCEPTAR A ABERTURA DO MODAL PARA CARREGAR GALERIA ---
-        // Definindo window.openGameModal aqui para fechar sobre o escopo de setupGameModalLogic
-        window.openGameModal = async (gameId) => {
-            const modal = document.getElementById('create-game-modal');
-            const title = document.getElementById('game-modal-title');
-            const btn = document.getElementById('save-game-submit-btn');
-            const form = document.getElementById('create-game-form');
-            const hiddenId = document.getElementById('game-id');
-            const mediaSection = document.getElementById('game-media-section');
-            const deleteBtn = document.getElementById('delete-game-btn');
-            
-            // Limpa estado
-            form.reset();
-            hiddenId.value = '';
-            if(coverPreview) coverPreview.style.display = 'none';
-            if(uploadStatus) uploadStatus.style.display = 'none';
-            currentTags = [];
-            currentGalleryUrls = []; // Reseta galeria
-            renderTags();
-            window.renderGallery();
-            
-            // Limpa agenda
-            if(singleDayEditor) singleDayEditor.classList.add('hidden');
-            bulkTimesArray = [];
-            if(bulkTimesList) bulkTimesList.innerHTML = '';
-            
-            // Abas
-            if(schedulePlaceholder) schedulePlaceholder.classList.remove('hidden');
-            if(scheduleContent) scheduleContent.classList.add('hidden');
-            if(warningBox) warningBox.classList.add('hidden');
-
-            document.getElementById('schedule-view-calendar').classList.remove('hidden');
-            document.getElementById('schedule-view-bulk').classList.add('hidden');
-            document.getElementById('tab-calendar-view').classList.add('active');
-            document.getElementById('tab-bulk-add').classList.remove('active');
-
-            // Reset Vida Extra
-            if(checkExtraLife) {
-                checkExtraLife.checked = false;
-                extraLifeContainer.classList.add('hidden');
-            }
-
-            if (gameId) {
-                // Modo Edição
-                title.textContent = "Editar Jogo";
-                btn.textContent = "Salvar Alterações";
-                hiddenId.value = gameId;
-                if(mediaSection) mediaSection.classList.remove('hidden');
-                if(deleteBtn) deleteBtn.classList.remove('hidden'); 
-                
-                try {
-                    const doc = await db.collection('games').doc(gameId).get();
-                    if (doc.exists) {
-                        const data = doc.data();
-                        document.getElementById('new-game-name').value = data.name;
-                        document.getElementById('new-game-status').value = data.status || 'available';
-                        document.getElementById('new-game-duration').value = data.sessionDuration || '';
-                        document.getElementById('new-game-price').value = data.price || ''; 
-                        document.getElementById('new-game-short-desc').value = data.shortDescription || '';
-                        document.getElementById('new-game-full-desc').value = data.fullDescription || '';
-                        document.getElementById('new-game-cover').value = data.coverImage || '';
-                        document.getElementById('new-game-trailer').value = data.videoPreview || '';
-                        
-                        if (data.coverImage && coverPreview) {
-                            coverPreview.src = data.coverImage;
-                            coverPreview.style.display = 'block';
-                        }
-
-                        if (data.tags) { currentTags = data.tags; renderTags(); }
-                        
-                        // CARREGA GALERIA DO BANCO
-                        if (data.galleryImages && Array.isArray(data.galleryImages)) {
-                            currentGalleryUrls = data.galleryImages;
-                            window.renderGallery();
-                        }
-
-                        // CARREGA VIDA EXTRA
-                        if (data.hasExtraLife) {
-                            checkExtraLife.checked = true;
-                            extraLifeContainer.classList.remove('hidden');
-                            extraLifeInput.value = data.extraLifeDuration || '';
-                        } else {
-                            checkExtraLife.checked = false;
-                            extraLifeContainer.classList.add('hidden');
-                            extraLifeInput.value = '';
-                        }
-
-                        // Configura Agenda
-                        currentGameData = { id: doc.id, ...data };
-                        if(schedulePlaceholder) schedulePlaceholder.classList.add('hidden');
-                        if(scheduleContent) scheduleContent.classList.remove('hidden');
-                        renderAdminCalendar();
-                    }
-                } catch (error) {
-                    console.error("Erro ao carregar jogo", error);
-                }
-            } else {
-                // Modo Criação
-                title.textContent = "Criar Novo Jogo";
-                btn.textContent = "Criar Jogo";
-                if(mediaSection) mediaSection.classList.add('hidden');
-                if(deleteBtn) deleteBtn.classList.add('hidden');
-                currentGameData = null;
-            }
-            modal.classList.remove('hidden');
-        };
-
-        // Função Schedule Only (Abre modal já na aba)
-        window.openScheduleOnly = async (gameId) => {
-            await window.openGameModal(gameId);
-            // Simula troca de aba se necessário ou foca
-        };
-
-        const closeModal = () => {
-            createGameModal.classList.add('hidden');
-            if(warningBox) warningBox.classList.add('hidden');
-        };
-
-        // Listeners de Fechamento
-        if (openCreateGameModalBtn) openCreateGameModalBtn.addEventListener('click', () => window.openGameModal(null));
-        if (closeCreateGameModal) closeCreateGameModal.addEventListener('click', closeModal);
-        if (cancelCreateGameBtn) cancelCreateGameBtn.addEventListener('click', closeModal);
-
-        // --- VALIDAÇÃO DE TAMANHO ---
-        function validateFile(file, type) {
-            const limit = type === 'image' ? MAX_IMG_SIZE : MAX_VIDEO_SIZE;
-            const limitMB = type === 'image' ? '10MB' : '100MB';
-            
-            if (file.size > limit) {
-                warningText.textContent = `Arquivo muito grande (${(file.size/1024/1024).toFixed(1)}MB). Limite: ${limitMB}.`;
-                if (type === 'image') {
-                    compressLink.href = "https://www.iloveimg.com/compress-image";
-                } else {
-                    compressLink.href = "https://www.freeconvert.com/video-compressor";
-                }
-                warningBox.classList.remove('hidden');
-                return false;
-            }
-            warningBox.classList.add('hidden');
-            return true;
-        }
-
-        // --- UPLOAD DE CAPA ---
-        if(coverUploadInput) {
-            coverUploadInput.addEventListener('change', async (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                if (!validateFile(file, 'image')) { coverUploadInput.value = ''; return; }
-
-                uploadStatus.textContent = "Enviando...";
-                uploadStatus.style.display = "block";
-                try {
-                    const ref = firebase.storage().ref().child(`game-covers/${Date.now()}_${file.name}`);
-                    await ref.put(file);
-                    const url = await ref.getDownloadURL();
-                    document.getElementById('new-game-cover').value = url;
-                    coverPreview.src = url;
-                    coverPreview.style.display = 'block';
-                    uploadStatus.textContent = "Upload concluído!";
-                } catch (error) {
-                    console.error(error);
-                    uploadStatus.textContent = "Erro upload.";
-                }
-            });
-        }
-
-        // --- UPLOAD DE GALERIA (MÚLTIPLO) ---
-        if (galleryInput) {
-            galleryInput.addEventListener('change', async (e) => {
-                const files = Array.from(e.target.files);
-                if (files.length === 0) return;
-
-                galleryStatus.textContent = `Enviando ${files.length} imagens...`;
-                galleryStatus.style.color = "#ffbb00";
-
-                try {
-                    const promises = files.map(async (file) => {
-                        if (!validateFile(file, 'image')) return null; // Pula arquivos grandes
-                        
-                        const ref = firebase.storage().ref().child(`game-gallery/${Date.now()}_${file.name}`);
-                        await ref.put(file);
-                        return await ref.getDownloadURL();
-                    });
-
-                    // Espera todos uploads
-                    const results = await Promise.all(promises);
-                    
-                    // Adiciona URLs válidas ao array
-                    const newUrls = results.filter(url => url !== null);
-                    currentGalleryUrls = [...currentGalleryUrls, ...newUrls];
-                    
-                    window.renderGallery();
-                    galleryStatus.textContent = "Imagens adicionadas!";
-                    galleryStatus.style.color = "#00ff88";
-                    
-                    // Limpa o input para permitir selecionar as mesmas fotos se quiser
-                    galleryInput.value = '';
-
-                } catch (error) {
-                    console.error("Erro galeria:", error);
-                    galleryStatus.textContent = "Erro ao enviar algumas imagens.";
-                    galleryStatus.style.color = "#ff3b3b";
-                }
-            });
-        }
-
-        // Adicionar URL manual na galeria
-        if (addManualBtn) {
-            addManualBtn.addEventListener('click', () => {
-                const url = manualGalleryInput.value.trim();
-                if (url) {
-                    currentGalleryUrls.push(url);
-                    window.renderGallery();
-                    manualGalleryInput.value = '';
-                }
-            });
-        }
-
-        // --- UPLOAD DE TRAILER ---
-        if(trailerUploadInput) {
-            trailerUploadInput.addEventListener('change', async (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                if (!validateFile(file, 'video')) { trailerUploadInput.value = ''; return; }
-
-                trailerStatus.textContent = "Enviando vídeo (aguarde)...";
-                trailerStatus.style.display = "inline-block";
-                
-                const task = firebase.storage().ref().child(`game-trailers/${Date.now()}_${file.name}`).put(file);
-                
-                task.on('state_changed', 
-                    (snap) => {
-                        const pc = (snap.bytesTransferred / snap.totalBytes) * 100;
-                        trailerStatus.textContent = `Enviando: ${Math.round(pc)}%`;
-                    },
-                    (err) => { trailerStatus.textContent = "Erro upload."; },
-                    async () => {
-                        const url = await task.snapshot.ref.getDownloadURL();
-                        document.getElementById('new-game-trailer').value = url;
-                        trailerStatus.textContent = "Vídeo carregado!";
-                        trailerStatus.style.color = "#00ff88";
-                    }
-                );
-            });
-        }
-
-        // --- TAGS ---
-        if (tagInput) {
-            tagInput.addEventListener('keydown', (e) => {
-                if ((e.key === 'Enter' || e.key === ',') && tagInput.value) {
-                    e.preventDefault(); addTag(tagInput.value);
-                }
-                if (e.key === 'Backspace' && !tagInput.value && currentTags.length) removeTag(currentTags.length - 1);
-            });
-            tagInput.addEventListener('input', (e) => {
-                const val = e.target.value.toLowerCase().trim();
-                suggestionsList.innerHTML = '';
-                if (val.length > 0) {
-                    const matches = Array.from(allKnownTags).filter(t => t.toLowerCase().includes(val) && !currentTags.includes(t));
-                    if (matches.length > 0) {
-                        matches.forEach(match => {
-                            const li = document.createElement('li');
-                            li.textContent = match;
-                            li.onclick = () => addTag(match);
-                            suggestionsList.appendChild(li);
-                        });
-                        suggestionsList.classList.add('active');
-                    } else suggestionsList.classList.remove('active');
-                } else suggestionsList.classList.remove('active');
-            });
-        }
-
-        // --- SUBMIT DO FORMULÁRIO ---
-        createGameForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if(saveGameBtn) {
-                saveGameBtn.textContent = "Salvando...";
-                saveGameBtn.disabled = true;
-            }
-
-            const gameId = gameIdHidden.value;
-            const isEditMode = !!gameId;
-
-            // Dados
-            const name = document.getElementById('new-game-name').value;
-            const status = document.getElementById('new-game-status').value;
-            const duration = document.getElementById('new-game-duration').value;
-            const price = document.getElementById('new-game-price').value; 
-            const shortDesc = document.getElementById('new-game-short-desc').value;
-            const fullDesc = document.getElementById('new-game-full-desc').value;
-            const coverUrl = document.getElementById('new-game-cover').value;
-            const trailerUrl = document.getElementById('new-game-trailer').value;
-
-            // CAPTURA DA VIDA EXTRA
-            const hasExtraLife = checkExtraLife.checked;
-            const extraLifeDuration = hasExtraLife ? document.getElementById('new-game-extra-life-time').value : 0;
-            
-            const slug = name.toLowerCase()
-                .normalize('NFD').replace(/[\u0300-\u036f]/g, "")
-                .replace(/[^a-z0-9]/g, '-')
-                .replace(/-+/g, '-')
-                .replace(/^-|-$/g, '');
-
-            const gameData = {
-                name, slug, status, 
-                sessionDuration: duration,
-                price: price,
-                hasExtraLife: hasExtraLife,
-                extraLifeDuration: extraLifeDuration,
-                tags: currentTags, 
-                shortDescription: shortDesc, fullDescription: fullDesc,
-                coverImage: coverUrl, 
-                galleryImages: currentGalleryUrls, 
-                videoPreview: trailerUrl,
-                isPaused: (status === 'paused')
-            };
-
-            try {
-                if (isEditMode) {
-                    await db.collection('games').doc(gameId).update(gameData);
-                    alert("Jogo atualizado!");
-                    localStorage.removeItem('games'); 
-                    closeModal();
-                    loadAllGames();
-                } else {
-                    gameData.ownerId = loggedInUser.username;
-                    gameData.availability = {};
-                    gameData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-                    
-                    const docRef = await db.collection('games').add(gameData);
-                    
-                    // Passa para modo edição
-                    window.openGameModal(docRef.id);
-                    alert("Básico salvo! Agora adicione Mídia e Horários.");
-                    loadAllGames();
-                }
-            } catch (error) {
-                console.error("Erro:", error);
-                alert("Erro ao salvar: " + error.message);
-            } finally {
-                if(saveGameBtn) {
-                    saveGameBtn.textContent = isEditMode ? "Salvar Alterações" : "Criar Jogo";
-                    saveGameBtn.disabled = false;
-                }
-            }
-        });
-    }
-
-   // --- 5. CARREGAR LISTA DE JOGOS (LAYOUT EM GRADE) ---
-    async function loadAllGames() {
-        if(!gameListContainer) return;
-        gameListContainer.innerHTML = '<div class="loader"></div>';
-        
-        try {
-            const snapshot = await db.collection('games').get();
-            gameListContainer.innerHTML = '';
-
-            if (snapshot.empty) {
-                gameListContainer.innerHTML = '<p>Nenhum jogo cadastrado.</p>';
-                return;
-            }
-
-            snapshot.forEach(doc => {
-                const game = doc.data();
-                if (game.tags && Array.isArray(game.tags)) game.tags.forEach(t => allKnownTags.add(t));
-
-                const card = document.createElement('div');
-                card.className = 'game-card';
-                
-                let statusBadge = `<span style="font-size:0.8rem; color:#888;">${game.status}</span>`;
-                if(game.status === 'available') statusBadge = `<span style="font-size:0.8rem; color:#00ff88;">● Disponível</span>`;
-                if(game.status === 'paused') statusBadge = `<span style="font-size:0.8rem; color:#ffbb00;">● Pausado</span>`;
-
-                card.innerHTML = `
-                    <button class="delete-corner-btn delete-game-trigger" data-id="${doc.id}" data-name="${game.name}" title="Excluir Jogo">
-                        <ion-icon name="trash-outline"></ion-icon>
-                    </button>
-
-                    <img src="${game.coverImage || 'assets/images/logo.png'}" class="game-card-img" style="height:150px">
-                    
-                    <div class="game-card-content">
-                        <div style="margin-bottom: 1rem;">
-                            <h3 style="margin-bottom: 0.2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${game.name}</h3>
-                            <p>${statusBadge}</p>
-                        </div>
-                        
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: auto;">
-                            
-                            <button class="submit-btn small-btn edit-game-trigger" data-id="${doc.id}" style="width:100%; justify-content: center; padding: 0.5rem; font-size: 0.85rem;" title="Editar">
-                                <ion-icon name="create-outline"></ion-icon> Editar
-                            </button>
-                            
-                            <button class="submit-btn small-btn schedule-game-trigger" data-id="${doc.id}" style="width:100%; justify-content: center; background-color: var(--primary-color-dark); border: 1px solid var(--border-color); padding: 0.5rem; font-size: 0.85rem;" title="Agenda">
-                                <ion-icon name="calendar-outline"></ion-icon> Agenda
-                            </button>
-
-                            <button class="submit-btn small-btn test-room-trigger" data-id="${doc.id}" data-name="${game.name}" style="grid-column: span 2; width:100%; justify-content: center; background-color: rgba(0, 255, 136, 0.1); border: 1px solid #00ff88; color: #00ff88;">
-                                <ion-icon name="flask-outline"></ion-icon> Abrir Sala de Teste
-                            </button>
-                        </div>
-                    </div>
-                `;
-                gameListContainer.appendChild(card);
-            });
-            
-            // Listeners
-            document.querySelectorAll('.edit-game-trigger').forEach(btn => btn.addEventListener('click', (e) => window.openGameModal(e.currentTarget.dataset.id)));
-            document.querySelectorAll('.schedule-game-trigger').forEach(btn => btn.addEventListener('click', (e) => window.openScheduleOnly(e.currentTarget.dataset.id)));
-            document.querySelectorAll('.test-room-trigger').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const target = e.currentTarget;
-                    createFixedTestRoom(target.dataset.id, target.dataset.name);
-                });
-            });
-
-            // Listener de Exclusão
-            document.querySelectorAll('.delete-game-trigger').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const target = e.currentTarget; 
-                    openDeleteConfirmModal(target.dataset.id, target.dataset.name);
-                });
-            });
-
-        } catch (error) { console.error("Erro games:", error); }
-    }
-
-    // --- LÓGICA DO MODAL DE EXCLUSÃO SEGURA ---
-    let gameToDeleteId = null;
-    let gameToDeleteName = null;
+    };
     
-    const deleteModal = document.getElementById('delete-confirm-modal');
-    const deleteInput = document.getElementById('delete-verification-input');
-    const confirmDeleteBtn = document.getElementById('confirm-delete-action-btn');
-    const cancelDeleteBtn = document.getElementById('cancel-delete-modal-btn');
-    const gameNameDisplay = document.getElementById('delete-game-name-display');
+    // Fechar Modal Usuário
+    if(document.getElementById('close-user-modal')) document.getElementById('close-user-modal').onclick = () => editUserModal.classList.add('hidden');
+    if(document.getElementById('cancel-edit-btn')) document.getElementById('cancel-edit-btn').onclick = () => editUserModal.classList.add('hidden');
 
-    window.openDeleteConfirmModal = (id, name) => {
-        gameToDeleteId = id;
-        gameToDeleteName = name;
-        
-        gameNameDisplay.textContent = name;
-        deleteInput.value = '';
-        confirmDeleteBtn.disabled = true;
-        confirmDeleteBtn.style.opacity = '0.5';
-        
-        deleteModal.classList.remove('hidden');
-        deleteInput.focus();
-    };
-
-    // Verifica o texto digitado
-    if (deleteInput) {
-        deleteInput.addEventListener('input', (e) => {
-            if (e.target.value === gameToDeleteName) {
-                confirmDeleteBtn.disabled = false;
-                confirmDeleteBtn.style.opacity = '1';
-            } else {
-                confirmDeleteBtn.disabled = true;
-                confirmDeleteBtn.style.opacity = '0.5';
-            }
-        });
-    }
-
-    if (cancelDeleteBtn) {
-        cancelDeleteBtn.addEventListener('click', () => {
-            deleteModal.classList.add('hidden');
-            gameToDeleteId = null;
-        });
-    }
-
-    if (confirmDeleteBtn) {
-        confirmDeleteBtn.addEventListener('click', async () => {
-            if (!gameToDeleteId) return;
-            
-            const originalText = confirmDeleteBtn.textContent;
-            confirmDeleteBtn.textContent = "Excluindo...";
-            
-            try {
-                // Deleta o jogo
-                await db.collection('games').doc(gameToDeleteId).delete();
-                
-                // (Opcional) Deletar agendamentos relacionados poderia ser feito via Cloud Functions
-                // ou manualmente aqui se quiser fazer uma varredura.
-                
-                alert(`O jogo "${gameToDeleteName}" foi excluído.`);
-                localStorage.removeItem('games');
-                
-                deleteModal.classList.add('hidden');
-                loadAllGames(); // Recarrega a lista
-            } catch (error) {
-                console.error(error);
-                alert("Erro ao excluir.");
-            } finally {
-                confirmDeleteBtn.textContent = originalText;
-            }
-        });
-    }
 
     // =========================================================================
-    // 4. FUNÇÃO: SALA DE TESTE FIXA (CORRIGIDA)
+    // 3. GERENCIAMENTO DE CONTEÚDO (FAQ & SOBRE)
     // =========================================================================
-    window.createFixedTestRoom = async (gameId, gameName) => {
-        const fixedBookingId = `test-${gameId}`;
-        const btn = document.querySelector(`.test-room-trigger[data-id="${gameId}"]`);
-        const originalText = btn ? btn.innerHTML : '';
-        
-        if(btn) {
-            btn.innerHTML = 'Criando...';
-            btn.disabled = true;
-        }
+    const faqList = document.getElementById('faq-list-admin');
+    const faqModal = document.getElementById('faq-modal');
+    const faqForm = document.getElementById('faq-form');
 
-        try {
-            // Cria um agendamento COMPLETO com dados fictícios para não quebrar a sala
-            await db.collection('bookings').doc(fixedBookingId).set({
-                type: 'test', // Flag essencial
-                gameId: gameId,
-                gameName: gameName,
-                hostId: loggedInUser.username,
-                hostName: loggedInUser.name,
-                
-                // DADOS FICTÍCIOS DO JOGADOR (Para a sala não travar esperando isso)
-                userId: 'guest-test', 
-                userName: 'Jogador Convidado',
-                userEmail: 'convidado@teste.com',
-                
-                // DADOS DA SESSÃO
-                date: new Date().toISOString().split('T')[0], // Hoje
-                time: "Sessão de Teste",
-                price: "Grátis (Modo Teste)",
-                paymentStatus: 'paid',
-                status: 'confirmed',
-                
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            }, { merge: true });
-
-            // Redireciona
-            window.location.href = `sala-host.html?bookingId=${fixedBookingId}&mode=test`;
-
-        } catch (error) {
-            console.error("Erro ao criar teste:", error);
-            alert("Erro ao iniciar teste. Verifique o console.");
-            if(btn) {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-            }
-        }
-    };
-
-    // --- LÓGICA DA AGENDA ---
-    
-    function renderAdminCalendar() {
-        if (!currentGameData) return;
-        adminCalendarGrid.innerHTML = '';
-        const month = currentAdminDate.getMonth();
-        const year = currentAdminDate.getFullYear();
-        adminMonthHeader.textContent = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(currentAdminDate);
-        const firstDayIndex = new Date(year, month, 1).getDay();
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-        const today = new Date(); today.setHours(0,0,0,0);
-
-        for (let i = 0; i < firstDayIndex; i++) adminCalendarGrid.innerHTML += `<div></div>`;
-
-        for (let day = 1; day <= daysInMonth; day++) {
-            const dateObj = new Date(year, month, day);
-            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-            const dayEl = document.createElement('div');
-            dayEl.textContent = day;
-            dayEl.className = 'calendar-day';
-
-            if (dateObj < today) {
-                dayEl.style.opacity = '0.3'; dayEl.style.cursor = 'not-allowed';
-            } else {
-                dayEl.classList.add('available');
-                if (currentGameData.availability && currentGameData.availability[dateStr] && currentGameData.availability[dateStr].length > 0) {
-                    dayEl.classList.add('has-schedule');
-                    const dot = document.createElement('span');
-                    dot.style.cssText = "display:block; width:6px; height:6px; background:var(--secondary-color); border-radius:50%; margin: 2px auto 0;";
-                    dayEl.appendChild(dot);
-                }
-                dayEl.onclick = () => openSingleDayEditor(dateStr);
-            }
-            adminCalendarGrid.appendChild(dayEl);
-        }
-    }
-
-    if(document.getElementById('admin-prev-month')) document.getElementById('admin-prev-month').addEventListener('click', () => { currentAdminDate.setMonth(currentAdminDate.getMonth() - 1); renderAdminCalendar(); });
-    if(document.getElementById('admin-next-month')) document.getElementById('admin-next-month').addEventListener('click', () => { currentAdminDate.setMonth(currentAdminDate.getMonth() + 1); renderAdminCalendar(); });
-
-    function openSingleDayEditor(dateStr) {
-        editingDateStr = dateStr;
-        singleDayEditor.classList.remove('hidden');
-        document.getElementById('editing-date-display').textContent = dateStr.split('-').reverse().join('/');
-        
-        // Injeta Botão de Limpar Dinamicamente se não existir no HTML estático do modal
-        let btnContainer = singleDayEditor.querySelector('.editor-btn-container');
-        if(!btnContainer) {
-            btnContainer = document.createElement('div');
-            btnContainer.className = 'editor-btn-container';
-            btnContainer.style.cssText = "display:flex; gap:10px; margin-top:10px;";
-            
-            const clearBtn = document.createElement('button');
-            clearBtn.textContent = 'Limpar Dia';
-            clearBtn.className = 'submit-btn danger-btn small-btn';
-            clearBtn.style.flex = '1';
-            clearBtn.onclick = () => {
-                if(confirm("Remover todos os horários deste dia?")) {
-                    renderSingleDaySlots([]);
-                }
-            };
-            
-            // Move o botão salvar existente para dentro
-            const saveBtn = document.getElementById('save-single-day-btn');
-            saveBtn.style.flex = '1';
-            saveBtn.style.width = 'auto'; // Remove width 100%
-            saveBtn.style.marginTop = '0';
-            
-            btnContainer.appendChild(clearBtn);
-            btnContainer.appendChild(saveBtn);
-            singleDayEditor.appendChild(btnContainer);
-        }
-
-        const times = (currentGameData.availability && currentGameData.availability[dateStr]) || [];
-        renderSingleDaySlots(times);
-    }
-
-    function renderSingleDaySlots(times) {
-        singleDaySlots.innerHTML = '';
-        times.sort().forEach((time, index) => {
-            const tag = document.createElement('div');
-            tag.className = 'tag-capsule';
-            tag.innerHTML = `<span>${time}</span><span class="close-tag" onclick="removeSingleTime(${index})">&times;</span>`;
-            singleDaySlots.appendChild(tag);
-        });
-    }
-
-    if(document.getElementById('add-single-time-btn')) document.getElementById('add-single-time-btn').addEventListener('click', () => {
-        const timeVal = document.getElementById('single-time-input').value;
-        if (timeVal) {
-            let currentTimes = [];
-            singleDaySlots.querySelectorAll('.tag-capsule span:first-child').forEach(el => currentTimes.push(el.textContent));
-            if (!currentTimes.includes(timeVal)) { currentTimes.push(timeVal); renderSingleDaySlots(currentTimes); }
-        }
-    });
-
-    window.removeSingleTime = (index) => {
-        let currentTimes = [];
-        singleDaySlots.querySelectorAll('.tag-capsule span:first-child').forEach(el => currentTimes.push(el.textContent));
-        currentTimes.splice(index, 1);
-        renderSingleDaySlots(currentTimes);
-    };
-
-    if(document.getElementById('save-single-day-btn')) document.getElementById('save-single-day-btn').addEventListener('click', async () => {
-        if (!editingDateStr || !currentGameData) return;
-        let newTimes = [];
-        singleDaySlots.querySelectorAll('.tag-capsule span:first-child').forEach(el => newTimes.push(el.textContent));
-        newTimes.sort();
-        if (!currentGameData.availability) currentGameData.availability = {};
-        if (newTimes.length > 0) currentGameData.availability[editingDateStr] = newTimes;
-        else delete currentGameData.availability[editingDateStr];
-
-        try {
-            await db.collection('games').doc(currentGameData.id).update({ availability: currentGameData.availability });
-            alert('Horários atualizados!');
-            singleDayEditor.classList.add('hidden');
-            renderAdminCalendar();
-        } catch (e) { console.error(e); alert('Erro ao salvar.'); }
-    });
-
-    // Bulk
-    if(document.getElementById('add-bulk-time-btn')) document.getElementById('add-bulk-time-btn').addEventListener('click', () => {
-        const timeVal = document.getElementById('bulk-time-input').value;
-        if (timeVal && !bulkTimesArray.includes(timeVal)) { bulkTimesArray.push(timeVal); bulkTimesArray.sort(); renderBulkTimes(); }
-    });
-
-    function renderBulkTimes() {
-        bulkTimesList.innerHTML = '';
-        bulkTimesArray.forEach((time, index) => {
-            const tag = document.createElement('div');
-            tag.className = 'tag-capsule';
-            tag.innerHTML = `<span>${time}</span><span class="close-tag" onclick="removeBulkTime(${index})">&times;</span>`;
-            bulkTimesList.appendChild(tag);
-        });
-    }
-
-    window.removeBulkTime = (index) => { bulkTimesArray.splice(index, 1); renderBulkTimes(); };
-
-    // APLICAR AGENDAMENTO EM MASSA
-    if(document.getElementById('apply-bulk-schedule-btn')) document.getElementById('apply-bulk-schedule-btn').addEventListener('click', async () => {
-        const startStr = bulkStartDate.value;
-        const endStr = bulkEndDate.value;
-        
-        if (!startStr || !endStr || bulkTimesArray.length === 0) {
-            alert("Preencha data de início, fim e adicione pelo menos um horário.");
-            return;
-        }
-
-        // CORREÇÃO DE FUSO HORÁRIO
-        const startDate = new Date(startStr + 'T00:00:00');
-        const endDate = new Date(endStr + 'T00:00:00');
-        
-        const selectedWeekdays = [];
-        document.querySelectorAll('#schedule-view-bulk input[type="checkbox"]:checked').forEach(cb => {
-            selectedWeekdays.push(parseInt(cb.value));
-        });
-
-        if (selectedWeekdays.length === 0) {
-            alert("Selecione pelo menos um dia da semana.");
-            return;
-        }
-
-        if (!currentGameData.availability) currentGameData.availability = {};
-
-        let loopDate = new Date(startDate);
-        let countChanges = 0;
-
-        while (loopDate <= endDate) {
-            const dayOfWeek = loopDate.getDay(); 
-            
-            if (selectedWeekdays.includes(dayOfWeek)) {
-                const year = loopDate.getFullYear();
-                const month = String(loopDate.getMonth() + 1).padStart(2, '0');
-                const day = String(loopDate.getDate()).padStart(2, '0');
-                const dateKey = `${year}-${month}-${day}`;
-                
-                const existing = currentGameData.availability[dateKey] || [];
-                const merged = [...new Set([...existing, ...bulkTimesArray])].sort();
-                
-                currentGameData.availability[dateKey] = merged;
-                countChanges++;
-            }
-            loopDate.setDate(loopDate.getDate() + 1);
-        }
-
-        try {
-            await db.collection('games').doc(currentGameData.id).update({
-                availability: currentGameData.availability
-            });
-            alert(`Sucesso! Agenda atualizada em ${countChanges} datas.`);
-            document.getElementById('tab-calendar-view').click();
-        } catch (e) { 
-            console.error(e); 
-            alert("Erro ao salvar em massa."); 
-        }
-    });
-
-    // --- Abas da Agenda ---
-    const tabCalendar = document.getElementById('tab-calendar-view');
-    const tabBulk = document.getElementById('tab-bulk-add');
-
-    if(tabCalendar) tabCalendar.addEventListener('click', (e) => {
-        document.getElementById('schedule-view-calendar').classList.remove('hidden');
-        document.getElementById('schedule-view-bulk').classList.add('hidden');
-        e.target.classList.add('active');
-        if(tabBulk) tabBulk.classList.remove('active');
-        renderAdminCalendar();
-    });
-
-    if(tabBulk) tabBulk.addEventListener('click', (e) => {
-        document.getElementById('schedule-view-calendar').classList.add('hidden');
-        document.getElementById('schedule-view-bulk').classList.remove('hidden');
-        e.target.classList.add('active');
-        if(tabCalendar) tabCalendar.classList.remove('active');
-    });
-
-    // =========================================================================
-    // 4. GERENCIAMENTO DE CONTEÚDO (FAQ E SOBRE)
-    // =========================================================================
-
+    // Abas internas de conteúdo
     document.querySelectorAll('.content-tabs .tab-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             if(e.target.closest('#schedule-content')) return; 
             document.querySelectorAll('.content-tabs .tab-btn').forEach(b => b.classList.remove('active'));
             e.target.classList.add('active');
             document.querySelectorAll('.content-sub-section').forEach(s => s.classList.add('hidden-section'));
-            document.getElementById(e.target.dataset.target).classList.remove('hidden-section');
+            const targetId = e.target.dataset.target;
+            if(document.getElementById(targetId)) document.getElementById(targetId).classList.remove('hidden-section');
         });
     });
 
     async function loadFAQs() {
-        faqListAdmin.innerHTML = '<div class="loader"></div>';
+        if(!faqList) return;
         try {
             const doc = await db.collection('siteContent').doc('faq').get();
-            let faqs = doc.exists ? (doc.data().items || []) : [];
-            faqListAdmin.innerHTML = '';
-            if (faqs.length === 0) { faqListAdmin.innerHTML = '<p>Nenhuma pergunta.</p>'; return; }
-            
-            window.currentFaqs = faqs;
-            faqs.forEach((faq, index) => {
-                const div = document.createElement('div');
-                div.className = 'booking-item';
-                div.innerHTML = `
-                    <div class="booking-item-info"><strong>${faq.question}</strong><span>${faq.answer.substring(0,50)}...</span></div>
-                    <button class="submit-btn small-btn" onclick="openFaqModal(${index})">Editar</button>
-                `;
-                faqListAdmin.appendChild(div);
+            currentFaqs = doc.exists ? (doc.data().items || []) : [];
+            faqList.innerHTML = '';
+            currentFaqs.forEach((faq, i) => {
+                const div = document.createElement('div'); div.className = 'booking-item';
+                div.innerHTML = `<div class="booking-item-info"><strong>${faq.question}</strong></div><button class="submit-btn small-btn" onclick="openFaqModal(${i})">Editar</button>`;
+                faqList.appendChild(div);
             });
-        } catch (error) { console.error(error); }
+        } catch(e) {}
     }
 
     window.openFaqModal = (index = null) => {
-        const isEdit = index !== null;
-        document.getElementById('faq-modal-title').textContent = isEdit ? 'Editar Pergunta' : 'Nova Pergunta';
-        document.getElementById('faq-id').value = isEdit ? index : '';
-        const deleteBtn = document.getElementById('delete-faq-btn');
-        
-        if (isEdit) {
-            const faq = window.currentFaqs[index];
-            document.getElementById('faq-question').value = faq.question;
-            document.getElementById('faq-answer').value = faq.answer;
-            deleteBtn.classList.remove('hidden');
-            deleteBtn.onclick = () => deleteFaq(index);
+        document.getElementById('faq-id').value = index !== null ? index : '';
+        const delBtn = document.getElementById('delete-faq-btn');
+        if(index !== null) {
+            document.getElementById('faq-question').value = currentFaqs[index].question;
+            document.getElementById('faq-answer').value = currentFaqs[index].answer;
+            if(delBtn) delBtn.classList.remove('hidden');
         } else {
-            faqForm.reset();
-            deleteBtn.classList.add('hidden');
+            faqForm.reset(); 
+            if(delBtn) delBtn.classList.add('hidden');
         }
         faqModal.classList.remove('hidden');
     };
 
-    if(addFaqBtn) addFaqBtn.addEventListener('click', () => openFaqModal(null));
-    if(document.getElementById('close-faq-modal')) document.getElementById('close-faq-modal').addEventListener('click', () => faqModal.classList.add('hidden'));
-    if(document.getElementById('cancel-faq-btn')) document.getElementById('cancel-faq-btn').addEventListener('click', () => faqModal.classList.add('hidden'));
-
-    if(faqForm) faqForm.addEventListener('submit', async (e) => {
+    if(faqForm) faqForm.onsubmit = async (e) => {
         e.preventDefault();
-        const index = document.getElementById('faq-id').value;
-        const newFaq = { 
-            question: document.getElementById('faq-question').value, 
-            answer: document.getElementById('faq-answer').value 
-        };
-        let faqs = window.currentFaqs || [];
-        if (index !== '') faqs[index] = newFaq;
-        else faqs.push(newFaq);
-        await saveFaqs(faqs);
-        faqModal.classList.add('hidden');
-    });
+        const idx = document.getElementById('faq-id').value;
+        const item = { question: document.getElementById('faq-question').value, answer: document.getElementById('faq-answer').value };
+        if(idx !== '') currentFaqs[idx] = item; else currentFaqs.push(item);
+        await db.collection('siteContent').doc('faq').set({ items: currentFaqs });
+        faqModal.classList.add('hidden'); loadFAQs();
+    };
 
-    async function deleteFaq(index) {
-        if (!confirm('Excluir pergunta?')) return;
-        let faqs = window.currentFaqs;
-        faqs.splice(index, 1);
-        await saveFaqs(faqs);
-        faqModal.classList.add('hidden');
-    }
+    if(document.getElementById('add-faq-btn')) document.getElementById('add-faq-btn').onclick = () => window.openFaqModal(null);
+    if(document.getElementById('delete-faq-btn')) document.getElementById('delete-faq-btn').onclick = async () => {
+        const idx = document.getElementById('faq-id').value;
+        currentFaqs.splice(idx, 1);
+        await db.collection('siteContent').doc('faq').set({ items: currentFaqs });
+        faqModal.classList.add('hidden'); loadFAQs();
+    };
+    if(document.getElementById('close-faq-modal')) document.getElementById('close-faq-modal').onclick = () => faqModal.classList.add('hidden');
+    if(document.getElementById('cancel-faq-btn')) document.getElementById('cancel-faq-btn').onclick = () => faqModal.classList.add('hidden');
 
-    async function saveFaqs(faqs) {
-        try {
-            await db.collection('siteContent').doc('faq').set({ items: faqs });
-            loadFAQs();
-        } catch (error) { alert('Erro ao salvar.'); }
-    }
-
+    // Sobre
     async function loadAboutText() {
-        try {
-            const doc = await db.collection('siteContent').doc('about').get();
-            if (doc.exists) document.getElementById('about-history').value = doc.data().text || '';
-        } catch (error) { console.error(error); }
+        try { const doc = await db.collection('siteContent').doc('about').get(); if(doc.exists) document.getElementById('about-history').value = doc.data().text || ''; } catch(e){}
     }
-
-    if(aboutForm) aboutForm.addEventListener('submit', async (e) => {
+    const aboutForm = document.getElementById('about-form');
+    if(aboutForm) aboutForm.onsubmit = async (e) => {
         e.preventDefault();
-        try {
-            await db.collection('siteContent').doc('about').set({ text: document.getElementById('about-history').value });
-            alert('Texto "Sobre" atualizado!');
-        } catch (error) { alert('Erro ao salvar.'); }
-    });
+        await db.collection('siteContent').doc('about').set({ text: document.getElementById('about-history').value });
+        alert("Sobre atualizado!");
+    };
+
 
     // =========================================================================
-    // 5. GERENCIAMENTO DE CURSOS
+    // 4. GERENCIAMENTO DE CURSOS
     // =========================================================================
-
-    const closeCourseModal = document.getElementById('close-course-modal');
-    const cancelCourseBtn = document.getElementById('cancel-course-btn');
-    const deleteCourseBtn = document.getElementById('delete-course-btn');
-    let currentCourseModules = [];
+    const courseList = document.getElementById('course-list-admin');
+    const courseModal = document.getElementById('course-modal');
+    const courseForm = document.getElementById('course-form');
+    const modulesContainer = document.getElementById('modules-container');
 
     async function loadCourses() {
-        if(!courseListAdmin) return;
-        courseListAdmin.innerHTML = '<div class="loader"></div>';
+        if(!courseList) return;
+        courseList.innerHTML = '<div class="loader"></div>';
         try {
-            const snapshot = await db.collection('courses').get();
-            courseListAdmin.innerHTML = '';
-            if (snapshot.empty) { courseListAdmin.innerHTML = '<p>Nenhum curso.</p>'; return; }
-            snapshot.forEach(doc => {
-                const course = doc.data();
-                const card = document.createElement('div');
-                card.className = 'game-card';
-                card.innerHTML = `
-                    <img src="${course.coverImage || 'assets/images/logo.png'}" class="game-card-img" style="height:150px">
-                    <div class="game-card-content">
-                        <h3>${course.title}</h3>
-                        <p>${(course.modules||[]).length} Módulos</p>
-                        <button class="submit-btn small-btn" onclick="openCourseModal('${doc.id}')">Editar</button>
-                    </div>
-                `;
-                courseListAdmin.appendChild(card);
+            const snap = await db.collection('courses').get();
+            courseList.innerHTML = '';
+            if(snap.empty) { courseList.innerHTML = '<p>Nenhum curso.</p>'; return; }
+            snap.forEach(doc => {
+                const c = doc.data();
+                const card = document.createElement('div'); card.className = 'game-card';
+                card.innerHTML = `<img src="${c.coverImage||'assets/images/logo.png'}" class="game-card-img" style="height:150px"><div class="game-card-content"><h3>${c.title}</h3><p>${(c.modules||[]).length} Módulos</p><button class="submit-btn small-btn" onclick="openCourseModal('${doc.id}')">Editar</button></div>`;
+                courseList.appendChild(card);
             });
-        } catch (e) { console.error(e); }
+        } catch(e) {}
     }
 
-    window.openCourseModal = async (courseId = null) => {
-        document.getElementById('course-modal-title').textContent = courseId ? 'Editar Curso' : 'Novo Curso';
-        document.getElementById('course-id').value = courseId || '';
+    window.openCourseModal = async (id = null) => {
+        document.getElementById('course-id').value = id || '';
         document.getElementById('course-title').value = '';
         document.getElementById('course-desc').value = '';
         document.getElementById('course-cover').value = '';
         currentCourseModules = [];
+        
+        const delBtn = document.getElementById('delete-course-btn');
+        if(id) {
+            if(delBtn) delBtn.classList.remove('hidden');
+            const doc = await db.collection('courses').doc(id).get();
+            if(doc.exists) {
+                const d = doc.data();
+                document.getElementById('course-title').value = d.title;
+                document.getElementById('course-desc').value = d.description;
+                document.getElementById('course-cover').value = d.coverImage;
+                currentCourseModules = d.modules || [];
+            }
+        } else {
+            if(delBtn) delBtn.classList.add('hidden');
+        }
         renderModulesInput();
-
-        if (courseId) {
-            deleteCourseBtn.classList.remove('hidden');
-            deleteCourseBtn.onclick = () => deleteCourse(courseId);
-            try {
-                const doc = await db.collection('courses').doc(courseId).get();
-                if (doc.exists) {
-                    const data = doc.data();
-                    document.getElementById('course-title').value = data.title;
-                    document.getElementById('course-desc').value = data.description;
-                    document.getElementById('course-cover').value = data.coverImage;
-                    currentCourseModules = data.modules || [];
-                    renderModulesInput();
-                }
-            } catch (e) { console.error(e); }
-        } else { deleteCourseBtn.classList.add('hidden'); }
         courseModal.classList.remove('hidden');
     };
 
     function renderModulesInput() {
+        if(!modulesContainer) return;
         modulesContainer.innerHTML = '';
-        currentCourseModules.forEach((mod, modIndex) => {
-            const modDiv = document.createElement('div');
-            modDiv.style.background = 'rgba(0,0,0,0.2)';
-            modDiv.style.padding = '1rem';
-            modDiv.style.marginBottom = '1rem';
-            modDiv.style.borderRadius = '5px';
-            modDiv.innerHTML = `
-                <div style="display:flex; gap:10px; margin-bottom:10px; align-items:center;">
-                    <strong style="color:var(--secondary-color)">Módulo ${modIndex + 1}</strong>
-                    <input type="text" value="${mod.title}" placeholder="Nome do Módulo" class="module-title-input" data-index="${modIndex}" style="flex:1; padding:5px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-color); color:var(--text-color);">
-                    <button type="button" class="submit-btn danger-btn small-btn" onclick="removeModule(${modIndex})">X</button>
-                </div>
-                <div class="videos-list-${modIndex}" style="padding-left:1rem; border-left:2px solid var(--border-color);"></div>
-                <button type="button" class="submit-btn small-btn secondary-btn" onclick="addVideo(${modIndex})" style="margin-top:10px; width:100%">+ Aula</button>
-            `;
-            const videosContainer = modDiv.querySelector(`.videos-list-${modIndex}`);
-            (mod.videos || []).forEach((vid, vidIndex) => {
-                const vidRow = document.createElement('div');
-                vidRow.style.display = 'flex';
-                vidRow.style.gap = '5px';
-                vidRow.style.marginTop = '5px';
-                vidRow.innerHTML = `
-                    <input type="text" value="${vid.title}" placeholder="Título Aula" onchange="updateVideo(${modIndex}, ${vidIndex}, 'title', this.value)" style="padding:5px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-color); color:var(--text-color);">
-                    <input type="text" value="${vid.url}" placeholder="Link" onchange="updateVideo(${modIndex}, ${vidIndex}, 'url', this.value)" style="padding:5px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-color); color:var(--text-color);">
-                    <button type="button" class="submit-btn danger-btn small-btn" onclick="removeVideo(${modIndex}, ${vidIndex})">X</button>
-                `;
-                videosContainer.appendChild(vidRow);
+        currentCourseModules.forEach((mod, mi) => {
+            const div = document.createElement('div'); div.style.cssText = 'background:rgba(0,0,0,0.2);padding:1rem;margin-bottom:1rem;border-radius:5px;';
+            div.innerHTML = `<div style="display:flex;gap:10px;margin-bottom:10px;"><strong style="color:var(--secondary-color)">Módulo ${mi+1}</strong><input type="text" value="${mod.title}" class="mod-title" data-i="${mi}" style="flex:1"><button type="button" class="submit-btn danger-btn small-btn" onclick="removeModule(${mi})">X</button></div><div class="v-list-${mi}"></div><button type="button" class="submit-btn small-btn secondary-btn" onclick="addVideo(${mi})" style="width:100%">+ Aula</button>`;
+            const vList = div.querySelector(`.v-list-${mi}`);
+            (mod.videos||[]).forEach((v, vi) => {
+                const row = document.createElement('div'); row.style.cssText='display:flex;gap:5px;margin-top:5px;';
+                row.innerHTML = `<input type="text" value="${v.title}" placeholder="Título" onchange="updV(${mi},${vi},'title',this.value)"><input type="text" value="${v.url}" placeholder="Link" onchange="updV(${mi},${vi},'url',this.value)"><button type="button" class="submit-btn danger-btn small-btn" onclick="remV(${mi},${vi})">X</button>`;
+                vList.appendChild(row);
             });
-            modulesContainer.appendChild(modDiv);
+            modulesContainer.appendChild(div);
         });
-        document.querySelectorAll('.module-title-input').forEach(input => {
-            input.addEventListener('input', (e) => { currentCourseModules[e.target.dataset.index].title = e.target.value; });
-        });
+        document.querySelectorAll('.mod-title').forEach(i => i.oninput = (e) => currentCourseModules[e.target.dataset.i].title = e.target.value);
     }
 
-    // Helpers Curso
-    window.addModule = () => { currentCourseModules.push({ title: '', videos: [] }); renderModulesInput(); };
-    window.removeModule = (i) => { if(confirm('Remover?')) { currentCourseModules.splice(i, 1); renderModulesInput(); } };
-    window.addVideo = (i) => { currentCourseModules[i].videos.push({ title: '', url: '' }); renderModulesInput(); };
-    window.removeVideo = (mi, vi) => { currentCourseModules[mi].videos.splice(vi, 1); renderModulesInput(); };
-    window.updateVideo = (mi, vi, f, v) => { currentCourseModules[mi].videos[vi][f] = v; };
+    // Helpers Globais de Cursos
+    window.addModule = () => { currentCourseModules.push({title:'', videos:[]}); renderModulesInput(); };
+    window.removeModule = (i) => { if(confirm('Remover?')){currentCourseModules.splice(i,1); renderModulesInput();} };
+    window.addVideo = (i) => { currentCourseModules[i].videos.push({title:'', url:''}); renderModulesInput(); };
+    window.remV = (mi, vi) => { currentCourseModules[mi].videos.splice(vi, 1); renderModulesInput(); };
+    window.updV = (mi, vi, f, v) => { currentCourseModules[mi].videos[vi][f] = v; };
 
-    if(addModuleBtn) addModuleBtn.addEventListener('click', window.addModule);
-    if(addCourseBtn) addCourseBtn.addEventListener('click', () => openCourseModal(null));
-    const closeCourse = () => courseModal.classList.add('hidden');
-    if(closeCourseModal) closeCourseModal.addEventListener('click', closeCourse);
-    if(cancelCourseBtn) cancelCourseBtn.addEventListener('click', closeCourse);
+    if(document.getElementById('add-module-btn')) document.getElementById('add-module-btn').onclick = window.addModule;
+    if(document.getElementById('add-course-btn')) document.getElementById('add-course-btn').onclick = () => window.openCourseModal(null);
+    if(courseForm) courseForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('course-id').value;
+        const data = { title: document.getElementById('course-title').value, description: document.getElementById('course-desc').value, coverImage: document.getElementById('course-cover').value, modules: currentCourseModules, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+        try { if(id) await db.collection('courses').doc(id).update(data); else await db.collection('courses').add(data); alert('Curso salvo!'); courseModal.classList.add('hidden'); loadCourses(); } catch(e) { alert('Erro'); }
+    };
+    if(document.getElementById('delete-course-btn')) document.getElementById('delete-course-btn').onclick = async () => { if(confirm('Excluir?')) { await db.collection('courses').doc(document.getElementById('course-id').value).delete(); courseModal.classList.add('hidden'); loadCourses(); }};
+    if(document.getElementById('close-course-modal')) document.getElementById('close-course-modal').onclick = () => courseModal.classList.add('hidden');
+    if(document.getElementById('cancel-course-btn')) document.getElementById('cancel-course-btn').onclick = () => courseModal.classList.add('hidden');
 
-    if(courseForm) {
-        courseForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const id = document.getElementById('course-id').value;
-            const data = {
-                title: document.getElementById('course-title').value,
-                description: document.getElementById('course-desc').value,
-                coverImage: document.getElementById('course-cover').value,
-                modules: currentCourseModules,
-                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-            };
-            try {
-                if(id) await db.collection('courses').doc(id).update(data);
-                else await db.collection('courses').add(data);
-                alert('Curso salvo!');
-                closeCourse();
-                loadCourses();
-            } catch (e) { alert('Erro ao salvar.'); }
+
+    // =========================================================================
+    // 5. GERENCIAMENTO DE JOGOS & AGENDAS (CORRIGIDO E SEPARADO)
+    // =========================================================================
+    
+    // Referências DOM
+    const gameListContainer = document.getElementById('game-list-container');
+    const createGameModal = document.getElementById('create-game-modal');
+    const createGameForm = document.getElementById('create-game-form');
+    const agendaModal = document.getElementById('agenda-modal');
+
+    // Funções Globais de Mídia (Assets)
+    window.renderGallery = () => {
+        const grid = document.getElementById('gallery-preview-grid');
+        if(!grid) return;
+        grid.innerHTML = '';
+        currentGalleryUrls.forEach((url, i) => {
+            grid.innerHTML += `<div class="gallery-item"><img src="${url}"><button type="button" class="gallery-remove-btn" onclick="removeGalleryItem(${i})">✕</button></div>`;
         });
-    }
-
-    window.deleteCourse = async (id) => {
-        if(confirm('Excluir curso?')) {
-            await db.collection('courses').doc(id).delete();
-            closeCourse();
-            loadCourses();
-        }
     };
 
-    // Inicializa
-    populateTimeSelects();
-    checkAuth();
+    window.renderSessionAssets = () => {
+        const list = document.getElementById('assets-crud-list'); // Atualizado para o ID do CRUD
+        if(!list) return;
+        list.innerHTML = '';
+        if(currentSessionAssets.length === 0) {
+            list.innerHTML = '<p style="padding:10px;text-align:center;opacity:0.5;">Sem arquivos.</p>'; return;
+        }
+        currentSessionAssets.forEach((a, i) => {
+            let thumb = a.type.includes('image') ? `<img src="${a.url}" class="crud-item-thumb">` : `<div class="crud-item-thumb"><ion-icon name="videocam"></ion-icon></div>`;
+            list.innerHTML += `
+            <div class="crud-item">
+                ${thumb}
+                <div class="crud-item-info"><div class="crud-item-name">${a.name}</div><div class="crud-item-type">${a.type}</div></div>
+                <div class="crud-actions">
+                    <button type="button" class="submit-btn small-btn" onclick="window.open('${a.url}')"><ion-icon name="eye"></ion-icon></button>
+                    <button type="button" class="submit-btn danger-btn small-btn" onclick="removeSessionAsset(${i})"><ion-icon name="trash"></ion-icon></button>
+                </div>
+            </div>`;
+        });
+    };
+
+    window.removeGalleryItem = (i) => { currentGalleryUrls.splice(i, 1); window.renderGallery(); };
+    window.removeSessionAsset = (i) => { currentSessionAssets.splice(i, 1); window.renderSessionAssets(); };
+    window.removeTag = (i) => { currentTags.splice(i, 1); renderTags(); };
+
+    function renderTags() {
+        const wrapper = document.getElementById('tags-wrapper');
+        const input = document.getElementById('tag-input-field');
+        if(!wrapper) return;
+        wrapper.querySelectorAll('.tag-capsule').forEach(e => e.remove());
+        currentTags.forEach((t, i) => {
+            const el = document.createElement('div'); el.className = 'tag-capsule';
+            el.innerHTML = `<span>${t}</span><span class="close-tag" onclick="removeTag(${i})">&times;</span>`;
+            wrapper.insertBefore(el, input);
+        });
+    }
+
+    // --- CARREGAR JOGOS (EVENT DELEGATION PARA EVITAR BUGS) ---
+    window.loadAllGames = async function() {
+        if(!gameListContainer) return;
+        gameListContainer.innerHTML = '<div class="loader"></div>';
+        try {
+            const snap = await db.collection('games').get();
+            gameListContainer.innerHTML = '';
+            if(snap.empty) { gameListContainer.innerHTML = '<p>Nenhum jogo cadastrado.</p>'; return; }
+            
+            snap.forEach(doc => {
+                const g = doc.data();
+                if(g.tags) g.tags.forEach(t => allKnownTags.add(t));
+                const card = document.createElement('div'); card.className = 'game-card';
+                card.innerHTML = `
+                    <button class="delete-corner-btn delete-game-trigger" data-id="${doc.id}" data-name="${g.name}"><ion-icon name="trash-outline"></ion-icon></button>
+                    <img src="${g.coverImage||'assets/images/logo.png'}" class="game-card-img" style="height:150px">
+                    <div class="game-card-content">
+                        <div style="margin-bottom:1rem;"><h3>${g.name}</h3><small>${g.status==='available'?'<span style="color:#00ff88">● On</span>':'<span style="color:#ffbb00">● Off</span>'}</small></div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                            <button class="submit-btn small-btn edit-game-trigger" data-id="${doc.id}">Editar</button>
+                            <button class="submit-btn small-btn schedule-game-trigger" data-id="${doc.id}" style="background:var(--primary-color-dark);border:1px solid #444;">Agenda</button>
+                            <button class="submit-btn small-btn test-room-trigger" data-id="${doc.id}" data-name="${g.name}" style="grid-column:span 2;background:rgba(0,255,136,0.1);color:#00ff88;">Testar Sala</button>
+                        </div>
+                    </div>`;
+                gameListContainer.appendChild(card);
+            });
+        } catch(e) { console.error(e); }
+    };
+
+    // DELEGATION LISTENER (CORREÇÃO FUNDAMENTAL)
+    if(gameListContainer) {
+        gameListContainer.addEventListener('click', (e) => {
+            const editBtn = e.target.closest('.edit-game-trigger');
+            const agendaBtn = e.target.closest('.schedule-game-trigger');
+            const testBtn = e.target.closest('.test-room-trigger');
+            const delBtn = e.target.closest('.delete-game-trigger');
+
+            if(editBtn) window.openGameModal(editBtn.dataset.id);
+            if(agendaBtn) window.openScheduleModal(agendaBtn.dataset.id);
+            if(testBtn) window.createFixedTestRoom(testBtn.dataset.id, testBtn.dataset.name);
+            if(delBtn) window.openDeleteConfirmModal(delBtn.dataset.id, delBtn.dataset.name);
+        });
+    }
+
+    // --- FUNÇÃO DE ABRIR MODAL DE JOGO (SAFE MODE) ---
+    window.openGameModal = async (gameId) => {
+        createGameForm.reset();
+        document.getElementById('game-id').value = gameId || '';
+        
+        // Reset local
+        currentTags = []; currentGalleryUrls = []; currentSessionAssets = [];
+        tempAssetFile = null;
+        renderTags(); window.renderGallery(); window.renderSessionAssets();
+        
+        // Esconder previews
+        const coverPreview = document.getElementById('admin-cover-preview');
+        if(coverPreview) coverPreview.style.display = 'none';
+        
+        // Reset Vida Extra
+        const chkExtra = document.getElementById('check-extra-life');
+        const extraCont = document.getElementById('extra-life-config-container');
+        if(chkExtra) { chkExtra.checked = false; if(extraCont) extraCont.classList.add('hidden'); }
+
+        const title = document.getElementById('game-modal-title');
+        const saveBtn = document.getElementById('save-game-submit-btn');
+        const delBtn = document.getElementById('delete-game-btn');
+
+        if (gameId) {
+            if(title) title.textContent = "Editar Jogo";
+            if(saveBtn) saveBtn.textContent = "Salvar Alterações";
+            if(delBtn) delBtn.classList.remove('hidden');
+            
+            try {
+                const doc = await db.collection('games').doc(gameId).get();
+                if(doc.exists) {
+                    const d = doc.data();
+                    const set = (id, v) => { const e = document.getElementById(id); if(e) e.value = v || ''; };
+                    
+                    set('new-game-name', d.name); set('new-game-status', d.status);
+                    set('new-game-duration', d.sessionDuration); set('new-game-price', d.price);
+                    set('new-game-short-desc', d.shortDescription); set('new-game-full-desc', d.fullDescription);
+                    set('new-game-cover', d.coverImage); set('new-game-trailer', d.videoPreview);
+                    
+                    if(d.coverImage && coverPreview) { coverPreview.src = d.coverImage; coverPreview.style.display = 'block'; }
+                    if(d.tags) { currentTags = d.tags; renderTags(); }
+                    if(d.galleryImages) { currentGalleryUrls = d.galleryImages; window.renderGallery(); }
+                    if(d.sessionAssets) { currentSessionAssets = d.sessionAssets; window.renderSessionAssets(); }
+                    
+                    if(d.hasExtraLife && chkExtra) {
+                        chkExtra.checked = true;
+                        if(extraCont) extraCont.classList.remove('hidden');
+                        document.getElementById('new-game-extra-life-time').value = d.extraLifeDuration || '';
+                    }
+                }
+            } catch(e) { console.error(e); }
+        } else {
+            if(title) title.textContent = "Criar Novo Jogo";
+            if(saveBtn) saveBtn.textContent = "Criar Jogo";
+            if(delBtn) delBtn.classList.add('hidden');
+        }
+        createGameModal.classList.remove('hidden');
+    };
+
+    // --- FUNÇÃO DE ABRIR MODAL AGENDA ---
+    window.openScheduleModal = async (gameId) => {
+        currentAgendaGameId = gameId;
+        currentAgendaData = {};
+        
+        // Reset UI Agenda
+        const viewCal = document.getElementById('schedule-view-calendar');
+        const viewBulk = document.getElementById('schedule-view-bulk');
+        const tabCal = document.getElementById('tab-calendar-view');
+        const tabBulk = document.getElementById('tab-bulk-add');
+
+        if(viewCal) viewCal.classList.remove('hidden');
+        if(viewBulk) viewBulk.classList.add('hidden');
+        if(tabCal) tabCal.classList.add('active');
+        if(tabBulk) tabBulk.classList.remove('active');
+        
+        try {
+            const doc = await db.collection('games').doc(gameId).get();
+            if(doc.exists) {
+                const d = doc.data();
+                currentAgendaData = d.availability || {};
+                const label = document.getElementById('agenda-game-name');
+                if(label) label.textContent = d.name;
+                renderAdminCalendar();
+                agendaModal.classList.remove('hidden');
+            }
+        } catch(e) { alert("Erro ao abrir agenda."); }
+    };
+
+    // --- UPLOAD HANDLER & ASSET CRUD ---
+    function setupUpload(inputId, type, cb) {
+        const input = document.getElementById(inputId);
+        if(!input) return;
+        input.onchange = async (e) => {
+            const files = Array.from(e.target.files);
+            if(!files.length) return;
+            try {
+                const promises = files.map(async f => {
+                    const ref = storage.ref().child(`uploads/${Date.now()}_${f.name}`);
+                    await ref.put(f);
+                    return { url: await ref.getDownloadURL(), name: f.name, type: f.type };
+                });
+                const res = await Promise.all(promises);
+                cb(res);
+            } catch(e) { console.error(e); }
+        };
+    }
+
+    setupUpload('admin-cover-upload', 'image', (r) => {
+        document.getElementById('new-game-cover').value = r[0].url;
+        document.getElementById('admin-cover-preview').src = r[0].url;
+        document.getElementById('admin-cover-preview').style.display = 'block';
+    });
+    setupUpload('gallery-upload-input', 'image', (r) => { currentGalleryUrls.push(...r.map(x=>x.url)); window.renderGallery(); });
+    // Trailer
+    setupUpload('admin-trailer-upload', 'video', (r) => { document.getElementById('new-game-trailer').value = r[0].url; });
+
+    // ASSET CRUD LOGIC
+    const assetFile = document.getElementById('assets-upload-input');
+    const assetName = document.getElementById('asset-name-input');
+    const assetBtn = document.getElementById('add-asset-btn');
+    const assetStatus = document.getElementById('assets-upload-status');
+
+    if(assetFile) assetFile.addEventListener('change', (e) => {
+        const f = e.target.files[0];
+        if(f) {
+            tempAssetFile = f;
+            if(assetStatus) assetStatus.textContent = `Selecionado: ${f.name}`;
+            if(assetName && !assetName.value) assetName.value = f.name.split('.')[0];
+        }
+    });
+
+    if(assetBtn) assetBtn.addEventListener('click', async () => {
+        if(!assetName.value) return alert("Nome?");
+        if(!tempAssetFile) return alert("Arquivo?");
+        
+        assetStatus.textContent = "Enviando...";
+        assetBtn.disabled = true;
+        try {
+            const ref = storage.ref().child(`game-assets/${Date.now()}_${tempAssetFile.name}`);
+            await ref.put(tempAssetFile);
+            const url = await ref.getDownloadURL();
+            const type = tempAssetFile.type.startsWith('image/') ? 'image' : 'video';
+            currentSessionAssets.push({ name: assetName.value, url, type });
+            window.renderSessionAssets();
+            assetName.value=''; assetFile.value=''; tempAssetFile=null;
+            assetStatus.textContent = "Sucesso!";
+        } catch(e) { console.error(e); }
+        finally { assetBtn.disabled = false; }
+    });
+
+    // Tag Keydown
+    const tagIn = document.getElementById('tag-input-field');
+    if(tagIn) tagIn.onkeydown = (e) => {
+        if(e.key==='Enter'||e.key===',') { e.preventDefault(); const v=tagIn.value.trim(); if(v&&!currentTags.includes(v)){currentTags.push(v);renderTags();} tagIn.value=''; }
+    };
+
+    const chkExtra = document.getElementById('check-extra-life');
+    if(chkExtra) chkExtra.onchange = (e) => {
+        const box = document.getElementById('extra-life-config-container');
+        if(e.target.checked) box.classList.remove('hidden'); else box.classList.add('hidden');
+    };
+
+    // --- SALVAR JOGO ---
+    if(createGameForm) createGameForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('game-id').value;
+        const btn = document.getElementById('save-game-submit-btn');
+        btn.textContent = "Salvando..."; btn.disabled = true;
+
+        const data = {
+            name: document.getElementById('new-game-name').value,
+            slug: document.getElementById('new-game-name').value.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+            status: document.getElementById('new-game-status').value,
+            sessionDuration: document.getElementById('new-game-duration').value,
+            price: document.getElementById('new-game-price').value,
+            hasExtraLife: chkExtra.checked,
+            extraLifeDuration: chkExtra.checked ? document.getElementById('new-game-extra-life-time').value : 0,
+            tags: currentTags,
+            shortDescription: document.getElementById('new-game-short-desc').value,
+            fullDescription: document.getElementById('new-game-full-desc').value,
+            coverImage: document.getElementById('new-game-cover').value,
+            videoPreview: document.getElementById('new-game-trailer').value,
+            galleryImages: currentGalleryUrls,
+            sessionAssets: currentSessionAssets,
+            isPaused: document.getElementById('new-game-status').value === 'paused'
+        };
+
+        try {
+            if(id) {
+                await db.collection('games').doc(id).update(data);
+                alert("Salvo!"); createGameModal.classList.add('hidden');
+            } else {
+                data.ownerId = loggedInUser.username;
+                data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                data.availability = {};
+                const ref = await db.collection('games').add(data);
+                alert("Criado!"); window.openGameModal(ref.id);
+            }
+            loadAllGames();
+        } catch(e) { alert("Erro ao salvar."); }
+        finally { btn.textContent = "Salvar Alterações"; btn.disabled = false; }
+    };
+
+    // =========================================================================
+    // 6. AGENDA CALENDAR LOGIC
+    // =========================================================================
+    function renderAdminCalendar() {
+        const grid = document.getElementById('admin-calendar-grid'); if(!grid) return;
+        grid.innerHTML = '';
+        const m = currentAdminDate.getMonth(), y = currentAdminDate.getFullYear();
+        document.getElementById('admin-month-header').textContent = `${m+1}/${y}`;
+        const fd = new Date(y, m, 1).getDay(), dim = new Date(y, m+1, 0).getDate();
+        for(let i=0; i<fd; i++) grid.innerHTML += `<div></div>`;
+        for(let d=1; d<=dim; d++) {
+            const k = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            const el = document.createElement('div'); el.className = 'calendar-day'; el.textContent = d;
+            if(currentAgendaData[k] && currentAgendaData[k].length) el.classList.add('has-schedule');
+            el.onclick = () => openSingleDayEditor(k);
+            grid.appendChild(el);
+        }
+    }
+    function openSingleDayEditor(k) {
+        editingDateStr = k;
+        document.getElementById('single-day-editor').classList.remove('hidden');
+        document.getElementById('editing-date-display').textContent = k;
+        renderSlots();
+    }
+    function renderSlots() {
+        const l = document.getElementById('single-day-slots'); l.innerHTML = '';
+        (currentAgendaData[editingDateStr]||[]).sort().forEach((t, i) => {
+            l.innerHTML += `<div class="tag-capsule"><span>${t}</span><span onclick="removeSlot(${i})">&times;</span></div>`;
+        });
+    }
+    window.removeSlot = (i) => { currentAgendaData[editingDateStr].splice(i,1); renderSlots(); };
+    
+    if(document.getElementById('add-single-time-btn')) document.getElementById('add-single-time-btn').onclick = () => {
+        const v = document.getElementById('single-time-input').value;
+        if(v) { 
+            if(!currentAgendaData[editingDateStr]) currentAgendaData[editingDateStr]=[];
+            if(!currentAgendaData[editingDateStr].includes(v)) currentAgendaData[editingDateStr].push(v); 
+            renderSlots(); 
+        }
+    };
+    if(document.getElementById('save-single-day-btn')) document.getElementById('save-single-day-btn').onclick = async () => {
+        if(!currentAgendaGameId) return;
+        if(currentAgendaData[editingDateStr] && !currentAgendaData[editingDateStr].length) delete currentAgendaData[editingDateStr];
+        await db.collection('games').doc(currentAgendaGameId).update({ availability: currentAgendaData });
+        document.getElementById('single-day-editor').classList.add('hidden'); renderAdminCalendar();
+    };
+    if(document.getElementById('clear-day-btn')) document.getElementById('clear-day-btn').onclick = () => { if(confirm("Limpar?")) { delete currentAgendaData[editingDateStr]; renderSlots(); } };
+    if(document.getElementById('close-day-editor-btn')) document.getElementById('close-day-editor-btn').onclick = () => document.getElementById('single-day-editor').classList.add('hidden');
+    
+    // Calendar Nav
+    if(document.getElementById('admin-prev-month')) document.getElementById('admin-prev-month').onclick = () => { currentAdminDate.setMonth(currentAdminDate.getMonth()-1); renderAdminCalendar(); };
+    if(document.getElementById('admin-next-month')) document.getElementById('admin-next-month').onclick = () => { currentAdminDate.setMonth(currentAdminDate.getMonth()+1); renderAdminCalendar(); };
+
+    // Fill selects
+    const opts = '<option value="">--</option>' + Array.from({length:24},(_,h)=>Array.from({length:2},(_,m)=>`<option>${String(h).padStart(2,'0')}:${String(m*30).padStart(2,'0')}</option>`).join('')).join('');
+    ['single-time-input','bulk-time-input'].forEach(id => { const e=document.getElementById(id); if(e) e.innerHTML=opts; });
+
+    // Bulk Actions
+    if(document.getElementById('add-bulk-time-btn')) document.getElementById('add-bulk-time-btn').onclick = () => {
+        const v = document.getElementById('bulk-time-input').value;
+        if(v && !bulkTimesArray.includes(v)) { bulkTimesArray.push(v); renderBulkTimes(); }
+    };
+    function renderBulkTimes() {
+        const l = document.getElementById('bulk-times-list'); l.innerHTML='';
+        bulkTimesArray.forEach((t, i) => l.innerHTML+=`<div class="tag-capsule"><span>${t}</span><span onclick="removeBulkTime(${i})">&times;</span></div>`);
+    }
+    window.removeBulkTime = (i) => { bulkTimesArray.splice(i,1); renderBulkTimes(); };
+    
+    if(document.getElementById('apply-bulk-schedule-btn')) document.getElementById('apply-bulk-schedule-btn').onclick = async () => {
+        const s = document.getElementById('bulk-start-date').value;
+        const e = document.getElementById('bulk-end-date').value;
+        const days = []; document.querySelectorAll('#schedule-view-bulk input:checked').forEach(c=>days.push(parseInt(c.value)));
+        if(!s || !e || !days.length || !bulkTimesArray.length) return alert("Preencha tudo");
+        
+        let loop = new Date(s+'T00:00:00'), end = new Date(e+'T00:00:00');
+        while(loop <= end) {
+            if(days.includes(loop.getDay())) {
+                const k = `${loop.getFullYear()}-${String(loop.getMonth()+1).padStart(2,'0')}-${String(loop.getDate()).padStart(2,'0')}`;
+                const ex = currentAgendaData[k] || [];
+                currentAgendaData[k] = [...new Set([...ex, ...bulkTimesArray])].sort();
+            }
+            loop.setDate(loop.getDate()+1);
+        }
+        await db.collection('games').doc(currentAgendaGameId).update({ availability: currentAgendaData });
+        alert("Aplicado!"); document.getElementById('tab-calendar-view').click();
+    };
+
+    // Close Modals
+    const closeMod = (id, mid) => { const e=document.getElementById(id); if(e) e.onclick = () => document.getElementById(mid).classList.add('hidden'); };
+    closeMod('close-create-game-modal','create-game-modal'); closeMod('cancel-create-game-btn','create-game-modal');
+    closeMod('close-agenda-modal','agenda-modal');
+    if(document.getElementById('open-create-game-modal-btn')) document.getElementById('open-create-game-modal-btn').onclick = () => window.openGameModal(null);
+
+    // Abas Agenda
+    if(document.getElementById('tab-calendar-view')) document.getElementById('tab-calendar-view').onclick = (e) => {
+        document.getElementById('schedule-view-calendar').classList.remove('hidden');
+        document.getElementById('schedule-view-bulk').classList.add('hidden');
+        e.target.classList.add('active'); document.getElementById('tab-bulk-add').classList.remove('active');
+        renderAdminCalendar();
+    };
+    if(document.getElementById('tab-bulk-add')) document.getElementById('tab-bulk-add').onclick = (e) => {
+        document.getElementById('schedule-view-calendar').classList.add('hidden');
+        document.getElementById('schedule-view-bulk').classList.remove('hidden');
+        e.target.classList.add('active'); document.getElementById('tab-calendar-view').classList.remove('active');
+    };
+
+    // Test & Delete
+    window.createFixedTestRoom = async (id, name) => {
+        const bid = `test-${id}`;
+        await db.collection('bookings').doc(bid).set({ type:'test', gameId:id, gameName:name, hostId:loggedInUser.username, date: new Date().toISOString(), status:'confirmed' });
+        window.location.href = `sala-host.html?bookingId=${bid}&mode=test`;
+    };
+    window.openDeleteConfirmModal = (id, name) => {
+        const m = document.getElementById('delete-confirm-modal');
+        const i = document.getElementById('delete-verification-input');
+        const b = document.getElementById('confirm-delete-action-btn');
+        document.getElementById('delete-game-name-display').textContent = name;
+        i.value = ''; b.disabled = true; b.style.opacity = '0.5';
+        m.classList.remove('hidden');
+        i.oninput = (e) => { b.disabled = e.target.value!==name; b.style.opacity = e.target.value===name?'1':'0.5'; };
+        b.onclick = async () => { await db.collection('games').doc(id).delete(); alert("Excluído!"); m.classList.add('hidden'); loadAllGames(); };
+        document.getElementById('cancel-delete-modal-btn').onclick = () => m.classList.add('hidden');
+    };
+
+    // Init
+    loadAllGames();
+    loadAllUsers();
 });
