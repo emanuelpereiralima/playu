@@ -822,6 +822,134 @@ input:checked + .slider:before { transform: translateX(26px); }
 .calendar-day.available:hover { background-color: rgba(233, 69, 96, 0.3); }
 .calendar-day.selected { background-color: var(--secondary-color); color: white; }
 
+/* =========================================
+   ESTILOS DO CALENDÁRIO (ADMIN)
+   ========================================= */
+.calendar-container {
+    background-color: rgba(0, 0, 0, 0.2);
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.calendar-header h4 {
+    margin: 0;
+    font-size: 1.3rem;
+    color: var(--secondary-color);
+    text-transform: capitalize;
+    font-weight: 600;
+}
+
+.month-nav-btn {
+    background: transparent;
+    border: 1px solid var(--text-color-light);
+    color: var(--text-color);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    font-size: 1.2rem;
+}
+
+.month-nav-btn:hover {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+    color: white;
+}
+
+.calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    font-weight: bold;
+    color: var(--text-color-light);
+    margin-bottom: 0.8rem;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+}
+
+.calendar-day {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    background-color:#333333;
+    color: #aaaaaa;
+    cursor: default;
+    font-size: 1rem;
+    position: relative;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+}
+
+/* Dias Disponíveis (Futuros) */
+.calendar-day.available {
+    background-color:#aaaaaa;
+    color: #FFFFFF;
+    cursor: pointer;
+}
+
+.calendar-day.available:hover {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(233, 69, 96, 0.4);
+}
+
+/* Dias com Horários Marcados */
+.calendar-day.has-schedule {
+    border-color: var(--secondary-color);
+    color: #fff;
+    background-color: rgba(233, 69, 96, 0.2);
+    font-weight: bold;
+}
+
+/* Bolinha indicadora */
+.calendar-day.has-schedule span {
+    display: block;
+    width: 6px;
+    height: 6px;
+    background-color: #ffffff;
+    border-radius: 50%;
+    margin-top: 4px;
+}
+
+/* Ajuste no Modal de Agenda */
+#agenda-modal .modal-content {
+    max-height: 95vh;
+}
+
+#single-day-editor {
+    background-color: var(--card-bg-color);
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-top: 1.5rem;
+    border: 1px solid var(--border-color);
+    animation: fadeIn 0.3s ease;
+}
+
 .time-slots-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 1rem; }
 .time-slot-btn {
     padding: 0.8rem; border: 1px solid var(--border-color);
@@ -873,6 +1001,32 @@ input:checked + .slider:before { transform: translateX(26px); }
     display: flex; justify-content: center; align-items: center;
 }
 .overlay-content { background: var(--card-bg-color); padding: 2rem; border-radius: 10px; max-width: 500px; text-align: center; }
+
+/* Correção visual para o input de confirmação de exclusão */
+#delete-verification-input {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    border-radius: 5px;
+    border: 1px solid var(--border-color); /* Borda padrão (cinza/tema) */
+    background-color: var(--bg-color);     /* Fundo padrão */
+    color: var(--text-color);
+    font-family: var(--body-font);
+    font-size: 1rem;
+    text-align: left; /* Alinha à esquerda como os outros campos */
+    margin-top: 1rem;
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+#delete-verification-input:focus {
+    border-color: var(--secondary-color); /* Fica rosa/verde no foco */
+    box-shadow: 0 0 5px rgba(233, 69, 96, 0.3);
+}
+
+/* Removemos a borda vermelha fixa anterior, se houver */
+#delete-confirm-modal .form-group {
+    border-color: var(--border-color);
+}
 
 /* --- Profile & Availability Editor --- */
 .profile-panel { margin-top: 2rem; }
