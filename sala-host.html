@@ -72,12 +72,15 @@
                         <button type="submit" class="submit-btn small-btn">Salvar Dicas</button>
                     </form>
                 </div>
-                <div class="tool-section" style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem; margin-top: 1rem;">
-                <h4>Mídias do Jogo</h4>
-                <div id="game-assets-container" style="display: flex; flex-direction: column; gap: 8px; max-height: 250px; overflow-y: auto;">
-                    <p style="font-size: 0.8rem; color: #888; text-align: center;">Carregando arquivos...</p>
+                <div class="tool-section">
+                <h4 style="margin-bottom: 10px; color: var(--secondary-color); display: flex; align-items: center; gap: 8px;">
+        <ion-icon name="layers-outline"></ion-icon> Mídias do Jogo
+                </h4>
+                <p style="font-size: 0.8rem; color: #888; margin-bottom: 10px;">Clique para exibir na tela do jogador.</p>
+                <div id="host-assets-list" style="display: flex; flex-direction: column; gap: 8px;">
+                    <div class="loader" style="width: 20px; height: 20px; margin: 0 auto;"></div>
                 </div>
-            </div>
+                </div>
 
                 <div class="tool-section">
                     <h3>Decisões do Jogador</h3>

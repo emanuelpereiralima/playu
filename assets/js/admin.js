@@ -497,13 +497,16 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch(e) { alert("Erro ao abrir agenda."); }
     };
 
-    // --- UPLOAD HANDLER & ASSET CRUD ---
+// --- UPLOAD HANDLER GENÉRICO (Para Capa, Galeria, Trailer) ---
     function setupUpload(inputId, type, cb) {
         const input = document.getElementById(inputId);
         if(!input) return;
         input.onchange = async (e) => {
             const files = Array.from(e.target.files);
             if(!files.length) return;
+            let stat = input.parentElement.querySelector('.form-hint') || document.getElementById(inputId.replace('input','status'));
+            if(stat) stat.textContent = "Enviando...";
+            
             try {
                 const promises = files.map(async f => {
                     const ref = storage.ref().child(`uploads/${Date.now()}_${f.name}`);
@@ -512,7 +515,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 const res = await Promise.all(promises);
                 cb(res);
-            } catch(e) { console.error(e); }
+                if(stat) stat.textContent = "Concluído!";
+            } catch(e) { if(stat) stat.textContent = "Erro."; }
         };
     }
 
@@ -522,42 +526,154 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('admin-cover-preview').style.display = 'block';
     });
     setupUpload('gallery-upload-input', 'image', (r) => { currentGalleryUrls.push(...r.map(x=>x.url)); window.renderGallery(); });
-    // Trailer
     setupUpload('admin-trailer-upload', 'video', (r) => { document.getElementById('new-game-trailer').value = r[0].url; });
 
-    // ASSET CRUD LOGIC
-    const assetFile = document.getElementById('assets-upload-input');
-    const assetName = document.getElementById('asset-name-input');
-    const assetBtn = document.getElementById('add-asset-btn');
-    const assetStatus = document.getElementById('assets-upload-status');
 
-    if(assetFile) assetFile.addEventListener('change', (e) => {
-        const f = e.target.files[0];
-        if(f) {
-            tempAssetFile = f;
-            if(assetStatus) assetStatus.textContent = `Selecionado: ${f.name}`;
-            if(assetName && !assetName.value) assetName.value = f.name.split('.')[0];
+    // =========================================================================
+    // LÓGICA DO CRUD DE ASSETS (FOTO / VÍDEO / ÁUDIO)
+    // =========================================================================
+    
+    // Elementos
+    const assetNameInput = document.getElementById('asset-name-input');
+    const assetAddBtn = document.getElementById('add-asset-btn');
+    const assetStatus = document.getElementById('assets-upload-status');
+    const selectedFileDisplay = document.getElementById('selected-file-display');
+    const assetFilenameText = document.getElementById('asset-filename-text');
+    const clearAssetBtn = document.getElementById('clear-asset-selection');
+
+    // Inputs Específicos
+    const inputImage = document.getElementById('upload-asset-image');
+    const inputVideo = document.getElementById('upload-asset-video');
+    const inputAudio = document.getElementById('upload-asset-audio');
+
+    // Variáveis Temporárias
+    let tempAssetType = null;
+
+    // Função auxiliar para lidar com a seleção
+    function handleAssetSelection(e, type) {
+        const file = e.target.files[0];
+        if (file) {
+            tempAssetFile = file;
+            tempAssetType = type;
+            
+            // Preenche nome se vazio
+            if (assetNameInput && !assetNameInput.value) {
+                assetNameInput.value = file.name.split('.')[0];
+            }
+
+            // Atualiza UI
+            if (selectedFileDisplay) selectedFileDisplay.classList.remove('hidden');
+            if (assetFilenameText) assetFilenameText.textContent = `${type.toUpperCase()}: ${file.name}`;
+            if (assetAddBtn) {
+                assetAddBtn.disabled = false;
+                assetAddBtn.classList.remove('secondary-btn');
+                assetAddBtn.classList.add('primary-btn'); // Destaque
+            }
+        }
+    }
+
+    // Listeners para cada tipo
+    if(inputImage) inputImage.addEventListener('change', (e) => handleAssetSelection(e, 'image'));
+    if(inputVideo) inputVideo.addEventListener('change', (e) => handleAssetSelection(e, 'video'));
+    if(inputAudio) inputAudio.addEventListener('change', (e) => handleAssetSelection(e, 'audio'));
+
+    // Botão Limpar Seleção
+    if(clearAssetBtn) clearAssetBtn.addEventListener('click', () => {
+        tempAssetFile = null;
+        tempAssetType = null;
+        if(inputImage) inputImage.value = '';
+        if(inputVideo) inputVideo.value = '';
+        if(inputAudio) inputAudio.value = '';
+        selectedFileDisplay.classList.add('hidden');
+        assetAddBtn.disabled = true;
+        assetAddBtn.classList.add('secondary-btn');
+        assetAddBtn.classList.remove('primary-btn');
+    });
+
+    // Botão Adicionar (Upload + Save to Array)
+    if(assetAddBtn) assetAddBtn.addEventListener('click', async () => {
+        const name = assetNameInput.value.trim();
+        if(!name) return alert("Digite um nome para a mídia.");
+        if(!tempAssetFile) return alert("Selecione um arquivo.");
+        
+        assetStatus.textContent = "Enviando...";
+        assetAddBtn.disabled = true;
+
+        try {
+            // Define pasta baseada no tipo
+            let folder = 'game-assets-misc';
+            if(tempAssetType === 'image') folder = 'game-assets-images';
+            if(tempAssetType === 'video') folder = 'game-assets-videos';
+            if(tempAssetType === 'audio') folder = 'game-assets-audio';
+
+            const ref = storage.ref().child(`${folder}/${Date.now()}_${tempAssetFile.name}`);
+            await ref.put(tempAssetFile);
+            const url = await ref.getDownloadURL();
+
+            // Adiciona ao array local
+            currentSessionAssets.push({ 
+                name: name, 
+                url: url, 
+                type: tempAssetType 
+            });
+
+            // Atualiza Lista Visual
+            window.renderSessionAssets();
+
+            // Reset UI
+            assetNameInput.value = '';
+            tempAssetFile = null;
+            tempAssetType = null;
+            selectedFileDisplay.classList.add('hidden');
+            inputImage.value = ''; inputVideo.value = ''; inputAudio.value = '';
+            
+            assetStatus.textContent = "Adicionado com sucesso!";
+            setTimeout(() => { assetStatus.textContent = ''; }, 2000);
+
+        } catch(e) { 
+            console.error(e); 
+            assetStatus.textContent = "Erro ao enviar."; 
+        } finally {
+            // Mantém desabilitado até nova seleção
+            assetAddBtn.disabled = true;
+            assetAddBtn.classList.add('secondary-btn');
+            assetAddBtn.classList.remove('primary-btn');
         }
     });
 
-    if(assetBtn) assetBtn.addEventListener('click', async () => {
-        if(!assetName.value) return alert("Nome?");
-        if(!tempAssetFile) return alert("Arquivo?");
+    // Renderizador da Lista (Atualizado para Áudio)
+    window.renderSessionAssets = () => {
+        const list = document.getElementById('assets-crud-list');
+        if(!list) return;
+        list.innerHTML = '';
         
-        assetStatus.textContent = "Enviando...";
-        assetBtn.disabled = true;
-        try {
-            const ref = storage.ref().child(`game-assets/${Date.now()}_${tempAssetFile.name}`);
-            await ref.put(tempAssetFile);
-            const url = await ref.getDownloadURL();
-            const type = tempAssetFile.type.startsWith('image/') ? 'image' : 'video';
-            currentSessionAssets.push({ name: assetName.value, url, type });
-            window.renderSessionAssets();
-            assetName.value=''; assetFile.value=''; tempAssetFile=null;
-            assetStatus.textContent = "Sucesso!";
-        } catch(e) { console.error(e); }
-        finally { assetBtn.disabled = false; }
-    });
+        if(currentSessionAssets.length === 0) {
+            list.innerHTML = '<p style="padding:10px;text-align:center;opacity:0.5;font-size:0.9rem">Nenhuma mídia adicionada.</p>';
+            return;
+        }
+
+        currentSessionAssets.forEach((a, i) => {
+            let thumb = '';
+            // Ícone apropriado por tipo
+            if(a.type === 'image') thumb = `<img src="${a.url}" class="crud-item-thumb">`;
+            else if(a.type === 'video') thumb = `<div class="crud-item-thumb" style="color:#00ff88"><ion-icon name="videocam"></ion-icon></div>`;
+            else if(a.type === 'audio') thumb = `<div class="crud-item-thumb" style="color:#ffbb00"><ion-icon name="musical-notes"></ion-icon></div>`;
+            else thumb = `<div class="crud-item-thumb"><ion-icon name="document"></ion-icon></div>`;
+
+            list.innerHTML += `
+            <div class="crud-item">
+                ${thumb}
+                <div class="crud-item-info">
+                    <div class="crud-item-name">${a.name}</div>
+                    <div class="crud-item-type" style="font-size:0.7rem; opacity:0.7;">${a.type.toUpperCase()}</div>
+                </div>
+                <div class="crud-actions">
+                    <button type="button" class="submit-btn small-btn" onclick="window.open('${a.url}', '_blank')" title="Ver/Ouvir"><ion-icon name="eye"></ion-icon></button>
+                    <button type="button" class="submit-btn danger-btn small-btn" onclick="removeSessionAsset(${i})" title="Excluir"><ion-icon name="trash"></ion-icon></button>
+                </div>
+            </div>`;
+        });
+    };
 
     // Tag Keydown
     const tagIn = document.getElementById('tag-input-field');
@@ -615,60 +731,205 @@ document.addEventListener('DOMContentLoaded', () => {
     // =========================================================================
     // 6. AGENDA CALENDAR LOGIC
     // =========================================================================
+    // =========================================================================
+    // 6. LÓGICA DA AGENDA (VALIDAÇÃO DE DATA/HORA)
+    // =========================================================================
+    
     function renderAdminCalendar() {
-        const grid = document.getElementById('admin-calendar-grid'); if(!grid) return;
+        const grid = document.getElementById('admin-calendar-grid');
+        if(!grid) return;
+        
         grid.innerHTML = '';
-        const m = currentAdminDate.getMonth(), y = currentAdminDate.getFullYear();
-        document.getElementById('admin-month-header').textContent = `${m+1}/${y}`;
-        const fd = new Date(y, m, 1).getDay(), dim = new Date(y, m+1, 0).getDate();
-        for(let i=0; i<fd; i++) grid.innerHTML += `<div></div>`;
-        for(let d=1; d<=dim; d++) {
-            const k = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-            const el = document.createElement('div'); el.className = 'calendar-day'; el.textContent = d;
-            if(currentAgendaData[k] && currentAgendaData[k].length) el.classList.add('has-schedule');
-            el.onclick = () => openSingleDayEditor(k);
+        const m = currentAdminDate.getMonth();
+        const y = currentAdminDate.getFullYear();
+        
+        document.getElementById('admin-month-header').textContent = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(currentAdminDate);
+
+        const firstDay = new Date(y, m, 1).getDay();
+        const daysInMonth = new Date(y, m + 1, 0).getDate();
+        
+        // Células vazias
+        for(let i = 0; i < firstDay; i++) {
+            const empty = document.createElement('div');
+            empty.className = 'calendar-day';
+            empty.style.opacity = '0';
+            empty.style.cursor = 'default';
+            grid.appendChild(empty);
+        }
+
+        // Data de Hoje (Zerada para comparação apenas de dia)
+        const today = new Date();
+        today.setHours(0,0,0,0);
+
+        for(let d = 1; d <= daysInMonth; d++) {
+            const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            const el = document.createElement('div');
+            el.className = 'calendar-day';
+            el.textContent = d;
+            el.dataset.date = dateStr;
+
+            const dateObj = new Date(y, m, d);
+
+            // VERIFICAÇÃO 1: Bloquear dias passados
+            if(dateObj < today) {
+                // Mantém a classe padrão (cinza escuro, not-allowed)
+                // Não adiciona onclick
+            } else {
+                // Dia Futuro ou Hoje
+                el.classList.add('available');
+
+                // DESTAQUE 1: Tem horários marcados?
+                if(currentAgendaData[dateStr] && currentAgendaData[dateStr].length > 0) {
+                    el.classList.add('has-schedule');
+                }
+
+                // DESTAQUE 2: É o dia selecionado agora?
+                if(editingDateStr === dateStr) {
+                    el.classList.add('selected');
+                }
+
+                el.onclick = () => openSingleDayEditor(dateStr);
+            }
             grid.appendChild(el);
         }
     }
-    function openSingleDayEditor(k) {
-        editingDateStr = k;
-        document.getElementById('single-day-editor').classList.remove('hidden');
-        document.getElementById('editing-date-display').textContent = k;
+
+    function openSingleDayEditor(dateStr) {
+        editingDateStr = dateStr;
+        
+        // Atualiza visual do grid (Move a classe .selected)
+        document.querySelectorAll('.calendar-day.selected').forEach(el => el.classList.remove('selected'));
+        const activeDay = document.querySelector(`.calendar-day[data-date="${dateStr}"]`);
+        if(activeDay) activeDay.classList.add('selected');
+
+        // Abre o editor
+        const modal = document.getElementById('single-day-editor');
+        modal.classList.remove('hidden');
+        
+        const dateParts = dateStr.split('-');
+        document.getElementById('editing-date-display').textContent = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+        
+        // Atualiza a lista de horários já marcados
         renderSlots();
+
+        // VERIFICAÇÃO 2: Filtrar horários no Select
+        updateTimeSelectOptions(dateStr);
     }
+
+    // Função Auxiliar: Gera opções de hora, removendo passado se for "Hoje"
+    function updateTimeSelectOptions(selectedDateStr) {
+        const select = document.getElementById('single-time-input');
+        if(!select) return;
+
+        select.innerHTML = '<option value="">Selecionar horário...</option>';
+
+        const now = new Date();
+        const isToday = selectedDateStr === now.toISOString().split('T')[0];
+        const currentHour = now.getHours();
+        const currentMin = now.getMinutes();
+
+        for(let h = 0; h < 24; h++) {
+            for(let m = 0; m < 60; m += 30) { // Intervalo de 30 min
+                // Se for hoje, verifica se o horário já passou
+                if (isToday) {
+                    if (h < currentHour || (h === currentHour && m < currentMin)) {
+                        continue; // Pula horários passados
+                    }
+                }
+
+                const timeStr = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+                
+                // Cria a opção
+                const option = document.createElement('option');
+                option.value = timeStr;
+                option.textContent = timeStr;
+                select.appendChild(option);
+            }
+        }
+    }
+
     function renderSlots() {
-        const l = document.getElementById('single-day-slots'); l.innerHTML = '';
-        (currentAgendaData[editingDateStr]||[]).sort().forEach((t, i) => {
-            l.innerHTML += `<div class="tag-capsule"><span>${t}</span><span onclick="removeSlot(${i})">&times;</span></div>`;
+        const list = document.getElementById('single-day-slots');
+        list.innerHTML = '';
+        const times = currentAgendaData[editingDateStr] || [];
+        
+        if(times.length === 0) {
+            list.innerHTML = '<span style="font-size:0.8rem; opacity:0.6;">Nenhum horário marcado.</span>';
+        }
+
+        times.sort().forEach((t, i) => {
+            list.innerHTML += `<div class="tag-capsule"><span>${t}</span><span onclick="removeSlot(${i})">&times;</span></div>`;
         });
     }
-    window.removeSlot = (i) => { currentAgendaData[editingDateStr].splice(i,1); renderSlots(); };
-    
-    if(document.getElementById('add-single-time-btn')) document.getElementById('add-single-time-btn').onclick = () => {
-        const v = document.getElementById('single-time-input').value;
-        if(v) { 
-            if(!currentAgendaData[editingDateStr]) currentAgendaData[editingDateStr]=[];
-            if(!currentAgendaData[editingDateStr].includes(v)) currentAgendaData[editingDateStr].push(v); 
-            renderSlots(); 
-        }
+
+    // Funções dos Botões do Editor de Dia
+    window.removeSlot = (i) => { 
+        currentAgendaData[editingDateStr].splice(i, 1); 
+        renderSlots(); 
     };
-    if(document.getElementById('save-single-day-btn')) document.getElementById('save-single-day-btn').onclick = async () => {
-        if(!currentAgendaGameId) return;
-        if(currentAgendaData[editingDateStr] && !currentAgendaData[editingDateStr].length) delete currentAgendaData[editingDateStr];
-        await db.collection('games').doc(currentAgendaGameId).update({ availability: currentAgendaData });
-        document.getElementById('single-day-editor').classList.add('hidden'); renderAdminCalendar();
-    };
-    if(document.getElementById('clear-day-btn')) document.getElementById('clear-day-btn').onclick = () => { if(confirm("Limpar?")) { delete currentAgendaData[editingDateStr]; renderSlots(); } };
-    if(document.getElementById('close-day-editor-btn')) document.getElementById('close-day-editor-btn').onclick = () => document.getElementById('single-day-editor').classList.add('hidden');
-    
-    // Calendar Nav
+
+    if(document.getElementById('add-single-time-btn')) {
+        document.getElementById('add-single-time-btn').onclick = () => {
+            const v = document.getElementById('single-time-input').value;
+            if(v) { 
+                if(!currentAgendaData[editingDateStr]) currentAgendaData[editingDateStr] = [];
+                // Evita duplicatas
+                if(!currentAgendaData[editingDateStr].includes(v)) {
+                    currentAgendaData[editingDateStr].push(v); 
+                    // Ordena cronologicamente
+                    currentAgendaData[editingDateStr].sort();
+                    renderSlots(); 
+                }
+            }
+        };
+    }
+
+    if(document.getElementById('save-single-day-btn')) {
+        document.getElementById('save-single-day-btn').onclick = async () => {
+            if(!currentAgendaGameId) return;
+            
+            // Limpa chave vazia se não houver horários
+            if(currentAgendaData[editingDateStr] && currentAgendaData[editingDateStr].length === 0) {
+                delete currentAgendaData[editingDateStr];
+            }
+            
+            try {
+                await db.collection('games').doc(currentAgendaGameId).update({ availability: currentAgendaData });
+                
+                // Fecha o editor de dia, mas mantém o calendário
+                document.getElementById('single-day-editor').classList.add('hidden');
+                document.querySelector('.calendar-day.selected')?.classList.remove('selected');
+                
+                renderAdminCalendar(); // Re-renderiza para mostrar a bolinha vermelha no dia
+            } catch(e) {
+                console.error(e);
+                alert("Erro ao salvar agenda.");
+            }
+        };
+    }
+
+    if(document.getElementById('clear-day-btn')) {
+        document.getElementById('clear-day-btn').onclick = () => {
+            if(confirm("Remover todos os horários deste dia?")) {
+                delete currentAgendaData[editingDateStr];
+                renderSlots();
+            }
+        };
+    }
+
+    // Botão fechar editor auxiliar
+    if(document.getElementById('close-day-editor-btn')) {
+        document.getElementById('close-day-editor-btn').onclick = () => {
+            document.getElementById('single-day-editor').classList.add('hidden');
+            document.querySelector('.calendar-day.selected')?.classList.remove('selected');
+        };
+    }
+
+    // Navegação Mês
     if(document.getElementById('admin-prev-month')) document.getElementById('admin-prev-month').onclick = () => { currentAdminDate.setMonth(currentAdminDate.getMonth()-1); renderAdminCalendar(); };
     if(document.getElementById('admin-next-month')) document.getElementById('admin-next-month').onclick = () => { currentAdminDate.setMonth(currentAdminDate.getMonth()+1); renderAdminCalendar(); };
-
-    // Fill selects
-    const opts = '<option value="">--</option>' + Array.from({length:24},(_,h)=>Array.from({length:2},(_,m)=>`<option>${String(h).padStart(2,'0')}:${String(m*30).padStart(2,'0')}</option>`).join('')).join('');
-    ['single-time-input','bulk-time-input'].forEach(id => { const e=document.getElementById(id); if(e) e.innerHTML=opts; });
-
+    
+    // (A parte do Bulk pode continuar igual, mas removendo a chamada antiga de populateTimeSelects no final do arquivo)
     // Bulk Actions
     if(document.getElementById('add-bulk-time-btn')) document.getElementById('add-bulk-time-btn').onclick = () => {
         const v = document.getElementById('bulk-time-input').value;

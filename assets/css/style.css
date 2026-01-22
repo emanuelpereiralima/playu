@@ -813,14 +813,6 @@ input:checked + .slider:before { transform: translateX(26px); }
     width: 40px; height: 40px; border-radius: 50%; cursor: pointer;
 }
 .calendar-weekdays, .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.5rem; text-align: center; }
-.calendar-day { padding: 0.8rem 0; border-radius: 8px; opacity: 0.4; }
-.calendar-day.available {
-    opacity: 1; font-weight: 600;
-    background-color: rgba(233, 69, 96, 0.1); border: 1px solid var(--secondary-color);
-    cursor: pointer; transition: background-color 0.3s;
-}
-.calendar-day.available:hover { background-color: rgba(233, 69, 96, 0.3); }
-.calendar-day.selected { background-color: var(--secondary-color); color: white; }
 
 /* =========================================
    ESTILOS DO CALENDÁRIO (ADMIN)
@@ -888,19 +880,20 @@ input:checked + .slider:before { transform: translateX(26px); }
 }
 
 .calendar-day {
-    aspect-ratio: 1;
+aspect-ratio: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     border-radius: 6px;
-    background-color:#333333;
-    color: #aaaaaa;
-    cursor: default;
+    background-color: #252525; /* Cinza muito escuro */
+    color: #555;               /* Texto apagado */
     font-size: 1rem;
+    font-weight: 500;
+    cursor: not-allowed;       /* Cursor de bloqueio */
+    border: 2px solid transparent;
     position: relative;
-    border: 1px solid transparent;
-    transition: all 0.2s;
+    transition: all 0.2s ease;
 }
 
 /* Dias Disponíveis (Futuros) */
@@ -911,29 +904,47 @@ input:checked + .slider:before { transform: translateX(26px); }
 }
 
 .calendar-day.available:hover {
-    background-color: var(--secondary-color);
-    border-color: var(--secondary-color);
-    color: #fff;
+    background-color: #4a4a4a;
     transform: translateY(-2px);
-    box-shadow: 0 4px 10px rgba(233, 69, 96, 0.4);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
 }
 
-/* Dias com Horários Marcados */
-.calendar-day.has-schedule {
-    border-color: var(--secondary-color);
-    color: #fff;
-    background-color: rgba(233, 69, 96, 0.2);
-    font-weight: bold;
-}
-
-/* Bolinha indicadora */
-.calendar-day.has-schedule span {
+.calendar-day.has-schedule::after {
+    content: '';
     display: block;
     width: 6px;
     height: 6px;
-    background-color: #ffffff;
+    background-color: var(--secondary-color);
     border-radius: 50%;
-    margin-top: 4px;
+    position: absolute;
+    bottom: 5px;
+}
+
+.calendar-day.selected {
+    background-color: var(--secondary-color) !important; /* Vermelho Sólido */
+    color: white !important;
+    border-color: white !important;
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(233, 69, 96, 0.6);
+    z-index: 2;
+}
+
+/* TEM HORÁRIO MARCADO (DESTAQUE SUTIL) */
+.calendar-day.has-schedule {
+    border-color: var(--secondary-color); /* Borda vermelha */
+    background-color: rgba(233, 69, 96, 0.1); /* Fundo avermelhado bem leve */
+    color: var(--secondary-color);
+    font-weight: bold;
+}
+
+.calendar-day.selected.has-schedule::after {
+    background-color: white;
+}
+
+/* Se tiver horário e passar o mouse, fica sólido */
+.calendar-day.has-schedule:hover {
+    background-color: var(--secondary-color);
+    color: white;
 }
 
 /* Ajuste no Modal de Agenda */
@@ -1186,6 +1197,51 @@ input:checked + .slider:before { transform: translateX(26px); }
     font-size: 0.75rem;
     color: var(--text-muted);
     text-transform: uppercase;
+}
+
+/* Grid de Botões de Tipo de Upload */
+.upload-type-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.type-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 10px;
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    font-size: 0.85rem;
+}
+
+.type-btn ion-icon {
+    font-size: 1.4rem;
+    color: var(--text-color-light);
+}
+
+.type-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: var(--secondary-color);
+}
+
+.type-btn:hover ion-icon {
+    color: var(--secondary-color);
+}
+
+/* Estado Ativo (opcional, via JS se quiser destacar qual foi clicado) */
+.type-btn.active {
+    background-color: rgba(0, 255, 136, 0.1);
+    border-color: var(--secondary-color);
+    color: var(--secondary-color);
 }
 
 /* Estilo da Lista CRUD de Assets */

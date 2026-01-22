@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let localStream = null;
     let pc = null;
     let roomRef = null;
+    let currentGameId = null; // Armazena o ID do jogo atual
 
     // URL Params
     const urlParams = new URLSearchParams(window.location.search);
@@ -25,9 +26,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const loggedInUser = JSON.parse(sessionStorage.getItem('loggedInUser'));
 
     // =========================================================================
-    // 1. VERIFICAÇÃO DE HOST
+    // 1. VERIFICAÇÃO DE HOST & INICIALIZAÇÃO
     // =========================================================================
-    // 1. Verifica se está logado
     if (!loggedInUser || (loggedInUser.role !== 'host' && loggedInUser.role !== 'admin')) {
         alert("Acesso restrito ao Host.");
         window.location.href = 'index.html';
@@ -36,202 +36,204 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!bookingId) {
         alert("ID da sessão não encontrado.");
-        window.location.href = 'admin.html'; // Volta pro admin
+        window.location.href = 'admin.html';
         return;
     }
 
-    // Inicializa Referência
-    roomRef = db.collection('sessions').doc(bookingId);;
+    roomRef = db.collection('sessions').doc(bookingId);
 
-    async function ensureSessionExists() {
+    async function initSession() {
         try {
-            const doc = await roomRef.get();
-            if(doc.exists) {
-            if (bookingData && bookingData.gameId) {
-                loadGameAssets(bookingData.gameId);
-            }
-        }
-            if (!doc.exists) {
-                // Cria documento vazio da sessão para sinalização WebRTC
+            // 1. Garante que a sessão WebRTC existe
+            const sessionDoc = await roomRef.get();
+            if (!sessionDoc.exists) {
                 await roomRef.set({
                     created: firebase.firestore.FieldValue.serverTimestamp(),
                     hostStatus: 'online'
                 });
             }
+
+            // 2. Busca dados do Agendamento para saber qual é o Jogo
+            const bookingDoc = await db.collection('bookings').doc(bookingId).get();
+            if (bookingDoc.exists) {
+                const bookingData = bookingDoc.data();
+                currentGameId = bookingData.gameId;
+                
+                // 3. Carrega os Assets do Jogo
+                if (currentGameId) {
+                    loadGameAssets(currentGameId);
+                }
+            } else {
+                console.error("Agendamento não encontrado no banco.");
+            }
+
+            // 4. Inicia WebRTC
+            startHost();
+
         } catch (e) {
-            console.error("Erro ao verificar sessão:", e);
+            console.error("Erro na inicialização:", e);
         }
     }
     
-    // Chama a garantia antes de iniciar
-    ensureSessionExists().then(() => {
-        // Inicia tudo
-        startHost();
-    });
+    initSession();
     
-    // --- LÓGICA DE MODO DE TESTE (LINK DE CONVITE) ---
+    // --- MODO DE TESTE (UI) ---
     if (isTestMode) {
-        const mainContent = document.querySelector('.main-content') || document.body;
-        
         const linkPanel = document.createElement('div');
         linkPanel.style.cssText = "background: #1a1a2e; border: 1px solid #00ff88; padding: 1rem; margin: 1rem; border-radius: 8px; text-align: center;";
         linkPanel.innerHTML = `
-            <h3 style="color:#00ff88; margin-bottom:0.5rem;"><ion-icon name="flask-outline"></ion-icon> Sala de Teste Ativa</h3>
-            <p style="margin-bottom:0.5rem; font-size:0.9rem;">Envie este link para quem vai testar com você (abre a visão do Jogador):</p>
+            <h3 style="color:#00ff88; margin-bottom:0.5rem;"><ion-icon name="flask-outline"></ion-icon> Sala de Teste</h3>
+            <p style="margin-bottom:0.5rem; font-size:0.9rem;">Link do Jogador:</p>
             <div style="display:flex; gap:10px; max-width:600px; margin:0 auto;">
                 <input type="text" id="share-link-input" readonly style="flex:1; padding:8px; border-radius:5px; border:1px solid #555; background:#222; color:#fff;">
                 <button id="copy-link-btn" class="submit-btn small-btn">Copiar</button>
             </div>
         `;
-        
-        // Insere no topo
-        if(document.querySelector('.game-room-container')) {
-            document.querySelector('.game-room-container').before(linkPanel);
-        } else {
-            document.body.prepend(linkPanel);
-        }
+        const container = document.querySelector('.game-room-container');
+        if(container) container.before(linkPanel); else document.body.prepend(linkPanel);
 
-        // Gera Link
         const baseUrl = window.location.origin + window.location.pathname.replace('sala-host.html', 'sala.html');
-        // Usa o mesmo bookingId e mode=test
         const guestLink = `${baseUrl}?bookingId=${bookingId}&mode=test`;
-        
         const input = document.getElementById('share-link-input');
         input.value = guestLink;
 
         document.getElementById('copy-link-btn').onclick = () => {
-            input.select();
-            document.execCommand('copy');
-            alert("Link copiado para a área de transferência!");
+            input.select(); document.execCommand('copy'); alert("Copiado!");
         };
     }
 
+    // =========================================================================
+    // 2. CARREGAMENTO DE MÍDIAS DO FIREBASE (NOVO)
+    // =========================================================================
     async function loadGameAssets(gameId) {
-        const container = document.getElementById('game-assets-container');
-        if(!container) return;
+        const listContainer = document.getElementById('host-assets-list');
+        if (!listContainer) return;
 
         try {
             const gameDoc = await db.collection('games').doc(gameId).get();
-            if(!gameDoc.exists) return;
+            if (!gameDoc.exists) {
+                listContainer.innerHTML = '<p style="font-size:0.8rem; color:#888;">Jogo não encontrado.</p>';
+                return;
+            }
 
             const assets = gameDoc.data().sessionAssets || [];
-            container.innerHTML = '';
+            listContainer.innerHTML = ''; // Limpa loader
 
-            if(assets.length === 0) {
-                container.innerHTML = '<p style="font-size:0.8rem; opacity:0.5; text-align:center;">Sem mídias cadastradas.</p>';
+            if (assets.length === 0) {
+                listContainer.innerHTML = '<p style="font-size:0.8rem; color:#888;">Nenhuma mídia cadastrada.</p>';
                 return;
             }
 
             assets.forEach(asset => {
+                // Cria o botão visual da mídia
                 const btn = document.createElement('div');
-                btn.style.cssText = "display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 6px; cursor: pointer; border: 1px solid transparent; transition: 0.2s;";
-                
-                // Ícone baseado no tipo
-                let icon = asset.type === 'image' ? 'image-outline' : 'videocam-outline';
-                
-                btn.innerHTML = `
-                    <ion-icon name="${icon}" style="font-size: 1.2rem; color: var(--secondary-color);"></ion-icon>
-                    <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.85rem;">${asset.name}</div>
-                    <ion-icon name="arrow-forward-circle-outline" style="margin-left: auto;"></ion-icon>
+                btn.className = 'asset-btn';
+                btn.style.cssText = `
+                    display: flex; align-items: center; gap: 10px;
+                    background: rgba(255,255,255,0.05); padding: 10px;
+                    border-radius: 6px; cursor: pointer; transition: 0.2s;
+                    border: 1px solid transparent;
                 `;
 
-                // Ação de Clique: Enviar para Tela
-                btn.onclick = () => {
-                    // Feedback visual
-                    btn.style.borderColor = "var(--secondary-color)";
-                    setTimeout(() => btn.style.borderColor = "transparent", 500);
+                // Ícone baseado no tipo
+                let iconName = 'document-outline';
+                let iconColor = '#fff';
+                
+                if (asset.type === 'image') { iconName = 'image-outline'; iconColor = '#4facfe'; }
+                else if (asset.type === 'video') { iconName = 'videocam-outline'; iconColor = '#00ff88'; }
+                else if (asset.type === 'audio') { iconName = 'musical-notes-outline'; iconColor = '#ffbb00'; }
+
+                btn.innerHTML = `
+                    <ion-icon name="${iconName}" style="font-size: 1.2rem; color: ${iconColor};"></ion-icon>
+                    <div style="flex:1; overflow:hidden;">
+                        <div style="font-size:0.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${asset.name}</div>
+                        <div style="font-size:0.7rem; color:#aaa; text-transform:uppercase;">${asset.type}</div>
+                    </div>
+                    <ion-icon name="send-outline"></ion-icon>
+                `;
+
+                // Ação de Clique: Enviar para o Jogador
+                btn.onclick = async () => {
+                    // Feedback visual de clique
+                    btn.style.borderColor = 'var(--secondary-color)';
+                    btn.style.background = 'rgba(233, 69, 96, 0.1)';
                     
-                    // Atualiza Firebase
-                    roomRef.update({
-                        liveMedia: {
-                            type: asset.type,
-                            src: asset.url,
-                            timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                        }
-                    }).then(() => {
-                        console.log("Mídia enviada:", asset.name);
-                    });
+                    try {
+                        // Atualiza a sessão no Firebase -> Dispara listener na sala.js
+                        await roomRef.update({
+                            liveMedia: {
+                                type: asset.type,
+                                src: asset.url,
+                                name: asset.name,
+                                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                            }
+                        });
+                        
+                        setTimeout(() => {
+                            btn.style.borderColor = 'transparent';
+                            btn.style.background = 'rgba(255,255,255,0.05)';
+                        }, 500);
+                        
+                    } catch (error) {
+                        console.error("Erro ao enviar mídia:", error);
+                        alert("Erro ao enviar mídia.");
+                    }
                 };
 
-                container.appendChild(btn);
+                listContainer.appendChild(btn);
             });
 
         } catch (error) {
-            console.error("Erro carregando assets:", error);
+            console.error("Erro ao carregar assets:", error);
+            listContainer.innerHTML = '<p style="color:red; font-size:0.8rem;">Erro ao carregar.</p>';
         }
     }
 
     // =========================================================================
-    // 2. INICIALIZAÇÃO WEBRTC (HOST É O CALLER)
+    // 3. WEBRTC (HOST)
     // =========================================================================
-    
     async function startHost() {
         pc = new RTCPeerConnection(servers);
 
-        // Mídia Local
         try {
             localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
             localVideo.srcObject = localStream;
-            
             localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-            
-            // Botões de Mute (Host)
             setupHostMediaControls();
-
         } catch (err) {
             console.error("Erro câmera Host:", err);
-            alert("Erro ao abrir câmera.");
+            alert("Erro ao acessar câmera/microfone.");
         }
 
-        // Recebe Mídia Remota
         pc.ontrack = event => {
-            if (event.streams && event.streams[0]) {
-                remoteVideo.srcObject = event.streams[0];
-            } else {
-                remoteVideo.srcObject = new MediaStream(event.track);
-            }
+            if (event.streams && event.streams[0]) remoteVideo.srcObject = event.streams[0];
+            else remoteVideo.srcObject = new MediaStream(event.track);
         };
 
-        // Subcoleções
         const offerCandidates = roomRef.collection('offerCandidates');
         const answerCandidates = roomRef.collection('answerCandidates');
 
-        // ICE Candidates Locais (Host)
         pc.onicecandidate = event => {
-            if (event.candidate) {
-                offerCandidates.add(event.candidate.toJSON());
-            }
+            if (event.candidate) offerCandidates.add(event.candidate.toJSON());
         };
 
-        // CRIA A OFERTA
         const offerDescription = await pc.createOffer();
         await pc.setLocalDescription(offerDescription);
-
-        const offer = {
-            sdp: offerDescription.sdp,
-            type: offerDescription.type,
-        };
-
-        // Salva oferta no documento da sessão (cria se não existir)
+        const offer = { sdp: offerDescription.sdp, type: offerDescription.type };
         await roomRef.set({ offer }, { merge: true });
 
-        // Ouve a resposta (Answer) do Jogador
         roomRef.onSnapshot(snapshot => {
             const data = snapshot.data();
             if (!pc.currentRemoteDescription && data?.answer) {
                 const answerDescription = new RTCSessionDescription(data.answer);
                 pc.setRemoteDescription(answerDescription);
             }
-            
-            // Monitora escolha do jogador (Decisões)
             if (data?.playerChoice) {
                 alert(`O jogador escolheu: ${data.playerChoice}`);
-                // Reseta a escolha para não alertar de novo
                 roomRef.update({ playerChoice: firebase.firestore.FieldValue.delete() });
             }
         });
 
-        // Ouve candidatos ICE remotos (do Jogador)
         answerCandidates.onSnapshot(snapshot => {
             snapshot.docChanges().forEach(change => {
                 if (change.type === 'added') {
@@ -245,7 +247,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function setupHostMediaControls() {
         const micBtn = document.getElementById('host-mic-btn');
         const camBtn = document.getElementById('host-cam-btn');
-        
         if(micBtn) micBtn.onclick = () => {
             const track = localStream.getAudioTracks()[0];
             track.enabled = !track.enabled;
@@ -259,84 +260,37 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =========================================================================
-    // 3. CONTROLES DO HOST (FERRAMENTAS)
+    // 4. OUTRAS FERRAMENTAS DO HOST
     // =========================================================================
-
+    
     // Toggle Sidebar
-    document.getElementById('toggle-tools-btn').addEventListener('click', () => {
+    const toggleBtn = document.getElementById('toggle-tools-btn');
+    if(toggleBtn) toggleBtn.addEventListener('click', () => {
         document.querySelector('.host-tools-wrapper').classList.toggle('collapsed');
     });
 
-    // Enviar Dica
+    // Enviar Dica (Texto Livre)
     document.querySelectorAll('.send-hint-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const hintId = e.target.dataset.hint;
-            const hintText = document.querySelector(`textarea[data-hint="${hintId}"]`).value;
-            
-            if(hintText) {
-                await roomRef.set({
-                    hints: { [hintId]: hintText }
-                }, { merge: true });
+            const textarea = document.querySelector(`textarea[data-hint="${hintId}"]`);
+            if(textarea && textarea.value) {
+                await roomRef.set({ hints: { [hintId]: textarea.value } }, { merge: true });
                 alert(`Dica ${hintId} enviada!`);
             }
         });
     });
 
-    // Enviar Decisão
-    document.querySelectorAll('.send-decision-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            const decisionId = e.target.dataset.decision;
-            // Exemplo estático, idealmente viria do banco de dados do jogo
-            const decisionsData = [
-                { id: '1', title: 'Escolha o caminho', options: ['Esquerda', 'Direita'] },
-                { id: '2', title: 'Abrir a caixa?', options: ['Sim', 'Não'] }
-            ];
-            
-            await roomRef.set({
-                liveDecision: decisionId,
-                decisions: decisionsData
-            }, { merge: true });
-            alert('Decisão enviada para a tela do jogador.');
-        });
-    });
-
-    // Enviar Mídia
-    document.querySelectorAll('.send-media-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            const mediaId = e.target.dataset.media;
-            // Exemplo estático
-            const mediaData = {
-                '1': { type: 'image', src: 'assets/images/pista1.jpg' },
-                '2': { type: 'video', src: 'https://www.w3schools.com/html/mov_bbb.mp4' }, // Exemplo
-                '3': { type: 'audio', src: 'assets/audio/scream.mp3' }
-            };
-
-            if (mediaData[mediaId]) {
-                await roomRef.update({
-                    liveMedia: mediaData[mediaId]
-                });
-                alert('Mídia enviada!');
-            }
-        });
-    });
-
     // Timer
-    document.getElementById('start-timer-btn').addEventListener('click', async () => {
-        await roomRef.update({
-            startTime: firebase.firestore.FieldValue.serverTimestamp()
-        });
+    const timerBtn = document.getElementById('start-timer-btn');
+    if(timerBtn) timerBtn.addEventListener('click', async () => {
+        await roomRef.update({ startTime: firebase.firestore.FieldValue.serverTimestamp() });
         alert('Cronômetro iniciado!');
     });
 
-    // Encerrar Sessão
-    document.getElementById('end-session-btn').addEventListener('click', async () => {
-        if(confirm("Encerrar sessão e desconectar todos?")) {
-            // Pode deletar a sessão ou marcar como finalizada
-            // await roomRef.delete(); 
-            window.location.href = 'host-panel.html';
-        }
+    // Encerrar
+    const endBtn = document.getElementById('end-session-btn');
+    if(endBtn) endBtn.addEventListener('click', () => {
+        if(confirm("Encerrar sessão?")) window.location.href = 'host-panel.html';
     });
-
-    // Inicia tudo
-    startHost();
 });
