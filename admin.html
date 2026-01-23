@@ -236,6 +236,27 @@
         </div>
     </div>
 
+    <div id="game-sessions-modal" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2>Sessões: <span id="sessions-game-name" style="color:var(--secondary-color)"></span></h2>
+                <button id="close-sessions-modal" class="close-overlay-btn">&times;</button>
+            </div>
+            
+            <div class="modal-body-scroll">
+                <p class="form-hint" style="margin-bottom: 1rem;">Abaixo estão os agendamentos futuros para este jogo.</p>
+                
+                <div id="game-sessions-list" class="bookings-list">
+                    <div class="loader"></div>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button id="close-sessions-btn" class="submit-btn secondary-btn" style="width: 100%;">Fechar</button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>

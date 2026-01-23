@@ -1,10 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // --- CONFIGURAÇÕES ---
+    // --- REFERÊNCIAS DOM ---
     const localVideo = document.getElementById('host-local-video');
     const remoteVideo = document.getElementById('host-remote-video');
-    const db = window.db || firebase.firestore();
+    const loadingOverlay = document.getElementById('loading-screen') || document.getElementById('loading-overlay'); // Tenta achar o loader
     
-    // WebRTC Config
+    // --- FIREBASE & CONFIG ---
+    const db = window.db || firebase.firestore();
     const servers = {
         iceServers: [
             { urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'] },
@@ -15,95 +16,88 @@ document.addEventListener('DOMContentLoaded', () => {
     let localStream = null;
     let pc = null;
     let roomRef = null;
-    let currentGameId = null; // Armazena o ID do jogo atual
+    let currentGameId = null;
 
     // URL Params
     const urlParams = new URLSearchParams(window.location.search);
     const bookingId = urlParams.get('bookingId');
     const isTestMode = urlParams.get('mode') === 'test';
 
-    // Auth
-    const loggedInUser = JSON.parse(sessionStorage.getItem('loggedInUser'));
+    // Auth Check
+    const sessionData = sessionStorage.getItem('loggedInUser');
+    const loggedInUser = sessionData ? JSON.parse(sessionData) : null;
 
     // =========================================================================
-    // 1. VERIFICAÇÃO DE HOST & INICIALIZAÇÃO
+    // 1. INICIALIZAÇÃO DA SESSÃO
     // =========================================================================
-    if (!loggedInUser || (loggedInUser.role !== 'host' && loggedInUser.role !== 'admin')) {
-        alert("Acesso restrito ao Host.");
-        window.location.href = 'index.html';
-        return;
-    }
-
-    if (!bookingId) {
-        alert("ID da sessão não encontrado.");
-        window.location.href = 'admin.html';
-        return;
-    }
-
-    roomRef = db.collection('sessions').doc(bookingId);
-
+    
     async function initSession() {
+        // 1. Validação de Segurança
+        if (!loggedInUser || (loggedInUser.role !== 'host' && loggedInUser.role !== 'admin')) {
+            alert("Acesso restrito ao Host.");
+            window.location.href = 'index.html';
+            return;
+        }
+
+        if (!bookingId) {
+            alert("ID da sessão inválido.");
+            window.location.href = 'admin.html';
+            return;
+        }
+
+        roomRef = db.collection('sessions').doc(bookingId);
+
         try {
-            // 1. Garante que a sessão WebRTC existe
+            // 2. Criar ou validar documento da sessão WebRTC
             const sessionDoc = await roomRef.get();
             if (!sessionDoc.exists) {
                 await roomRef.set({
                     created: firebase.firestore.FieldValue.serverTimestamp(),
-                    hostStatus: 'online'
+                    hostStatus: 'online',
+                    type: isTestMode ? 'test' : 'game'
                 });
+            } else {
+                // Atualiza status se já existir
+                await roomRef.update({ hostStatus: 'online' });
             }
 
-            // 2. Busca dados do Agendamento para saber qual é o Jogo
+            // 3. Buscar dados do Agendamento (Para saber qual é o Jogo)
             const bookingDoc = await db.collection('bookings').doc(bookingId).get();
+            
             if (bookingDoc.exists) {
                 const bookingData = bookingDoc.data();
                 currentGameId = bookingData.gameId;
                 
-                // 3. Carrega os Assets do Jogo
+                // Carrega os botões de mídia se tivermos o ID do jogo
                 if (currentGameId) {
                     loadGameAssets(currentGameId);
                 }
             } else {
-                console.error("Agendamento não encontrado no banco.");
+                console.warn("Agendamento não encontrado, modo fallback ativado.");
             }
 
-            // 4. Inicia WebRTC
-            startHost();
+            // 4. Iniciar Câmera e WebRTC
+            await startHost();
+
+            // 5. REMOVER TELA DE LOADING (A CORREÇÃO ESTÁ AQUI)
+            if (loadingOverlay) {
+                loadingOverlay.style.opacity = '0';
+                setTimeout(() => {
+                    loadingOverlay.style.display = 'none';
+                }, 500);
+            }
 
         } catch (e) {
-            console.error("Erro na inicialização:", e);
+            console.error("Erro fatal na inicialização:", e);
+            alert("Erro ao conectar na sala: " + e.message);
         }
     }
-    
+
+    // Inicia tudo
     initSession();
-    
-    // --- MODO DE TESTE (UI) ---
-    if (isTestMode) {
-        const linkPanel = document.createElement('div');
-        linkPanel.style.cssText = "background: #1a1a2e; border: 1px solid #00ff88; padding: 1rem; margin: 1rem; border-radius: 8px; text-align: center;";
-        linkPanel.innerHTML = `
-            <h3 style="color:#00ff88; margin-bottom:0.5rem;"><ion-icon name="flask-outline"></ion-icon> Sala de Teste</h3>
-            <p style="margin-bottom:0.5rem; font-size:0.9rem;">Link do Jogador:</p>
-            <div style="display:flex; gap:10px; max-width:600px; margin:0 auto;">
-                <input type="text" id="share-link-input" readonly style="flex:1; padding:8px; border-radius:5px; border:1px solid #555; background:#222; color:#fff;">
-                <button id="copy-link-btn" class="submit-btn small-btn">Copiar</button>
-            </div>
-        `;
-        const container = document.querySelector('.game-room-container');
-        if(container) container.before(linkPanel); else document.body.prepend(linkPanel);
-
-        const baseUrl = window.location.origin + window.location.pathname.replace('sala-host.html', 'sala.html');
-        const guestLink = `${baseUrl}?bookingId=${bookingId}&mode=test`;
-        const input = document.getElementById('share-link-input');
-        input.value = guestLink;
-
-        document.getElementById('copy-link-btn').onclick = () => {
-            input.select(); document.execCommand('copy'); alert("Copiado!");
-        };
-    }
 
     // =========================================================================
-    // 2. CARREGAMENTO DE MÍDIAS DO FIREBASE (NOVO)
+    // 2. MODULO DE MÍDIAS (ASSETS)
     // =========================================================================
     async function loadGameAssets(gameId) {
         const listContainer = document.getElementById('host-assets-list');
@@ -117,7 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const assets = gameDoc.data().sessionAssets || [];
-            listContainer.innerHTML = ''; // Limpa loader
+            listContainer.innerHTML = ''; 
 
             if (assets.length === 0) {
                 listContainer.innerHTML = '<p style="font-size:0.8rem; color:#888;">Nenhuma mídia cadastrada.</p>';
@@ -125,20 +119,17 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             assets.forEach(asset => {
-                // Cria o botão visual da mídia
                 const btn = document.createElement('div');
                 btn.className = 'asset-btn';
                 btn.style.cssText = `
                     display: flex; align-items: center; gap: 10px;
                     background: rgba(255,255,255,0.05); padding: 10px;
                     border-radius: 6px; cursor: pointer; transition: 0.2s;
-                    border: 1px solid transparent;
+                    border: 1px solid transparent; margin-bottom: 5px;
                 `;
 
-                // Ícone baseado no tipo
                 let iconName = 'document-outline';
                 let iconColor = '#fff';
-                
                 if (asset.type === 'image') { iconName = 'image-outline'; iconColor = '#4facfe'; }
                 else if (asset.type === 'video') { iconName = 'videocam-outline'; iconColor = '#00ff88'; }
                 else if (asset.type === 'audio') { iconName = 'musical-notes-outline'; iconColor = '#ffbb00'; }
@@ -152,14 +143,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     <ion-icon name="send-outline"></ion-icon>
                 `;
 
-                // Ação de Clique: Enviar para o Jogador
                 btn.onclick = async () => {
-                    // Feedback visual de clique
+                    // Feedback visual
                     btn.style.borderColor = 'var(--secondary-color)';
                     btn.style.background = 'rgba(233, 69, 96, 0.1)';
                     
                     try {
-                        // Atualiza a sessão no Firebase -> Dispara listener na sala.js
                         await roomRef.update({
                             liveMedia: {
                                 type: asset.type,
@@ -168,48 +157,52 @@ document.addEventListener('DOMContentLoaded', () => {
                                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
                             }
                         });
-                        
                         setTimeout(() => {
                             btn.style.borderColor = 'transparent';
                             btn.style.background = 'rgba(255,255,255,0.05)';
                         }, 500);
-                        
                     } catch (error) {
-                        console.error("Erro ao enviar mídia:", error);
-                        alert("Erro ao enviar mídia.");
+                        console.error("Erro envio media:", error);
                     }
                 };
-
                 listContainer.appendChild(btn);
             });
-
         } catch (error) {
-            console.error("Erro ao carregar assets:", error);
-            listContainer.innerHTML = '<p style="color:red; font-size:0.8rem;">Erro ao carregar.</p>';
+            console.error("Erro assets:", error);
         }
     }
 
     // =========================================================================
-    // 3. WEBRTC (HOST)
+    // 3. WEBRTC & CONTROLES
     // =========================================================================
     async function startHost() {
         pc = new RTCPeerConnection(servers);
 
+        // Setup Local Stream
         try {
             localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
             localVideo.srcObject = localStream;
             localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-            setupHostMediaControls();
+            
+            // Ativa controles de mute/video
+            setupMediaControls();
+            
         } catch (err) {
-            console.error("Erro câmera Host:", err);
-            alert("Erro ao acessar câmera/microfone.");
+            console.error("Erro ao acessar câmera:", err);
+            alert("Não foi possível acessar a câmera/microfone. Verifique as permissões.");
+            throw err; // Interrompe a inicialização
         }
 
+        // Setup Remote Stream
         pc.ontrack = event => {
-            if (event.streams && event.streams[0]) remoteVideo.srcObject = event.streams[0];
-            else remoteVideo.srcObject = new MediaStream(event.track);
+            if (event.streams && event.streams[0]) {
+                remoteVideo.srcObject = event.streams[0];
+            } else {
+                remoteVideo.srcObject = new MediaStream([event.track]);
+            }
         };
 
+        // ICE Candidates
         const offerCandidates = roomRef.collection('offerCandidates');
         const answerCandidates = roomRef.collection('answerCandidates');
 
@@ -217,23 +210,26 @@ document.addEventListener('DOMContentLoaded', () => {
             if (event.candidate) offerCandidates.add(event.candidate.toJSON());
         };
 
+        // Create Offer
         const offerDescription = await pc.createOffer();
         await pc.setLocalDescription(offerDescription);
-        const offer = { sdp: offerDescription.sdp, type: offerDescription.type };
+        
+        const offer = {
+            sdp: offerDescription.sdp,
+            type: offerDescription.type,
+        };
         await roomRef.set({ offer }, { merge: true });
 
+        // Listen for Answer
         roomRef.onSnapshot(snapshot => {
             const data = snapshot.data();
             if (!pc.currentRemoteDescription && data?.answer) {
                 const answerDescription = new RTCSessionDescription(data.answer);
                 pc.setRemoteDescription(answerDescription);
             }
-            if (data?.playerChoice) {
-                alert(`O jogador escolheu: ${data.playerChoice}`);
-                roomRef.update({ playerChoice: firebase.firestore.FieldValue.delete() });
-            }
         });
 
+        // Listen for Remote ICE
         answerCandidates.onSnapshot(snapshot => {
             snapshot.docChanges().forEach(change => {
                 if (change.type === 'added') {
@@ -244,53 +240,55 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function setupHostMediaControls() {
+    function setupMediaControls() {
         const micBtn = document.getElementById('host-mic-btn');
         const camBtn = document.getElementById('host-cam-btn');
+        
         if(micBtn) micBtn.onclick = () => {
-            const track = localStream.getAudioTracks()[0];
-            track.enabled = !track.enabled;
-            micBtn.classList.toggle('active', track.enabled);
+            const audioTrack = localStream.getAudioTracks()[0];
+            if(audioTrack) {
+                audioTrack.enabled = !audioTrack.enabled;
+                micBtn.classList.toggle('active', !audioTrack.enabled); // Active = Muted visualmente
+                micBtn.innerHTML = audioTrack.enabled ? '<ion-icon name="mic"></ion-icon>' : '<ion-icon name="mic-off"></ion-icon>';
+            }
         };
+        
         if(camBtn) camBtn.onclick = () => {
-            const track = localStream.getVideoTracks()[0];
-            track.enabled = !track.enabled;
-            camBtn.classList.toggle('active', track.enabled);
+            const videoTrack = localStream.getVideoTracks()[0];
+            if(videoTrack) {
+                videoTrack.enabled = !videoTrack.enabled;
+                camBtn.classList.toggle('active', !videoTrack.enabled);
+                camBtn.innerHTML = videoTrack.enabled ? '<ion-icon name="videocam"></ion-icon>' : '<ion-icon name="videocam-off"></ion-icon>';
+            }
         };
     }
 
     // =========================================================================
-    // 4. OUTRAS FERRAMENTAS DO HOST
+    // 4. INTERFACE DE TESTE & TOOLS
     // =========================================================================
-    
-    // Toggle Sidebar
-    const toggleBtn = document.getElementById('toggle-tools-btn');
-    if(toggleBtn) toggleBtn.addEventListener('click', () => {
-        document.querySelector('.host-tools-wrapper').classList.toggle('collapsed');
-    });
+    if (isTestMode) {
+        createTestInterface();
+    }
 
-    // Enviar Dica (Texto Livre)
-    document.querySelectorAll('.send-hint-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            const hintId = e.target.dataset.hint;
-            const textarea = document.querySelector(`textarea[data-hint="${hintId}"]`);
-            if(textarea && textarea.value) {
-                await roomRef.set({ hints: { [hintId]: textarea.value } }, { merge: true });
-                alert(`Dica ${hintId} enviada!`);
-            }
-        });
-    });
-
-    // Timer
-    const timerBtn = document.getElementById('start-timer-btn');
-    if(timerBtn) timerBtn.addEventListener('click', async () => {
-        await roomRef.update({ startTime: firebase.firestore.FieldValue.serverTimestamp() });
-        alert('Cronômetro iniciado!');
-    });
-
-    // Encerrar
-    const endBtn = document.getElementById('end-session-btn');
-    if(endBtn) endBtn.addEventListener('click', () => {
-        if(confirm("Encerrar sessão?")) window.location.href = 'host-panel.html';
-    });
+    function createTestInterface() {
+        // Cria painel de link para teste
+        const panel = document.createElement('div');
+        panel.style.cssText = "background:#1a1a2e; border:1px solid #00ff88; padding:15px; margin:15px; border-radius:8px; text-align:center; position:relative; z-index:100;";
+        
+        const baseUrl = window.location.href.replace('sala-host.html', 'sala.html').split('?')[0];
+        const guestLink = `${baseUrl}?bookingId=${bookingId}&mode=test`;
+        
+        panel.innerHTML = `
+            <h3 style="color:#00ff88; margin:0 0 10px 0;"><ion-icon name="flask"></ion-icon> Modo de Teste</h3>
+            <p style="margin-bottom:5px; font-size:0.9rem;">Envie este link para um convidado ou abra em aba anônima:</p>
+            <div style="display:flex; gap:10px; justify-content:center;">
+                <input type="text" value="${guestLink}" readonly style="width:70%; padding:8px; background:#222; border:1px solid #444; color:#fff; border-radius:4px;">
+                <button onclick="navigator.clipboard.writeText('${guestLink}');alert('Copiado!')" class="submit-btn small-btn">Copiar</button>
+            </div>
+        `;
+        
+        const header = document.querySelector('header');
+        if(header) header.after(panel);
+        else document.body.prepend(panel);
+    }
 });

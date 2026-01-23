@@ -68,6 +68,82 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // =========================================================================
+    // NOVA FUNÇÃO: MODAL DE SESSÕES
+    // =========================================================================
+    const sessionsModal = document.getElementById('game-sessions-modal');
+    const sessionsList = document.getElementById('game-sessions-list');
+
+    window.openGameSessionsModal = async (gameId, gameName) => {
+        if(!sessionsModal) return;
+        
+        document.getElementById('sessions-game-name').textContent = gameName;
+        sessionsList.innerHTML = '<div class="loader"></div>';
+        sessionsModal.classList.remove('hidden');
+
+        try {
+            // Busca agendamentos deste jogo
+            const snapshot = await db.collection('bookings')
+                .where('gameId', '==', gameId)
+                .get();
+
+            sessionsList.innerHTML = '';
+            
+            if (snapshot.empty) {
+                sessionsList.innerHTML = '<p style="text-align:center; padding:1rem; opacity:0.6;">Nenhuma sessão agendada.</p>';
+                return;
+            }
+
+            let bookings = [];
+            snapshot.forEach(doc => bookings.push({ id: doc.id, ...doc.data() }));
+
+            // Ordena por data/hora
+            bookings.sort((a, b) => new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`));
+
+            let hasFuture = false;
+            const now = new Date();
+
+            bookings.forEach(bk => {
+                const sessionDate = new Date(`${bk.date}T${bk.time}`);
+                // Tolerância de 2 horas para sessões que acabaram de começar
+                const tolerance = new Date(now.getTime() - (2 * 60 * 60 * 1000));
+
+                if (sessionDate >= tolerance) {
+                    hasFuture = true;
+                    const dateFmt = sessionDate.toLocaleDateString('pt-BR');
+                    
+                    const item = document.createElement('div');
+                    item.className = 'booking-item';
+                    item.style.cssText = "display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.05); padding:10px; margin-bottom:8px; border-radius:6px; border-left: 3px solid var(--secondary-color);";
+                    
+                    item.innerHTML = `
+                        <div style="font-size:0.9rem;">
+                            <div style="font-weight:bold; color:#fff;">${dateFmt} às ${bk.time}</div>
+                            <div style="font-size:0.8rem; color:#aaa;">Cliente: ${bk.userName || 'Convidado'}</div>
+                        </div>
+                        <button class="submit-btn small-btn" onclick="window.location.href='sala-host.html?bookingId=${bk.id}'" style="background:var(--secondary-color); color:#fff; border:none;">
+                            Entrar <ion-icon name="arrow-forward"></ion-icon>
+                        </button>
+                    `;
+                    sessionsList.appendChild(item);
+                }
+            });
+
+            if (!hasFuture) {
+                sessionsList.innerHTML = '<p style="text-align:center; padding:1rem; opacity:0.6;">Sem sessões futuras.</p>';
+            }
+
+        } catch (e) {
+            console.error(e);
+            sessionsList.innerHTML = '<p style="color:red; text-align:center;">Erro ao carregar sessões.</p>';
+        }
+    };
+
+    // Fechar Modal Sessões
+    const closeSess = () => sessionsModal.classList.add('hidden');
+    if(document.getElementById('close-sessions-modal')) document.getElementById('close-sessions-modal').onclick = closeSess;
+    if(document.getElementById('close-sessions-btn')) document.getElementById('close-sessions-btn').onclick = closeSess;
+
+    // =========================================================================
     // 2. GERENCIAMENTO DE USUÁRIOS
     // =========================================================================
     const userTableBody = document.getElementById('user-table-body');
@@ -364,35 +440,89 @@ document.addEventListener('DOMContentLoaded', () => {
             wrapper.insertBefore(el, input);
         });
     }
+   
 
-    // --- CARREGAR JOGOS (EVENT DELEGATION PARA EVITAR BUGS) ---
+    // =========================================================================
+    // 3. CARREGAMENTO DE JOGOS
+    // =========================================================================
+    
     window.loadAllGames = async function() {
         if(!gameListContainer) return;
         gameListContainer.innerHTML = '<div class="loader"></div>';
+        
         try {
-            const snap = await db.collection('games').get();
-            gameListContainer.innerHTML = '';
-            if(snap.empty) { gameListContainer.innerHTML = '<p>Nenhum jogo cadastrado.</p>'; return; }
+            // 1. Busca Jogos
+            const gamesSnap = await db.collection('games').get();
             
-            snap.forEach(doc => {
+            // 2. Busca Agendamentos Futuros
+            const todayStr = new Date().toISOString().split('T')[0];
+            const bookingsSnap = await db.collection('bookings')
+                .where('date', '>=', todayStr)
+                .get();
+
+            // Mapeia jogos que têm sessão
+            const gamesWithSessions = new Set();
+            bookingsSnap.forEach(doc => {
+                const data = doc.data();
+                if (data.gameId && data.status !== 'cancelled') {
+                    gamesWithSessions.add(data.gameId);
+                }
+            });
+
+            // 3. Renderiza
+            gameListContainer.innerHTML = '';
+            if(gamesSnap.empty) { gameListContainer.innerHTML = '<p>Nenhum jogo.</p>'; return; }
+            
+            gamesSnap.forEach(doc => {
                 const g = doc.data();
                 if(g.tags) g.tags.forEach(t => allKnownTags.add(t));
+                
+                // VERIFICAÇÃO DE SESSÃO
+                const hasFutureSession = gamesWithSessions.has(doc.id);
+                
+                // Define Estilo e Estado do Botão
+                const sessionBtnState = hasFutureSession ? '' : 'disabled';
+                
+                // Se tiver sessão: Cor secundária (Ativo). Se não: Cinza transparente (Inativo).
+                const sessionBtnStyle = hasFutureSession 
+                    ? 'background:var(--secondary-color); color:#fff; border:none;' 
+                    : 'background:rgba(255,255,255,0.05); color:#666; border:1px solid #444; cursor:not-allowed; opacity:0.6;';
+
                 const card = document.createElement('div'); card.className = 'game-card';
+                
                 card.innerHTML = `
                     <button class="delete-corner-btn delete-game-trigger" data-id="${doc.id}" data-name="${g.name}"><ion-icon name="trash-outline"></ion-icon></button>
-                    <img src="${g.coverImage||'assets/images/logo.png'}" class="game-card-img" style="height:150px">
+                    
+                    <img src="${g.coverImage||'assets/images/logo.png'}" class="game-card-img" style="height:150px; object-fit: cover;">
+                    
                     <div class="game-card-content">
-                        <div style="margin-bottom:1rem;"><h3>${g.name}</h3><small>${g.status==='available'?'<span style="color:#00ff88">● On</span>':'<span style="color:#ffbb00">● Off</span>'}</small></div>
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                        <div style="margin-bottom:1rem;">
+                            <h3 style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${g.name}</h3>
+                            <small>${g.status==='available'?'<span style="color:#00ff88">● On</span>':'<span style="color:#ffbb00">● Off</span>'}</small>
+                        </div>
+                        
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
                             <button class="submit-btn small-btn edit-game-trigger" data-id="${doc.id}">Editar</button>
-                            <button class="submit-btn small-btn schedule-game-trigger" data-id="${doc.id}" style="background:var(--primary-color-dark);border:1px solid #444;">Agenda</button>
-                            <button class="submit-btn small-btn test-room-trigger" data-id="${doc.id}" data-name="${g.name}" style="grid-column:span 2;background:rgba(0,255,136,0.1);color:#00ff88;">Testar Sala</button>
+                            <button class="submit-btn small-btn schedule-game-trigger" data-id="${doc.id}" style="background:var(--primary-color-dark); border:1px solid #444;">Agenda</button>
+                            
+                            <button class="submit-btn small-btn test-room-trigger" data-id="${doc.id}" data-name="${g.name}" style="background:rgba(0,255,136,0.1); color:#00ff88; border:1px solid #00ff88;">
+                                <ion-icon name="flask-outline"></ion-icon> Testar
+                            </button>
+
+                            <button class="submit-btn small-btn sessions-game-trigger" 
+                                    data-id="${doc.id}" 
+                                    data-name="${g.name}" 
+                                    ${sessionBtnState} 
+                                    style="${sessionBtnStyle} display: flex; align-items: center; justify-content: center; gap: 5px;">
+                                <ion-icon name="list-outline"></ion-icon> Sessões
+                            </button>
                         </div>
                     </div>`;
                 gameListContainer.appendChild(card);
             });
         } catch(e) { console.error(e); }
     };
+
 
     // DELEGATION LISTENER (CORREÇÃO FUNDAMENTAL)
     if(gameListContainer) {
@@ -728,9 +858,6 @@ document.addEventListener('DOMContentLoaded', () => {
         finally { btn.textContent = "Salvar Alterações"; btn.disabled = false; }
     };
 
-    // =========================================================================
-    // 6. AGENDA CALENDAR LOGIC
-    // =========================================================================
     // =========================================================================
     // 6. LÓGICA DA AGENDA (VALIDAÇÃO DE DATA/HORA)
     // =========================================================================
