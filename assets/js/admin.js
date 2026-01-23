@@ -446,6 +446,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 3. CARREGAMENTO DE JOGOS
     // =========================================================================
     
+    
     window.loadAllGames = async function() {
         if(!gameListContainer) return;
         gameListContainer.innerHTML = '<div class="loader"></div>';
@@ -454,22 +455,44 @@ document.addEventListener('DOMContentLoaded', () => {
             // 1. Busca Jogos
             const gamesSnap = await db.collection('games').get();
             
-            // 2. Busca Agendamentos Futuros
-            const todayStr = new Date().toISOString().split('T')[0];
+            // 2. Definir "Hoje" corretamente (Fuso Local)
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const todayStr = `${year}-${month}-${day}`; // YYYY-MM-DD Local
+
+            // 3. Busca Agendamentos do Banco (De hoje em diante)
             const bookingsSnap = await db.collection('bookings')
                 .where('date', '>=', todayStr)
                 .get();
 
-            // Mapeia jogos que têm sessão
+            // 4. Filtragem Refinada (JavaScript)
+            // O Firestore filtra a DATA, mas aqui filtramos a HORA do dia atual
+            // para garantir que sessões muito antigas de hoje não contem, se desejar,
+            // ou apenas para garantir consistência com o modal.
             const gamesWithSessions = new Set();
+            
+            // Tolerância: Consideramos sessões "ativas" até 2 horas depois do início
+            const toleranceTime = new Date(now.getTime() - (2 * 60 * 60 * 1000));
+
             bookingsSnap.forEach(doc => {
                 const data = doc.data();
                 if (data.gameId && data.status !== 'cancelled') {
-                    gamesWithSessions.add(data.gameId);
+                    // Cria objeto de data da sessão
+                    const sessionDateTime = new Date(`${data.date}T${data.time}`);
+                    
+                    // LÓGICA:
+                    // 1. Se a data for FUTURA (maior que hoje), conta.
+                    // 2. Se a data for HOJE, verifica se o horário + tolerância ainda é válido.
+                    // (Ex: Se é 15:00, uma sessão de 14:00 ainda aparece. Uma de 10:00 não).
+                    if (sessionDateTime >= toleranceTime) {
+                        gamesWithSessions.add(data.gameId);
+                    }
                 }
             });
 
-            // 3. Renderiza
+            // 5. Renderiza a Lista
             gameListContainer.innerHTML = '';
             if(gamesSnap.empty) { gameListContainer.innerHTML = '<p>Nenhum jogo.</p>'; return; }
             
@@ -477,16 +500,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 const g = doc.data();
                 if(g.tags) g.tags.forEach(t => allKnownTags.add(t));
                 
-                // VERIFICAÇÃO DE SESSÃO
+                // Verifica se tem sessão futura/ativa na lista filtrada
                 const hasFutureSession = gamesWithSessions.has(doc.id);
                 
-                // Define Estilo e Estado do Botão
+                // Define Visual
                 const sessionBtnState = hasFutureSession ? '' : 'disabled';
-                
-                // Se tiver sessão: Cor secundária (Ativo). Se não: Cinza transparente (Inativo).
                 const sessionBtnStyle = hasFutureSession 
-                    ? 'background:var(--secondary-color); color:#fff; border:none;' 
-                    : 'background:rgba(255,255,255,0.05); color:#666; border:1px solid #444; cursor:not-allowed; opacity:0.6;';
+                    ? 'background:var(--secondary-color); color:#fff; border:none;' // Ativo
+                    : 'background:rgba(255,255,255,0.05); color:#666; border:1px solid #444; cursor:not-allowed; opacity:0.6;'; // Inativo
 
                 const card = document.createElement('div'); card.className = 'game-card';
                 
@@ -504,12 +525,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
                             <button class="submit-btn small-btn edit-game-trigger" data-id="${doc.id}">Editar</button>
                             <button class="submit-btn small-btn schedule-game-trigger" data-id="${doc.id}" style="background:var(--primary-color-dark); border:1px solid #444;">Agenda</button>
-                            
+                                                      
                             <button class="submit-btn small-btn test-room-trigger" data-id="${doc.id}" data-name="${g.name}" style="background:rgba(0,255,136,0.1); color:#00ff88; border:1px solid #00ff88;">
                                 <ion-icon name="flask-outline"></ion-icon> Testar
                             </button>
 
-                            <button class="submit-btn small-btn sessions-game-trigger" 
+                              <button class="submit-btn small-btn sessions-game-trigger" 
                                     data-id="${doc.id}" 
                                     data-name="${g.name}" 
                                     ${sessionBtnState} 
