@@ -4,142 +4,87 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sala do Host - PlayU</title>
+    
     <link rel="stylesheet" href="assets/css/style.css">
+    
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
-</head>
-<body>
-
-    <div id="access-message-container">
-        <h1>Verificando Acesso...</h1>
-        <div class="loader"></div>
-    </div>
-
-    <main id="host-view" class="room-view hidden">
-        
-        <div class="video-grid-container">
-            <div class="video-grid">
-                <div class="video-container">
-                    <h3>Host (Você)</h3>
-                    <video id="local-video" autoplay muted playsinline></video>
-                </div>
-                <div class="video-container">
-                    <h3>Jogador</h3>
-                    <video id="remote-video" autoplay playsinline></video>
-                </div>
-            </div>
-            
-            <div class="media-controls">
-                <button id="host-mic-btn" class="control-btn" disabled>
-                    <ion-icon name="mic-off-outline"></ion-icon>
-                </button>
-                <button id="host-cam-btn" class="control-btn" disabled>
-                    <ion-icon name="videocam-off-outline"></ion-icon>
-                </button>
-                <button id="host-exit-btn" class="control-btn danger">
-                    <ion-icon name="exit-outline"></ion-icon>
-                    Sair
-                </button>
-            </div>
-        </div>
-
-        <div id="host-tools-wrapper" class="collapsed">
-            <button id="host-tools-toggle-btn">
-                <ion-icon name="chevron-back-outline"></ion-icon>
-            </button>
-            
-            <div class="host-tools-content">
-                <h2>Ferramentas do Host</h2>
-                
-                <div class="tool-section">
-                    <h3>Timer</h3>
-                    <div id="host-timer-display" class="timer-display">00:00</div>
-                    <button id="start-timer-btn" class="submit-btn small-btn">Iniciar Timer</button>
-                    <input type="color" id="timer-color-input" title="Cor do Timer">
-                    <select id="timer-font-select" title="Fonte do Timer">
-                        <option value="'Poppins', sans-serif">Poppins</option>
-                        <option value="'Courier New', Courier, monospace">Courier</option>
-                        <option value="'Times New Roman', Times, serif">Times</form>
-                    </select>
-                </div>
-
-                <div class="tool-section">
-                    <h3>Controle de Dicas</h3>
-                    <form id="hints-editor-form">
-                        <input type="text" id="hint1-input" placeholder="Dica 1">
-                        <input type="text" id="hint2-input" placeholder="Dica 2">
-                        <input type="text" id="hint3-input" placeholder="Dica 3">
-                        <button type="submit" class="submit-btn small-btn">Salvar Dicas</button>
-                    </form>
-                </div>
-                <div class="tool-section">
-                <h4 style="margin-bottom: 10px; color: var(--secondary-color); display: flex; align-items: center; gap: 8px;">
-        <ion-icon name="layers-outline"></ion-icon> Mídias do Jogo
-                </h4>
-                <p style="font-size: 0.8rem; color: #888; margin-bottom: 10px;">Clique para exibir na tela do jogador.</p>
-                <div id="host-assets-list" style="display: flex; flex-direction: column; gap: 8px;">
-                    <div class="loader" style="width: 20px; height: 20px; margin: 0 auto;"></div>
-                </div>
-                </div>
-
-                <div class="tool-section">
-                    <h3>Decisões do Jogador</h3>
-                    <form id="decision-creator-form">
-                        <input type="text" id="decision-title-input" placeholder="Título da Decisão" required>
-                        <div id="decision-options-inputs">
-                            <input type="text" class="decision-option-input" placeholder="Opção 1" required>
-                            <input type="text" class="decision-option-input" placeholder="Opção 2" required>
-                        </div>
-                        <button type="button" id="add-option-btn" class="submit-btn small-btn">Add Opção</button>
-                        <button type="submit" class="submit-btn small-btn">Salvar Decisão</button>
-                    </form>
-                    <div id="saved-decisions-list"></div>
-                    <p id="player-choice-feedback">Aguardando jogador...</p>
-                </div>
-
-                <div class="tool-section">
-                    <h3>Mídia do Jogo</h3>
-                    <div class="asset-manager-compact">
-                        <div class="asset-tabs">
-                            <button type="button" class="asset-tab-btn active" data-tab="host-photos">Fotos</button>
-                            <button type="button" class="asset-tab-btn" data-tab="host-videos">Vídeos</button>
-                            <button type="button" class="asset-tab-btn" data-tab="host-sounds">Sons</button>
-                        </div>
-                        <div class="asset-content-compact">
-                            <div id="host-photos-tab" class="asset-tab-content active">
-                                <div id="host-photos-preview" class="asset-preview-grid"></div>
-                            </div>
-                            <div id="host-videos-tab" class="asset-tab-content">
-                                <div id="host-videos-preview" class="asset-preview-grid"></div>
-                            </div>
-                            <div id="host-sounds-tab" class="asset-tab-content">
-                                <div id="host-sounds-preview" class="asset-preview-list"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-        </div>
-
-        <div id="player-decision-overlay" class="overlay-container hidden">
-            <div class="overlay-content">
-                <button id="host-close-decision-btn" class="close-overlay-btn">&times;</button>
-                <h3>Jogador está decidindo:</h3>
-                <h2 id="decision-title">...</h2>
-                <div id="decision-options-container"></div>
-            </div>
-        </div>
-        <div id="host-media-display-overlay" class="overlay-container media-overlay hidden"></div>
-    </main>
-
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
 
-    <script src="assets/js/storage.js"></script>
-    <script src="assets/js/gamedata.js"></script>
     <script src="assets/js/firebase-config.js"></script>
+
+    <script src="assets/js/main.js"></script>
+</head>
+<body class="host-room-body">
+
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loader"></div>
+        <p style="margin-top: 15px; color: #fff;">Conectando à sala...</p>
+    </div>
+
+    <div class="host-grid-container">
+        
+        <div class="host-video-area">
+            <div class="video-wrapper remote">
+                <video id="host-remote-video" autoplay playsinline></video>
+                <div class="video-label">Jogador</div>
+            </div>
+            
+            <div class="video-wrapper local">
+                <video id="host-local-video" autoplay playsinline muted></video>
+                <div class="video-label">Você</div>
+            </div>
+
+            <div class="host-controls-bar">
+                <button id="host-mic-btn" class="control-btn" title="Microfone"><ion-icon name="mic-outline"></ion-icon></button>
+                <button id="host-cam-btn" class="control-btn" title="Câmera"><ion-icon name="videocam-outline"></ion-icon></button>
+                <button id="end-call-btn" class="control-btn danger" title="Encerrar Sessão"><ion-icon name="call-outline"></ion-icon></button>
+            </div>
+        </div>
+
+        <div class="host-sidebar">
+            <div class="sidebar-header">
+                <h3>Mestre do Jogo</h3>
+                <div id="session-timer" style="color:var(--secondary-color); font-weight:bold;">00:00</div>
+            </div>
+
+            <div class="sidebar-tabs">
+                <button class="tab-btn active" onclick="switchTab('media')">Mídia</button>
+                <button class="tab-btn" onclick="switchTab('notes')">Notas</button>
+                <button class="tab-btn" onclick="switchTab('chat')">Chat</button>
+            </div>
+
+            <div id="tab-media" class="sidebar-content active">
+                <div id="host-assets-list" class="assets-list">
+                    <p style="text-align:center; opacity:0.5; margin-top:20px;">Carregando...</p>
+                </div>
+            </div>
+
+            <div id="tab-notes" class="sidebar-content">
+                <textarea placeholder="Suas anotações privadas..." style="width:100%; height:300px; background:#222; border:1px solid #444; color:#fff; padding:10px; border-radius:6px; resize:none;"></textarea>
+            </div>
+
+            <div id="tab-chat" class="sidebar-content">
+                <p style="text-align:center; opacity:0.5; margin-top:20px;">Chat em breve.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tabId) {
+            document.querySelectorAll('.sidebar-content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            const target = document.getElementById(`tab-${tabId}`);
+            if(target) target.classList.add('active');
+            event.currentTarget.classList.add('active');
+        }
+    </script>
+
     <script src="assets/js/sala-host.js"></script>
+
 </body>
 </html>

@@ -68,7 +68,29 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // =========================================================================
-    // NOVA FUNÇÃO: MODAL DE SESSÕES
+    // NOVA FUNÇÃO: PREVIEW DO TIMER (ATUALIZAÇÃO)
+    // =========================================================================
+    window.updateTimerPreview = () => {
+        const font = document.getElementById('edit-timer-font')?.value;
+        const color = document.getElementById('edit-timer-color')?.value;
+        const type = document.getElementById('edit-timer-type')?.value;
+        const previewEl = document.getElementById('timer-preview-text');
+
+        if (previewEl && font && color) {
+            previewEl.style.fontFamily = font;
+            previewEl.style.color = color;
+
+            // Apenas visual: muda o texto para indicar o tipo
+            if (type === 'progressive') {
+                previewEl.textContent = "00:00 (Crescente)";
+            } else {
+                previewEl.textContent = "60:00 (Regressivo)";
+            }
+        }
+    };
+
+    // =========================================================================
+    // MODAL DE SESSÕES
     // =========================================================================
     const sessionsModal = document.getElementById('game-sessions-modal');
     const sessionsList = document.getElementById('game-sessions-list');
@@ -385,7 +407,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // =========================================================================
-    // 5. GERENCIAMENTO DE JOGOS & AGENDAS (CORRIGIDO E SEPARADO)
+    // 5. GERENCIAMENTO DE JOGOS & AGENDAS
     // =========================================================================
     
     // Referências DOM
@@ -405,7 +427,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     window.renderSessionAssets = () => {
-        const list = document.getElementById('assets-crud-list'); // Atualizado para o ID do CRUD
+        const list = document.getElementById('assets-crud-list'); 
         if(!list) return;
         list.innerHTML = '';
         if(currentSessionAssets.length === 0) {
@@ -446,7 +468,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // 3. CARREGAMENTO DE JOGOS
     // =========================================================================
     
-    
     window.loadAllGames = async function() {
         if(!gameListContainer) return;
         gameListContainer.innerHTML = '<div class="loader"></div>';
@@ -460,26 +481,20 @@ document.addEventListener('DOMContentLoaded', () => {
             const year = now.getFullYear();
             const month = String(now.getMonth() + 1).padStart(2, '0');
             const day = String(now.getDate()).padStart(2, '0');
-            const todayStr = `${year}-${month}-${day}`; // YYYY-MM-DD Local
+            const todayStr = `${year}-${month}-${day}`; 
 
             // 3. Busca Agendamentos do Banco (De hoje em diante)
             const bookingsSnap = await db.collection('bookings')
                 .where('date', '>=', todayStr)
                 .get();
 
-            // 4. Filtragem Refinada (JavaScript)
-            // O Firestore filtra a DATA, mas aqui filtramos a HORA do dia atual
-            // para garantir que sessões muito antigas de hoje não contem, se desejar,
-            // ou apenas para garantir consistência com o modal.
+            // 4. Filtragem Refinada
             const gamesWithSessions = new Set();
-            
-            // Tolerância: Consideramos sessões "ativas" até 2 horas depois do início
             const toleranceTime = new Date(now.getTime() - (2 * 60 * 60 * 1000));
 
             bookingsSnap.forEach(doc => {
                 const data = doc.data();
                 if (data.gameId && data.status !== 'cancelled') {
-                    // Cria objeto de data da sessão
                     const sessionDateTime = new Date(`${data.date}T${data.time}`);
                     if (sessionDateTime >= toleranceTime) {
                         gamesWithSessions.add(data.gameId);
@@ -495,14 +510,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const g = doc.data();
                 if(g.tags) g.tags.forEach(t => allKnownTags.add(t));
                 
-                // Verifica se tem sessão futura/ativa na lista filtrada
                 const hasFutureSession = gamesWithSessions.has(doc.id);
-                
-                // Define Visual
                 const sessionBtnState = hasFutureSession ? '' : 'disabled';
                 const sessionBtnStyle = hasFutureSession 
-                    ? 'background:var(--secondary-color); color:#fff; border:none;' // Ativo
-                    : 'background:rgba(255,255,255,0.05); color:#666; border:1px solid #444; cursor:not-allowed; opacity:0.6;'; // Inativo
+                    ? 'background:var(--secondary-color); color:#fff; border:none;' 
+                    : 'background:rgba(255,255,255,0.05); color:#666; border:1px solid #444; cursor:not-allowed; opacity:0.6;'; 
 
                 const card = document.createElement('div'); card.className = 'game-card';
                 
@@ -517,7 +529,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <small>${g.status==='available'?'<span style="color:#00ff88">● On</span>':'<span style="color:#ffbb00">● Off</span>'}</small>
                         </div>
                         
-                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
                             <button class="submit-btn small-btn edit-game-trigger" data-id="${doc.id}">Editar</button>
                             <button class="submit-btn small-btn schedule-game-trigger" data-id="${doc.id}" style="background:var(--primary-color-dark); border:1px solid #444;">Agenda</button>
                                                       
@@ -540,7 +552,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
 
-    // DELEGATION LISTENER (CORREÇÃO FUNDAMENTAL)
+    // DELEGATION LISTENER
     if(gameListContainer) {
         gameListContainer.addEventListener('click', (e) => {
             const editBtn = e.target.closest('.edit-game-trigger');
@@ -555,7 +567,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- FUNÇÃO DE ABRIR MODAL DE JOGO (SAFE MODE) ---
+    // --- FUNÇÃO DE ABRIR MODAL DE JOGO (ATUALIZADA) ---
     window.openGameModal = async (gameId) => {
         createGameForm.reset();
         document.getElementById('game-id').value = gameId || '';
@@ -594,6 +606,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     set('new-game-short-desc', d.shortDescription); set('new-game-full-desc', d.fullDescription);
                     set('new-game-cover', d.coverImage); set('new-game-trailer', d.videoPreview);
                     
+                    // CARREGAMENTO DAS CONFIGURAÇÕES DO TIMER
+                    const timerSettings = d.timerSettings || {};
+                    set('edit-timer-type', timerSettings.type || 'regressive');
+                    set('edit-timer-font', timerSettings.font || "'Orbitron', sans-serif");
+                    set('edit-timer-color', timerSettings.color || '#ff0000');
+                    // Atualiza o preview visual
+                    if(window.updateTimerPreview) window.updateTimerPreview();
+
                     if(d.coverImage && coverPreview) { coverPreview.src = d.coverImage; coverPreview.style.display = 'block'; }
                     if(d.tags) { currentTags = d.tags; renderTags(); }
                     if(d.galleryImages) { currentGalleryUrls = d.galleryImages; window.renderGallery(); }
@@ -610,6 +630,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if(title) title.textContent = "Criar Novo Jogo";
             if(saveBtn) saveBtn.textContent = "Criar Jogo";
             if(delBtn) delBtn.classList.add('hidden');
+            // Reset do preview do timer para padrão
+            if(window.updateTimerPreview) window.updateTimerPreview();
         }
         createGameModal.classList.remove('hidden');
     };
@@ -643,7 +665,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch(e) { alert("Erro ao abrir agenda."); }
     };
 
-// --- UPLOAD HANDLER GENÉRICO (Para Capa, Galeria, Trailer) ---
+    // --- UPLOAD HANDLER GENÉRICO ---
     function setupUpload(inputId, type, cb) {
         const input = document.getElementById(inputId);
         if(!input) return;
@@ -787,7 +809,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Renderizador da Lista (Atualizado para Áudio)
+    // Renderizador da Lista
     window.renderSessionAssets = () => {
         const list = document.getElementById('assets-crud-list');
         if(!list) return;
@@ -833,7 +855,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(e.target.checked) box.classList.remove('hidden'); else box.classList.add('hidden');
     };
 
-    // --- SALVAR JOGO ---
+    // --- SALVAR JOGO (ATUALIZADO COM TIMER) ---
     if(createGameForm) createGameForm.onsubmit = async (e) => {
         e.preventDefault();
         const id = document.getElementById('game-id').value;
@@ -855,7 +877,14 @@ document.addEventListener('DOMContentLoaded', () => {
             videoPreview: document.getElementById('new-game-trailer').value,
             galleryImages: currentGalleryUrls,
             sessionAssets: currentSessionAssets,
-            isPaused: document.getElementById('new-game-status').value === 'paused'
+            isPaused: document.getElementById('new-game-status').value === 'paused',
+            
+            // DADOS DO TIMER
+            timerSettings: {
+                type: document.getElementById('edit-timer-type').value,
+                font: document.getElementById('edit-timer-font').value,
+                color: document.getElementById('edit-timer-color').value
+            }
         };
 
         try {
@@ -875,7 +904,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // =========================================================================
-    // 6. LÓGICA DA AGENDA (VALIDAÇÃO DE DATA/HORA)
+    // 6. LÓGICA DA AGENDA
     // =========================================================================
     
     function renderAdminCalendar() {
@@ -900,7 +929,7 @@ document.addEventListener('DOMContentLoaded', () => {
             grid.appendChild(empty);
         }
 
-        // Data de Hoje (Zerada para comparação apenas de dia)
+        // Data de Hoje
         const today = new Date();
         today.setHours(0,0,0,0);
 
@@ -913,24 +942,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const dateObj = new Date(y, m, d);
 
-            // VERIFICAÇÃO 1: Bloquear dias passados
             if(dateObj < today) {
-                // Mantém a classe padrão (cinza escuro, not-allowed)
-                // Não adiciona onclick
+                // Passado (sem ação)
             } else {
-                // Dia Futuro ou Hoje
                 el.classList.add('available');
-
-                // DESTAQUE 1: Tem horários marcados?
                 if(currentAgendaData[dateStr] && currentAgendaData[dateStr].length > 0) {
                     el.classList.add('has-schedule');
                 }
-
-                // DESTAQUE 2: É o dia selecionado agora?
                 if(editingDateStr === dateStr) {
                     el.classList.add('selected');
                 }
-
                 el.onclick = () => openSingleDayEditor(dateStr);
             }
             grid.appendChild(el);
@@ -939,27 +960,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function openSingleDayEditor(dateStr) {
         editingDateStr = dateStr;
-        
-        // Atualiza visual do grid (Move a classe .selected)
         document.querySelectorAll('.calendar-day.selected').forEach(el => el.classList.remove('selected'));
         const activeDay = document.querySelector(`.calendar-day[data-date="${dateStr}"]`);
         if(activeDay) activeDay.classList.add('selected');
 
-        // Abre o editor
         const modal = document.getElementById('single-day-editor');
         modal.classList.remove('hidden');
         
         const dateParts = dateStr.split('-');
         document.getElementById('editing-date-display').textContent = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
         
-        // Atualiza a lista de horários já marcados
         renderSlots();
-
-        // VERIFICAÇÃO 2: Filtrar horários no Select
         updateTimeSelectOptions(dateStr);
     }
 
-    // Função Auxiliar: Gera opções de hora, removendo passado se for "Hoje"
     function updateTimeSelectOptions(selectedDateStr) {
         const select = document.getElementById('single-time-input');
         if(!select) return;
@@ -972,17 +986,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const currentMin = now.getMinutes();
 
         for(let h = 0; h < 24; h++) {
-            for(let m = 0; m < 60; m += 30) { // Intervalo de 30 min
-                // Se for hoje, verifica se o horário já passou
+            for(let m = 0; m < 60; m += 30) { 
                 if (isToday) {
                     if (h < currentHour || (h === currentHour && m < currentMin)) {
-                        continue; // Pula horários passados
+                        continue; 
                     }
                 }
-
                 const timeStr = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
-                
-                // Cria a opção
                 const option = document.createElement('option');
                 option.value = timeStr;
                 option.textContent = timeStr;
@@ -1005,7 +1015,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Funções dos Botões do Editor de Dia
     window.removeSlot = (i) => { 
         currentAgendaData[editingDateStr].splice(i, 1); 
         renderSlots(); 
@@ -1016,10 +1025,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const v = document.getElementById('single-time-input').value;
             if(v) { 
                 if(!currentAgendaData[editingDateStr]) currentAgendaData[editingDateStr] = [];
-                // Evita duplicatas
                 if(!currentAgendaData[editingDateStr].includes(v)) {
                     currentAgendaData[editingDateStr].push(v); 
-                    // Ordena cronologicamente
                     currentAgendaData[editingDateStr].sort();
                     renderSlots(); 
                 }
@@ -1030,20 +1037,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if(document.getElementById('save-single-day-btn')) {
         document.getElementById('save-single-day-btn').onclick = async () => {
             if(!currentAgendaGameId) return;
-            
-            // Limpa chave vazia se não houver horários
             if(currentAgendaData[editingDateStr] && currentAgendaData[editingDateStr].length === 0) {
                 delete currentAgendaData[editingDateStr];
             }
-            
             try {
                 await db.collection('games').doc(currentAgendaGameId).update({ availability: currentAgendaData });
-                
-                // Fecha o editor de dia, mas mantém o calendário
                 document.getElementById('single-day-editor').classList.add('hidden');
                 document.querySelector('.calendar-day.selected')?.classList.remove('selected');
-                
-                renderAdminCalendar(); // Re-renderiza para mostrar a bolinha vermelha no dia
+                renderAdminCalendar(); 
             } catch(e) {
                 console.error(e);
                 alert("Erro ao salvar agenda.");
@@ -1060,7 +1061,6 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // Botão fechar editor auxiliar
     if(document.getElementById('close-day-editor-btn')) {
         document.getElementById('close-day-editor-btn').onclick = () => {
             document.getElementById('single-day-editor').classList.add('hidden');
@@ -1072,7 +1072,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if(document.getElementById('admin-prev-month')) document.getElementById('admin-prev-month').onclick = () => { currentAdminDate.setMonth(currentAdminDate.getMonth()-1); renderAdminCalendar(); };
     if(document.getElementById('admin-next-month')) document.getElementById('admin-next-month').onclick = () => { currentAdminDate.setMonth(currentAdminDate.getMonth()+1); renderAdminCalendar(); };
     
-    // (A parte do Bulk pode continuar igual, mas removendo a chamada antiga de populateTimeSelects no final do arquivo)
     // Bulk Actions
     if(document.getElementById('add-bulk-time-btn')) document.getElementById('add-bulk-time-btn').onclick = () => {
         const v = document.getElementById('bulk-time-input').value;

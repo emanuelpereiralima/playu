@@ -233,10 +233,210 @@ img, video {
 
 .small-btn { padding: 0.5rem 1rem !important; font-size: 0.9rem; }
 
+/* =========================================
+   ESTILO DA SALA DO HOST (SALA-HOST.HTML)
+   ========================================= */
+.host-room-body {
+    background-color: #0f0f13;
+    color: #fff;
+    height: 100vh;
+    overflow: hidden;
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+}
+
+.host-grid-container {
+    display: grid;
+    grid-template-columns: 1fr 350px; /* Vídeo na esquerda, Painel na direita */
+    height: 100vh;
+}
+
+/* ÁREA DE VÍDEO */
+.host-video-area {
+    background-color: #000;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.video-wrapper.remote {
+    width: 100%;
+    height: 100%;
+    max-height: 90vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.video-wrapper.remote video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain; /* Garante que o vídeo apareça inteiro */
+    background: #1a1a1a;
+    border-radius: 8px;
+}
+
+.video-wrapper.local {
+    position: absolute;
+    bottom: 30px;
+    right: 30px;
+    width: 180px;
+    height: 120px;
+    background: #222;
+    border: 2px solid #333;
+    border-radius: 8px;
+    overflow: hidden;
+    z-index: 10;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+}
+
+.video-wrapper.local video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* BARRA DE CONTROLES (Mute, Camera, Sair) */
+.host-controls-bar {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 15px;
+    background: rgba(0,0,0,0.6);
+    padding: 10px 20px;
+    border-radius: 30px;
+    backdrop-filter: blur(5px);
+    z-index: 20;
+}
+
 .control-btn {
-    background: none; border: none;
-    color: var(--text-color); cursor: pointer;
-    font-family: var(--body-font); font-weight: 500;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    border: none;
+    background: #333;
+    color: #fff;
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.2s;
+}
+
+.control-btn:hover { background: #555; }
+.control-btn.active { background: #ff4444; border: 1px solid #ff0000; } /* Estado Mute/Off */
+.control-btn.danger { background: #ff4444; }
+.control-btn.danger:hover { background: #cc0000; }
+
+/* BARRA LATERAL (ASSETS) */
+.host-sidebar {
+    background-color: #1a1a2e;
+    border-left: 1px solid #333;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-header {
+    padding: 15px;
+    border-bottom: 1px solid #333;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #16213e;
+}
+
+.sidebar-tabs {
+    display: flex;
+    background: #111;
+}
+
+.tab-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    padding: 12px;
+    color: #888;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+}
+
+.tab-btn.active {
+    color: var(--secondary-color);
+    border-bottom-color: var(--secondary-color);
+    background: rgba(233, 69, 96, 0.05);
+}
+
+.sidebar-content {
+    flex: 1;
+    padding: 15px;
+    overflow-y: auto;
+    display: none; /* Esconde abas inativas */
+}
+
+.sidebar-content.active {
+    display: block; /* Mostra aba ativa */
+}
+
+/* LOADING OVERLAY */
+.loading-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: #0f0f13;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.5s ease;
+}
+
+/* =========================================
+   CONFIGURAÇÃO DE TIMER (ADMIN)
+   ========================================= */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+
+.timer-config-section {
+    background: rgba(255, 255, 255, 0.03);
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 20px;
+}
+
+.timer-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+/* Preview do Timer */
+.timer-preview-box {
+    background: #000;
+    padding: 15px;
+    border-radius: 6px;
+    text-align: center;
+    border: 1px solid #333;
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 80px;
+}
+
+.timer-preview-text {
+    font-size: 2.5rem;
+    font-weight: bold;
+    line-height: 1;
+}
+
+@media (max-width: 768px) {
+    .timer-grid { grid-template-columns: 1fr; }
 }
 
 .back-to-top {
