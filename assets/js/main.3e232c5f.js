@@ -1,9 +1,53 @@
-// playu/assets/js/main.js
-
 document.addEventListener('DOMContentLoaded', () => {
     initApp();       
     loadGameContent(); 
 });
+
+/**
+ * Inicializa configurações globais do app
+ */
+function initApp() {
+    checkAuthPersistence();
+    initTheme();
+    const backToTop = document.getElementById('back-to-top');
+    if(backToTop) {
+        window.addEventListener('scroll', () => {
+            backToTop.classList.toggle('visible', window.scrollY > 300);
+        });
+    }
+}
+
+/**
+ * Verifica se há um login persistente válido (regra de 2 dias)
+ */
+function checkAuthPersistence() {
+    const localData = localStorage.getItem('loggedInUser');
+    
+    if (localData) {
+        try {
+            const userData = JSON.parse(localData);
+            
+            // Verifica se tem data de expiração e se ainda é válida
+            if (userData.authExpiry && Date.now() < userData.authExpiry) {
+                // Sessão Válida: Sincroniza com sessionStorage para compatibilidade
+                // (Isso garante que scripts como admin.js, que buscam no sessionStorage, funcionem)
+                if (!sessionStorage.getItem('loggedInUser')) {
+                    sessionStorage.setItem('loggedInUser', JSON.stringify(userData));
+                    console.log("Sessão restaurada via persistência.");
+                }
+            } else {
+                // Sessão Expirada: Limpa tudo
+                console.warn("Sessão expirada. Deslogando...");
+                localStorage.removeItem('loggedInUser');
+                sessionStorage.removeItem('loggedInUser');
+                if (window.auth) window.auth.signOut();
+            }
+        } catch (e) {
+            console.error("Erro ao validar persistência:", e);
+            localStorage.removeItem('loggedInUser');
+        }
+    }
+}
 
 /**
  * Função principal que orquestra o carregamento dos jogos
@@ -55,9 +99,14 @@ async function loadGameContent() {
         return;
     }
 
-    // 3. Popula o Carrossel
+    // 3. Popula o Carrossel (ALEATÓRIO)
     if (carouselContainer) {
-        const featuredGames = games.slice(0, 5); 
+        // Cria uma cópia da lista e embaralha para não afetar a ordem da grade abaixo
+        const shuffledGames = [...games].sort(() => 0.5 - Math.random());
+        
+        // Pega os 5 primeiros da lista embaralhada
+        const featuredGames = shuffledGames.slice(0, 5); 
+        
         featuredGames.forEach(game => {
             const slide = createCarouselSlide(game);
             carouselContainer.appendChild(slide);
@@ -65,7 +114,7 @@ async function loadGameContent() {
         initCarouselControls(); 
     }
 
-    // 4. Popula a Grade
+    // 4. Popula a Grade (Mantém ordem original ou pode embaralhar também se desejar)
     if (gamesGrid) {
         games.forEach(game => {
             const card = createGameCard(game);
@@ -74,18 +123,14 @@ async function loadGameContent() {
     }
 }
 
-/**
- * Cria o HTML de um Slide do Carrossel (URL LIMPA)
- */
 function createCarouselSlide(game) {
     const slide = document.createElement('div');
     slide.className = 'carousel-slide';
-    
     const imageSrc = game.coverImage || 'assets/images/logo.png';
     const gameIdentifier = game.slug || game.id;
     
-    // URL LIMPA: /jogo/nome-do-jogo
-    const gameUrl = `jogo/${gameIdentifier}`;
+    // CORREÇÃO AQUI: Mudamos para usar ?id= para evitar erro de rota 404
+    const gameUrl = `jogo-template.html?id=${gameIdentifier}`;
 
     slide.innerHTML = `
         <a href="${gameUrl}" class="carousel-img-link" title="Ver detalhes do jogo">
@@ -99,51 +144,41 @@ function createCarouselSlide(game) {
     return slide;
 }
 
-/**
- * Cria o HTML de um Card de Jogo (URL LIMPA)
- */
 function createGameCard(game) {
     const card = document.createElement('div');
     card.className = 'game-card';
-    
     const imageSrc = game.coverImage || 'assets/images/logo.png';
     const gameIdentifier = game.slug || game.id;
     
-    // URL LIMPA: /jogo/nome-do-jogo
-    const gameUrl = `jogo/${gameIdentifier}`;
+    // URL correta para o template
+    const gameUrl = `jogo-template.html?id=${gameIdentifier}`;
     
-    let pausedBadge = '';
+    // Status visual
+    let statusHtml = '';
     if (game.status === 'paused') {
-        pausedBadge = `<div style="position:absolute; top:10px; right:10px; background:#ffbb00; color:#000; padding:2px 8px; border-radius:4px; font-weight:bold; font-size:0.8rem; z-index:5;">PAUSADO</div>`;
+        statusHtml = '<small style="font-size:0.75rem;"><span style="color:#ffbb00">● Pausado</span></small>';
+    } else {
+        const durationText = game.sessionDuration ? `⏱ ${game.sessionDuration} min` : '● Disponível';
+        statusHtml = `<small style="font-size:0.75rem; color:#aaa;">${durationText}</small>`;
     }
 
     card.innerHTML = `
-        <div style="position:relative;">
-            <img src="${imageSrc}" alt="${game.name}" class="game-card-img">
-            ${pausedBadge}
-        </div>
-        <div class="game-card-content">
-            <h3>${game.name}</h3>
-            <p>${game.shortDescription || 'Sem descrição.'}</p>
-            <div style="margin-top:auto; display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-size:0.8rem; opacity:0.7;">⏱ ${game.sessionDuration || 'N/A'}</span>
-                <a href="${gameUrl}" class="submit-btn small-btn">Ver Detalhes</a>
+        <img src="${imageSrc}" class="game-card-img" style="height:120px; object-fit: cover; width: 100%;">
+        
+        <div class="game-card-content" style="display: flex; flex-direction: column; flex: 1; padding: 1rem;">
+            <div style="margin-bottom:0.8rem;">
+                <h3 style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size: 1rem; color: #fff; margin: 0 0 3px 0;">${game.name}</h3>
+                ${statusHtml}
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr; gap:8px; margin-top: auto;">
+                <a href="${gameUrl}" class="submit-btn small-btn" style="text-align:center; text-decoration:none; display:flex; align-items:center; justify-content:center; gap:8px; font-size: 0.85rem; padding: 0.5rem;">
+                    Ver Detalhes <ion-icon name="arrow-forward-outline"></ion-icon>
+                </a>
             </div>
         </div>
     `;
     return card;
-}
-
-// --- Funções Auxiliares (UI) ---
-
-function initApp() {
-    initTheme();
-    const backToTop = document.getElementById('back-to-top');
-    if(backToTop) {
-        window.addEventListener('scroll', () => {
-            backToTop.classList.toggle('visible', window.scrollY > 300);
-        });
-    }
 }
 
 function initTheme() {
