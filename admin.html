@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel Admin - PlayU</title>
-    <script src="assets/js/version.c59b84bc.js"></script>
+    <script src="assets/js/version.704b844d.js"></script>
     <script>
         function loadAsset(path) {
             const version = typeof SITE_VERSION !== 'undefined' ? SITE_VERSION : new Date().getTime();
@@ -119,6 +119,46 @@
                         <div class="form-group"><label>Galeria</label><input type="file" id="gallery-upload-input" multiple accept="image/*" style="display:none;"><label for="gallery-upload-input" class="upload-label small-btn">Adicionar Fotos</label><div id="gallery-preview-grid" class="gallery-grid" style="margin-top:5px;"></div></div>
                         <div class="form-group"><label>Teaser</label><label for="admin-trailer-upload" class="upload-label small-btn">Enviar Vídeo</label><input type="file" id="admin-trailer-upload" accept="video/*" style="display:none;"><input type="text" id="new-game-trailer" style="display:none;"></div>
                     </div>
+                    
+                    <div class="form-group">
+    <label style="color: var(--secondary-color); margin-bottom: 10px; display: block;">
+        <ion-icon name="timer-outline"></ion-icon> Personalização do Timer
+    </label>
+    
+    <div class="timer-config-section">
+        <div class="timer-grid">
+            <div>
+                <label for="edit-timer-type">Modo de Contagem</label>
+                <select id="edit-timer-type" class="admin-input" onchange="updateTimerPreview()">
+                    <option value="regressive">Regressivo (Decrescente)</option>
+                    <option value="progressive">Progressivo (Crescente)</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="edit-timer-font">Estilo da Fonte</label>
+                <select id="edit-timer-font" class="admin-input" onchange="updateTimerPreview()">
+                    <option value="'Orbitron', sans-serif">Digital (Futurista)</option>
+                    <option value="'Courier New', monospace">Máquina de Escrever</option>
+                    <option value="sans-serif">Padrão (Clean)</option>
+                    <option value="serif">Clássico (Serifa)</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="edit-timer-color">Cor dos Números</label>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <input type="color" id="edit-timer-color" value="#ff0000" oninput="updateTimerPreview()" style="height:40px; width:60px; border:none; background:none; cursor:pointer;">
+                    <span style="font-size:0.8rem; opacity:0.7;">Escolha a cor</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="timer-preview-box">
+            <span id="timer-preview-text" class="timer-preview-text">00:00</span>
+        </div>
+    </div>
+
 
                     <div class="modal-col-right" style="background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: 8px; border: 1px solid var(--border-color); display: flex; flex-direction: column;">
                         <h4 style="color: var(--secondary-color); border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 15px;">
@@ -263,10 +303,10 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
     <script src="assets/js/firebase-config.js"></script>
     <script>
-        loadAsset('assets/css/style.c59b84bc.css');
+        loadAsset('assets/css/style.704b844d.css');
         loadAsset('https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js');
         loadAsset('https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js');
-        loadAsset('assets/js/admin.c59b84bc.js');
+        loadAsset('assets/js/admin.704b844d.js');
     </script>
 </body>
 </html>
