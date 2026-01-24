@@ -481,11 +481,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data.gameId && data.status !== 'cancelled') {
                     // Cria objeto de data da sessão
                     const sessionDateTime = new Date(`${data.date}T${data.time}`);
-                    
-                    // LÓGICA:
-                    // 1. Se a data for FUTURA (maior que hoje), conta.
-                    // 2. Se a data for HOJE, verifica se o horário + tolerância ainda é válido.
-                    // (Ex: Se é 15:00, uma sessão de 14:00 ainda aparece. Uma de 10:00 não).
                     if (sessionDateTime >= toleranceTime) {
                         gamesWithSessions.add(data.gameId);
                     }
@@ -522,7 +517,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <small>${g.status==='available'?'<span style="color:#00ff88">● On</span>':'<span style="color:#ffbb00">● Off</span>'}</small>
                         </div>
                         
-                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
                             <button class="submit-btn small-btn edit-game-trigger" data-id="${doc.id}">Editar</button>
                             <button class="submit-btn small-btn schedule-game-trigger" data-id="${doc.id}" style="background:var(--primary-color-dark); border:1px solid #444;">Agenda</button>
                                                       
