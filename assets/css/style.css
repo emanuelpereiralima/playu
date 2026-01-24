@@ -543,25 +543,55 @@ input:checked + .slider:before { transform: translateX(26px); }
 .admin-table th { background-color: var(--primary-color-dark); text-transform: uppercase; font-size: 0.9rem; color: var(--text-color-light); }
 
 /* --- Cards de Jogo --- */
-.game-grid {
+.games-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 1.5rem;
+    /* Cards menores (min 200px) para caberem mais lado a lado */
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    /* Distância maior entre eles */
+    gap: 3rem; 
+    padding: 1rem 0;
+    width: 100%;
 }
-.game-card {
-    background-color: var(--primary-color);
-    border-radius: 12px;
-    border: 1px solid var(--border-color);
-    overflow: hidden;
-    display: flex; flex-direction: column;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    position: relative;
-}
-.game-card-img { width: 100%; height: 180px; object-fit: cover; }
-.game-card-content { padding: 1rem; display: flex; flex-direction: column; flex-grow: 1; }
-.game-card-content h3 { margin-bottom: 0.5rem; }
-.game-card-content p { font-size: 0.9rem; color: var(--text-color-light); flex-grow: 1; margin-bottom: 1rem; }
 
+.game-card {
+    background-color: var(--card-bg-color);
+    border-radius: 10px; /* Bordas um pouco menos arredondadas para o tamanho menor */
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+}
+
+.game-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+    border-color: var(--secondary-color);
+}
+
+.game-card-img {
+    width: 100%;
+    height: 120px; /* Altura reduzida para acompanhar o card menor */
+    object-fit: cover;
+    display: block;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.game-card-content {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.game-card-content h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1rem; /* Fonte levemente menor */
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
 
 .delete-corner-btn {
     position: absolute;
@@ -653,8 +683,8 @@ input:checked + .slider:before { transform: translateX(26px); }
     transform: translate(-50%, -50%); pointer-events: none;
 }
 .nav-btn {
-    background-color: rgba(255, 255, 255, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    background-color: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(0, 0, 0, 0.3);
     color: var(--text-color); width: 45px; height: 45px;
     border-radius: 50%; cursor: pointer;
     display: flex; justify-content: center; align-items: center;
@@ -939,6 +969,81 @@ aspect-ratio: 1;
 
 .calendar-day.selected.has-schedule::after {
     background-color: white;
+}
+
+/* =========================================
+   OVERLAY DE CALENDÁRIO (JOGADOR)
+   ========================================= */
+.calendar-wrapper {
+    position: relative; /* Necessário para o overlay absoluto */
+    min-height: 300px;
+}
+
+.calendar-paused-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(26, 26, 46, 0.85); /* Fundo escuro semi-transparente */
+    backdrop-filter: blur(4px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    text-align: center;
+    padding: 20px;
+}
+
+.calendar-paused-overlay h3 {
+    color: var(--secondary-color);
+    margin-bottom: 10px;
+    font-size: 1.5rem;
+}
+
+.calendar-paused-overlay p {
+    color: #ccc;
+    font-size: 0.95rem;
+    max-width: 80%;
+}
+
+/* Ajuste visual dos dias no calendário do jogador */
+.player-calendar-day {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    background-color: rgba(255,255,255,0.02);
+    color: #555;
+    cursor: default;
+    font-size: 0.9rem;
+    position: relative;
+}
+
+.player-calendar-day.has-slots {
+    background-color: rgba(0, 255, 136, 0.1);
+    color: #fff;
+    cursor: pointer;
+    border: 1px solid rgba(0, 255, 136, 0.3);
+    font-weight: bold;
+    transition: all 0.2s;
+}
+
+.player-calendar-day.has-slots:hover {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(233, 69, 96, 0.4);
+}
+
+.player-calendar-day.selected {
+    background-color: var(--secondary-color);
+    color: #fff;
+    box-shadow: 0 0 10px var(--secondary-color);
 }
 
 /* Se tiver horário e passar o mouse, fica sólido */
