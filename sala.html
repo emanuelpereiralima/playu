@@ -4,85 +4,56 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sala de Jogo - PlayU</title>
-    <link rel="stylesheet" href="assets/css/style.704b844d.css">
+    
+    <link rel="stylesheet" href="assets/css/style.617da207.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
-</head>
-<body>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     
-    <div id="access-message-container">
-        <h1>Carregando Sessão...</h1>
+    <script src="assets/js/firebase-config.js"></script>
+    <script src="assets/js/main.617da207.js"></script>
+</head>
+<body class="player-room-body">
+
+    <div id="loading-overlay" class="loading-overlay">
         <div class="loader"></div>
+        <p style="margin-top: 15px; color: #fff;">Conectando à sessão...</p>
     </div>
 
-    <main id="player-view" class="room-view hidden">
+    <div class="player-video-container">
+        <video id="player-remote-video" autoplay playsinline></video>
         
-        <div class="video-grid-container">
-            <div class="video-grid">
-                <div class="video-container">
-                    <h3>Jogador (Você)</h3>
-                    <video id="local-video" autoplay muted playsinline></video>
+        <video id="player-local-video" autoplay playsinline muted></video>
+
+        <div id="player-timer" class="player-timer-overlay">00:00</div>
+
+        <div id="player-media-overlay" class="player-media-overlay">
+            <button class="close-media-btn" onclick="closeMedia()">&times;</button>
+            <div id="media-content-wrapper">
                 </div>
-                <div class="video-container">
-                    <h3>Host</h3>
-                    <video id="remote-video" autoplay playsinline></video>
-                </div>
-            </div>
-            
-            <div class="media-controls">
-                <button id="player-mic-btn" class="control-btn" disabled>
-                    <ion-icon name="mic-off-outline"></ion-icon>
-                </button>
-                <button id="player-cam-btn" class="control-btn" disabled>
-                    <ion-icon name="videocam-off-outline"></ion-icon>
-                </button>
-                <button id="player-hints-btn" class="control-btn">
-                    <ion-icon name="help-buoy-outline"></ion-icon>
-                    Dicas
-                </button>
-                <button id="player-exit-btn" class="control-btn danger">
-                    <ion-icon name="exit-outline"></ion-icon>
-                    Sair
-                </button>
-            </div>
         </div>
 
-        <div id="player-timer-overlay" class="timer-display">00:00</div>
-        
-        <div id="player-hints-overlay" class="overlay-container hidden">
-            <div class="overlay-content">
-                <button id="close-hints-btn" class="close-overlay-btn">&times;</button>
-                <h2>Dicas</h2>
-                <div id="hints-list">
-                    <p data-hint-id="1">Dica 1: (Aguardando host...)</p>
-                    <p data-hint-id="2">Dica 2: (Aguardando host...)</p>
-                    <p data-hint-id="3">Dica 3: (Aguardando host...)</p>
-                </div>
-            </div>
-        </div>
-
-        <div id="player-decision-overlay" class="overlay-container hidden">
-            <div class="overlay-content">
-                <h2 id="decision-title">...</h2>
-                <div id="decision-options-container">
+        <div id="player-decision-overlay" class="player-decision-overlay">
+            <div class="decision-box">
+                <div id="decision-question" class="decision-title">Pergunta aqui?</div>
+                <div id="decision-options" class="decision-options">
                     </div>
             </div>
         </div>
 
-        <div id="player-media-overlay" class="overlay-container media-overlay hidden">
-            <div id="media-content">
-                </div>
-            <button id="close-media-btn" class="close-overlay-btn">&times;</button>
+        <div class="player-controls">
+            <button id="player-mic-btn" class="control-btn" title="Microfone"><ion-icon name="mic-outline"></ion-icon></button>
+            <button id="player-cam-btn" class="control-btn" title="Câmera"><ion-icon name="videocam-outline"></ion-icon></button>
+            <button id="player-leave-btn" class="control-btn danger" title="Sair"><ion-icon name="log-out-outline"></ion-icon></button>
         </div>
+    </div>
 
-    </main>
+    <script src="assets/js/sala.617da207.js"></script>
 
-
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-
-    <script src="assets/js/storage.js"></script>
-    <script src="assets/js/gamedata.js"></script>
-    <script src="assetsjs/firebase-config.js"></script> <script src="assets/js/sala-jogador.js"></script>
 </body>
 </html>
