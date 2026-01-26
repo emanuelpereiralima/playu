@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel Admin - PlayU</title>
-    <script src="assets/js/version.6c3afff7.js"></script>
+    <script src="assets/js/version.51a14114.js"></script>
     <script>
         function loadAsset(path) {
             const version = typeof SITE_VERSION !== 'undefined' ? SITE_VERSION : new Date().getTime();
@@ -110,6 +110,11 @@
                         <h4 style="color: var(--secondary-color); border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 15px;">Informações</h4>
                         <div class="form-row"><div class="form-group"><label>Nome *</label><input type="text" id="new-game-name" required></div><div class="form-group"><label>Status</label><select id="new-game-status"><option value="available">Disponível</option><option value="paused">Pausado</option></select></div></div>
                         <div class="form-row"><div class="form-group"><label>Duração (Min)</label><input type="number" id="new-game-duration" required></div><div class="form-group"><label>Valor (R$)</label><input type="number" id="new-game-price" step="0.01" required></div></div>
+                        <div class="form-group">
+                            <label>Máx. Jogadores *</label>
+                            <input type="number" id="new-game-max-players" required min="1" value="1" placeholder="Ex: 1 para exclusivo">
+                            <small style="color:#aaa; font-size:0.8rem;">1 = Sessão Exclusiva</small>
+                        </div>
                         <div class="form-group"><label class="upload-label" style="justify-content:flex-start; padding:10px;"><input type="checkbox" id="check-extra-life" style="width:auto;margin-right:10px;"> Possui Vida Extra?</label><div id="extra-life-config-container" class="hidden" style="margin-top:10px;"><label style="font-size:0.8rem;color:#aaa">Tempo Extra (Min)</label><input type="number" id="new-game-extra-life-time" placeholder="15"></div></div>
                         <div class="form-group" style="position:relative;"><label>Tags</label><div class="tags-input-container" id="tags-wrapper" onclick="document.getElementById('tag-input-field').focus()"><input type="text" id="tag-input-field" class="tag-input-field" placeholder="Digite..." autocomplete="off"></div><ul id="tags-suggestions" class="tags-suggestions-list"></ul></div>
                         <div class="form-group"><label>Descrição Curta</label><input type="text" id="new-game-short-desc"></div>
@@ -327,10 +332,10 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
     <script src="assets/js/firebase-config.js"></script>
     <script>
-        loadAsset('assets/css/style.6c3afff7.css');
+        loadAsset('assets/css/style.51a14114.css');
         loadAsset('https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js');
         loadAsset('https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js');
-        loadAsset('assets/js/admin.6c3afff7.js');
+        loadAsset('assets/js/admin.51a14114.js');
     </script>
 </body>
 </html>
