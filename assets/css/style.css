@@ -867,6 +867,178 @@ img, video {
     pointer-events: none; /* Jogador não clica */
 }
 
+/* =========================================
+   AJUSTE DE CÂMERA RESPONSIVA (SALA HOST)
+   ========================================= */
+
+/* Garante que o container principal ocupe a altura total sem scroll */
+.host-grid-container {
+    display: grid;
+    grid-template-columns: 1fr 350px; /* Vídeo | Sidebar */
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: #111;
+}
+
+/* Área que contém os vídeos */
+.host-video-area {
+    display: flex;
+    flex-direction: row; /* Padrão Desktop: Lado a Lado */
+    width: 100%;
+    height: 100%;
+    position: relative;
+    background: #000;
+}
+
+/* Wrapper individual de cada vídeo (Host e Jogador) */
+.video-wrapper {
+    flex: 1; /* Divide o espaço igualmente (50% cada) */
+    position: relative;
+    overflow: hidden;
+    min-width: 0;
+    min-height: 0;
+    border-right: 1px solid #333; /* Separação visual */
+}
+
+/* O VÍDEO EM SI - O SEGREDO DA ADAPTAÇÃO */
+.video-wrapper video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Estica o vídeo para preencher todo o quadrado (zoom/crop) */
+    /* object-fit: contain; <--- Use 'contain' se preferir ver o vídeo inteiro com bordas pretas */
+    z-index: 1;
+}
+
+/* GIF de Fundo (ajuste para cobrir também) */
+.video-bg-gif {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 0;
+    opacity: 0.5;
+}
+
+/* Etiqueta (Nome) */
+.video-label {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    z-index: 2;
+    pointer-events: none;
+}
+
+/* --- RESPONSIVIDADE (CELULARES E TABLETS) --- */
+@media (max-width: 900px) {
+    /* Muda o layout geral para empilhado */
+    .host-grid-container {
+        grid-template-columns: 1fr; /* Apenas 1 coluna */
+        grid-template-rows: 1fr auto; /* Vídeo em cima (grande), Sidebar em baixo (auto) */
+    }
+
+    /* Muda a direção dos vídeos para empilhado */
+    .host-video-area {
+        flex-direction: column; 
+    }
+
+    /* Sidebar vira um painel inferior ou overlay */
+    .host-sidebar {
+        height: auto;
+        max-height: 40vh; /* Ocupa no máximo 40% da tela em baixo */
+        overflow-y: auto;
+        border-left: none;
+        border-top: 2px solid var(--primary-color);
+    }
+    
+    .video-wrapper {
+        border-right: none;
+        border-bottom: 1px solid #333;
+    }
+}
+
+/* --- BARRA DE CONTROLES CENTRALIZADA --- */
+.host-controls-bar {
+    position: absolute;
+    bottom: 30px; /* Distância do fundo */
+    left: 50%;
+    transform: translateX(-50%); /* Centraliza exato horizontalmente */
+    
+    display: flex;
+    gap: 20px; /* Espaço entre botões */
+    
+    background: rgba(0, 0, 0, 0.6); /* Fundo semi-transparente */
+    backdrop-filter: blur(10px);    /* Efeito de vidro */
+    padding: 15px 30px;
+    border-radius: 50px;            /* Borda arredondada (Cápsula) */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    
+    z-index: 2000 !important; /* Garante que fique acima de tudo */
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+}
+
+/* Ajuste para mobile */
+@media (max-width: 768px) {
+    .host-controls-bar {
+        bottom: 20px;
+        padding: 10px 20px;
+        gap: 15px;
+        width: 90%; /* Ocupa quase toda largura no celular */
+        justify-content: center;
+    }
+}
+
+/* Estilo do botão de troca (opcional, para dar destaque se quiser) */
+#switch-cam-btn ion-icon {
+    font-size: 1.4rem;
+}
+
+/* --- EFEITO BACKGROUND GIF --- */
+.video-wrapper {
+    position: relative;
+    background: #000;
+    overflow: hidden;
+}
+
+/* O GIF fica no fundo (z-index 0) */
+.video-bg-gif {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 0;
+    opacity: 0.5; /* Levemente escurecido */
+}
+
+/* O vídeo fica na frente (z-index 1) */
+.video-wrapper video {
+    position: absolute; /* Ajustado para cobrir o gif perfeitamente */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 1;
+    transition: opacity 0.3s ease;
+}
+
+/* Quando esta classe é adicionada via JS, o vídeo some e o GIF aparece */
+.video-wrapper video.camera-off {
+    opacity: 0;
+}
+
 .player-decision-overlay {
     position: absolute;
     bottom: 140px;

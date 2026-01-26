@@ -30,16 +30,32 @@
         <div class="host-video-area">
             <div class="video-wrapper remote">
                 <img src="assets/images/GIF Play.U.gif" class="video-bg-gif" alt="Aguardando...">
-                <video id="host-local-video" autoplay playsinline></video>
+                
+                <video id="host-local-video" autoplay playsinline muted></video>
+                <div class="video-label">Você (Host)</div>
             </div>
+
             <div class="video-wrapper local">
-                <video id="host-remote-video" autoplay playsinline muted></video>
-                <div class="video-label"></div>
+                <video id="host-remote-video" autoplay playsinline></video>
+                <div class="video-label">Jogador</div>
             </div>
+
             <div class="host-controls-bar">
-                <button id="host-mic-btn" class="control-btn" title="Microfone"><ion-icon name="mic-outline"></ion-icon></button>
-                <button id="host-cam-btn" class="control-btn" title="Câmera"><ion-icon name="videocam-outline"></ion-icon></button>
-                <button id="end-call-btn" class="control-btn danger" title="Encerrar Sessão"><ion-icon name="call-outline"></ion-icon></button>
+                <button id="host-mic-btn" class="control-btn" title="Microfone">
+                    <ion-icon name="mic-outline"></ion-icon>
+                </button>
+                
+                <button id="host-cam-btn" class="control-btn" title="Câmera">
+                    <ion-icon name="videocam-outline"></ion-icon>
+                </button>
+
+                <button id="switch-cam-btn" class="control-btn" title="Trocar Câmera (Mobile)">
+                    <ion-icon name="sync-outline"></ion-icon>
+                </button>
+                
+                <button id="end-call-btn" class="control-btn danger" title="Encerrar Sessão">
+                    <ion-icon name="call-outline"></ion-icon>
+                </button>
             </div>
         </div>
 
@@ -53,26 +69,21 @@
                 </div>
                 
                 <div id="session-timer-container" style="width: 100%; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; text-align: center; border: 1px solid #333;">
-                    <div id="session-timer" style="font-size: 2.2rem; line-height: 1;">00:00</div>
+                    <div id="timer-info-display" style="font-size: 0.7rem; color: #aaa; margin-bottom: 5px;">TEMPO RESTANTE</div>
+                    <div id="session-timer" style="font-size: 2.2rem; line-height: 1; font-family: 'Orbitron', sans-serif; color: #ff0000;">00:00</div>
                 </div>
             </div>
 
-            <div id="invite-floating-modal" class="invite-floating-modal">
+            <div id="invite-floating-modal" class="invite-floating-modal hidden">
                 <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                     <h3 style="margin:0 auto;">Link do Jogador</h3>
                     <button onclick="document.getElementById('invite-floating-modal').classList.add('hidden')" style="background:none; border:none; color:#666; cursor:pointer; font-size:1.2rem;">✕</button>
                 </div>
-                
-                <p>Copie este link para o jogador entrar sem login:</p>
-                
+                <p>Copie este link para o jogador:</p>
                 <div class="invite-input-group" style="background: rgba(255,255,255,0.1); padding: 5px; border-radius: 6px;">
                     <input type="text" id="floating-invite-link" class="invite-link-input" readonly value="Gerando..." style="background:transparent;">
-                    <button id="floating-copy-btn" class="copy-btn">
-                        <ion-icon name="copy-outline"></ion-icon>
-                    </button>
+                    <button id="floating-copy-btn" class="copy-btn"><ion-icon name="copy-outline"></ion-icon></button>
                 </div>
-                
-                <p style="font-size: 0.75rem; margin-top: 15px; opacity: 0.5;">Esta janela fechará automaticamente em 2 minutos.</p>
             </div>       
 
             <div class="sidebar-tabs">
@@ -82,12 +93,8 @@
             </div>
 
             <div id="tab-media" class="sidebar-content active">
-                <div style="padding: 0 5px;">
-                    <p style="font-size: 0.8rem; color: #aaa; margin-bottom: 10px;">Clique para enviar ao jogador:</p>
-                    <div id="host-assets-list" class="assets-list">
-                        <div class="loader-small"></div>
-                        <p style="text-align:center; opacity:0.5; margin-top:20px; font-size:0.9rem;">Carregando arquivos...</p>
-                    </div>
+                <div id="host-assets-list" class="assets-list">
+                    <p style="text-align:center; opacity:0.5; margin-top:20px;">Carregando arquivos...</p>
                 </div>
             </div>
 
@@ -95,16 +102,15 @@
                 <div id="host-decisions-list" class="assets-list">
                     <p style="text-align:center; opacity:0.5; margin-top:20px;">Carregando decisões...</p>
                 </div>
-    
                 <button onclick="clearPlayerDecision()" class="submit-btn small-btn danger-btn" style="width:100%; margin-top:15px;">
-                    <ion-icon name="close-circle-outline"></ion-icon> Ocultar Decisão no Jogador
+                    <ion-icon name="close-circle-outline"></ion-icon> Ocultar Decisão
                 </button>
             </div>
 
             <div id="tab-timer" class="sidebar-content">
                 <div style="display: flex; flex-direction: column; gap: 10px;">
                     <div class="form-group">
-                        <label style="font-size: 0.8rem; color: #aaa;">Controles</label>
+                        <label style="font-size: 0.8rem; color: #aaa;">Ações</label>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 5px;">
                             <button id="timer-start-btn" class="submit-btn small-btn" style="background: var(--secondary-color); border: none;">
                                 <ion-icon name="play"></ion-icon> Iniciar
@@ -117,16 +123,14 @@
                             <ion-icon name="refresh"></ion-icon> Resetar
                         </button>
                     </div>
-
                     <hr style="border: 0; border-top: 1px solid #333; margin: 10px 0;">
-
                     <div class="form-group">
-                        <label style="font-size: 0.8rem; color: #aaa;">Ajuste Rápido (Minutos)</label>
+                        <label style="font-size: 0.8rem; color: #aaa;">Ajuste Rápido</label>
                         <div style="display: flex; gap: 5px; margin-top: 5px;">
-                            <button onclick="adjustTimer(1)" class="submit-btn small-btn">+1m</button>
-                            <button onclick="adjustTimer(5)" class="submit-btn small-btn">+5m</button>
-                            <button onclick="adjustTimer(-1)" class="submit-btn small-btn">-1m</button>
-                            <button onclick="adjustTimer(-5)" class="submit-btn small-btn">-5m</button>
+                            <button onclick="window.adjustTimer(1)" class="submit-btn small-btn">+1m</button>
+                            <button onclick="window.adjustTimer(5)" class="submit-btn small-btn">+5m</button>
+                            <button onclick="window.adjustTimer(-1)" class="submit-btn small-btn">-1m</button>
+                            <button onclick="window.adjustTimer(-5)" class="submit-btn small-btn">-5m</button>
                         </div>
                     </div>
                 </div>
@@ -136,17 +140,19 @@
 
     <script>
         function switchTab(tabId) {
-            // Remove active de todas as abas e botões
             document.querySelectorAll('.sidebar-content').forEach(c => c.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             
-            // Ativa a aba alvo
             const targetContent = document.getElementById(`tab-${tabId}`);
             if(targetContent) targetContent.classList.add('active');
             
             // Ativa o botão clicado
-            const activeBtn = Array.from(document.querySelectorAll('.tab-btn')).find(btn => btn.getAttribute('onclick').includes(tabId));
-            if(activeBtn) activeBtn.classList.add('active');
+            const btns = document.querySelectorAll('.tab-btn');
+            for(let btn of btns) {
+                if(btn.getAttribute('onclick').includes(tabId)) {
+                    btn.classList.add('active');
+                }
+            }
         }
     </script>
 
