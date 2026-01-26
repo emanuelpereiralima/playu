@@ -36,8 +36,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     let roomRef = null;
     let localStream = null;
     let pc = null;
-    const servers = { iceServers: [{ urls: 'stun:stun1.l.google.com:19302' }] };
-
+// Configuração ICE (STUN e TURN)
+    const servers = {
+        iceServers: [
+            // Servidores STUN do Google (Descobrem o IP)
+            { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun2.l.google.com:19302' },
+            
+            // Servidores TURN Gratuitos (OpenRelay) - Repassam o vídeo
+            // IMPORTANTE: Para produção, crie sua conta gratuita em metered.ca
+            {
+                urls: "turn:openrelay.metered.ca:80",
+                username: "openrelayproject",
+                credential: "openrelayproject"
+            },
+            {
+                urls: "turn:openrelay.metered.ca:443",
+                username: "openrelayproject",
+                credential: "openrelayproject"
+            },
+            {
+                urls: "turn:openrelay.metered.ca:443?transport=tcp",
+                username: "openrelayproject",
+                credential: "openrelayproject"
+            }
+        ]
+    };
     // Estado do Timer
     let timerInterval = null;
     let timerSeconds = 0;

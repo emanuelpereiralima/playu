@@ -685,11 +685,29 @@ document.addEventListener('DOMContentLoaded', () => {
     function setupUpload(inputId, type, cb) {
         const input = document.getElementById(inputId);
         if(!input) return;
+        
         input.onchange = async (e) => {
             const files = Array.from(e.target.files);
             if(!files.length) return;
+
+            // --- VALIDAÇÃO DE TAMANHO (100MB) ---
+            const MAX_SIZE = 100 * 1024 * 1024; // 100MB em bytes
+            const oversizedFile = files.find(f => f.size > MAX_SIZE);
+
+            if (oversizedFile) {
+                alert(`O arquivo "${oversizedFile.name}" é muito grande (acima de 100MB).\n\nO envio foi cancelado.`);
+                input.value = ''; // Limpa o input para permitir nova seleção
+                
+                // Limpa status se houver
+                let stat = input.parentElement.querySelector('.form-hint') || document.getElementById(inputId.replace('input','status'));
+                if(stat) stat.textContent = "Erro: Arquivo muito grande.";
+                return;
+            }
+            // -------------------------------------
+
             let stat = input.parentElement.querySelector('.form-hint') || document.getElementById(inputId.replace('input','status'));
             if(stat) stat.textContent = "Enviando...";
+            
             try {
                 const promises = files.map(async f => {
                     const ref = storage.ref().child(`uploads/${Date.now()}_${f.name}`);
@@ -699,9 +717,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const res = await Promise.all(promises);
                 cb(res);
                 if(stat) stat.textContent = "Concluído!";
-            } catch(e) { if(stat) stat.textContent = "Erro."; }
+            } catch(e) { 
+                console.error(e);
+                if(stat) stat.textContent = "Erro no envio."; 
+            }
         };
     }
+
     setupUpload('admin-cover-upload', 'image', (r) => { document.getElementById('new-game-cover').value = r[0].url; document.getElementById('admin-cover-preview').src = r[0].url; document.getElementById('admin-cover-preview').style.display = 'block'; });
     setupUpload('gallery-upload-input', 'image', (r) => { currentGalleryUrls.push(...r.map(x=>x.url)); window.renderGallery(); });
     setupUpload('admin-trailer-upload', 'video', (r) => { document.getElementById('new-game-trailer').value = r[0].url; });
@@ -721,7 +743,28 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleAssetSelection(e, type) {
         const file = e.target.files[0];
         if (file) {
-            tempAssetFile = file; tempAssetType = type;
+            // --- VALIDAÇÃO DE TAMANHO (100MB) ---
+            const MAX_SIZE = 100 * 1024 * 1024; // 100MB
+            if (file.size > MAX_SIZE) {
+                alert(`O arquivo "${file.name}" excede o limite de 100MB.\n\nPor favor, escolha um arquivo menor.`);
+                e.target.value = ''; // Limpa o input
+                
+                // Limpa variáveis temporárias para garantir que nada seja enviado
+                tempAssetFile = null;
+                tempAssetType = null;
+                selectedFileDisplay.classList.add('hidden');
+                if(assetAddBtn) {
+                    assetAddBtn.disabled = true;
+                    assetAddBtn.classList.add('secondary-btn');
+                    assetAddBtn.classList.remove('primary-btn');
+                }
+                return;
+            }
+            // -------------------------------------
+
+            tempAssetFile = file; 
+            tempAssetType = type;
+            
             if (assetNameInput && !assetNameInput.value) assetNameInput.value = file.name.split('.')[0];
             if (selectedFileDisplay) selectedFileDisplay.classList.remove('hidden');
             if (assetFilenameText) assetFilenameText.textContent = `${type.toUpperCase()}: ${file.name}`;
@@ -883,7 +926,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const currentHour = now.getHours(); const currentMin = now.getMinutes();
 
         for(let h = 0; h < 24; h++) {
-            for(let m = 0; m < 60; m += 30) { 
+            for(let m = 0; m < 60; m += 10) { 
                 if (isToday) { if (h < currentHour || (h === currentHour && m < currentMin)) continue; }
                 const timeStr = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
                 const option = document.createElement('option'); option.value = timeStr; option.textContent = timeStr; select.appendChild(option);
