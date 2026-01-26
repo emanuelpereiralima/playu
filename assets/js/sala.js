@@ -1,227 +1,144 @@
-document.addEventListener('DOMContentLoaded', () => {
-    // --- CONFIGURAÇÕES E VARIÁVEIS GLOBAIS ---
-    const localVideo = document.getElementById('local-video');
-    const remoteVideo = document.getElementById('remote-video');
-    const accessMsgContainer = document.getElementById('access-message-container');
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log("🎮 Iniciando Sala do Jogador...");
+
+    // 1. SETUP FIREBASE
+    if (typeof firebase === 'undefined' || !firebase.apps.length) {
+        return alert("Erro: Firebase não conectado.");
+    }
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+
+    // 2. ELEMENTOS DOM
+    const remoteVideo = document.getElementById('player-remote-video');
+    const localVideo = document.getElementById('player-local-video');
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const timerDisplay = document.getElementById('player-timer');
     
-    let localStream = null;
-    let pc = null; 
+    // Media Overlay
+    const mediaOverlay = document.getElementById('player-media-overlay');
+    const mediaWrapper = document.getElementById('media-content-wrapper');
+    window.closeMedia = () => mediaOverlay.classList.remove('active');
+
+    // Decision Overlay
+    const decisionOverlay = document.getElementById('player-decision-overlay');
+    const decisionQuestion = document.getElementById('decision-question');
+    const decisionOptions = document.getElementById('decision-options');
+
+    // 3. VARIÁVEIS DE ESTADO
     let roomRef = null;
-    let timerInterval = null;
-    let isAnswerSent = false;
+    let localStream = null;
+    let pc = null;
+    const servers = { iceServers: [{ urls: 'stun:stun1.l.google.com:19302' }] };
 
-    // Configuração do Servidor STUN (Google) para WebRTC
-    const servers = {
-        iceServers: [
-            { urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'] },
-        ],
-        iceCandidatePoolSize: 10,
-    };
-
-    // Dados da URL e Sessão
+    // 4. URL & AUTH
     const urlParams = new URLSearchParams(window.location.search);
     const bookingId = urlParams.get('bookingId');
-    const db = window.db || firebase.firestore(); // Pega do config global
-    
-    // Recupera usuário da sessão
-    const loggedInUser = JSON.parse(sessionStorage.getItem('loggedInUser'));
-    let session = null;
+    const isGuest = urlParams.get('guest') === 'true';
 
-    // =========================================================================
-    // 1. VERIFICAÇÃO DE ACESSO (Segurança + Lógica de Teste)
-    // =========================================================================
-    async function verifyAccessAndLoadData() {
-        // Validação Básica
-        if (!bookingId) {
-            showAccessError('<h1>Sessão Inválida</h1><p>Link incompleto ou corrompido.</p>');
-            return false;
-        }
-        
-        // Login Obrigatório (Mesmo para teste, precisamos saber quem é)
-        if (!loggedInUser) {
+    if (!bookingId) {
+        alert("Link inválido. ID da sessão não encontrado.");
+        window.location.href = 'index.html';
+        return;
+    }
+
+    // Verifica Login (se não for Guest)
+    if (!isGuest) {
+        const sessionUser = sessionStorage.getItem('loggedInUser');
+        if (!sessionUser) {
+            // Salva link para voltar depois do login
             sessionStorage.setItem('redirectAfterLogin', window.location.href);
-            showAccessError(`
-                <h1>Identificação Necessária</h1>
-                <p>Para acessar a sala, você precisa se identificar.</p>
-                <a href="login.html" class="submit-btn" style="margin-top:1rem; display:inline-block;">Entrar / Criar Conta</a>
-            `);
-            return false;
+            window.location.href = 'login.html';
+            return;
         }
+    } else {
+        console.log("👤 Acesso Convidado (Guest Mode)");
+    }
 
+    // =========================================================================
+    // INICIALIZAÇÃO
+    // =========================================================================
+    async function init() {
         try {
-            const bookingDoc = await db.collection('bookings').doc(bookingId).get();
-
-            if (!bookingDoc.exists) {
-                showAccessError('<h1>Sessão Inexistente</h1><p>Esta sala não existe ou foi encerrada.</p>');
-                return false;
-            }
-
-            session = bookingDoc.data();
-
-            // --- LÓGICA DE EXCEÇÃO PARA SALA DE TESTE ---
-            if (session.type === 'test') {
-                console.log("Entrando em modo de Sala de Teste...");
-                // Permite acesso imediato para qualquer usuário logado
-                return true; 
-            }
-
-            // --- LÓGICA PADRÃO (SALA REAL) ---
-            
-            // 1. Verifica se é o dono do agendamento
-            if (session.userId !== loggedInUser.username) {
-                showAccessError('<h1>Acesso Negado</h1><p>Esta sessão pertence a outro jogador.</p>');
-                return false;
-            }
-
-            // 2. Regra dos 10 Minutos (Horário)
-            if (!checkTimeRestriction(session.date, session.time)) {
-                return false;
-            }
-
-            return true;
-
-        } catch (error) {
-            console.error("Erro verificação:", error);
-            showAccessError('<h1>Erro de Conexão</h1><p>Falha ao verificar status da sala.</p>');
-            return false;
-        }
-    }
-
-    // Função Auxiliar: Verifica Horário
-    function checkTimeRestriction(dateStr, timeStr) {
-        // Cria Data Agendada (YYYY-MM-DDTHH:MM:00)
-        const scheduledDate = new Date(`${dateStr}T${timeStr}:00`);
-        const now = new Date();
-
-        const diffMs = scheduledDate - now;
-        const diffMinutes = Math.floor(diffMs / 1000 / 60);
-
-        // Se faltam mais de 10 minutos
-        if (diffMinutes > 10) {
-            showAccessError(`
-                <h1>Sala Fechada</h1>
-                <p>Sua sessão está agendada para <strong>${dateStr.split('-').reverse().join('/')} às ${timeStr}</strong>.</p>
-                <div style="margin-top:1rem; padding:1rem; background:rgba(255,255,255,0.1); border-radius:8px; border:1px solid #444;">
-                    <p style="margin:0; font-size:0.9rem;">A sala abre 10 minutos antes.</p>
-                    <p style="margin:0.5rem 0 0; font-weight:bold; color:var(--secondary-color);">Faltam aprox. ${diffMinutes} minutos.</p>
-                </div>
-                <a href="dashboard.html" class="submit-btn secondary-btn" style="margin-top:1.5rem;">Voltar ao Dashboard</a>
-            `);
-            return false;
-        }
-        return true;
-    }
-
-    function showAccessError(html) {
-        if(accessMsgContainer) {
-            accessMsgContainer.innerHTML = html;
-            accessMsgContainer.style.display = 'flex';
-        }
-        const playerView = document.getElementById('player-view');
-        if(playerView) playerView.classList.add('hidden');
-    }
-
-    // =========================================================================
-    // 2. INICIALIZAÇÃO DA SALA (WEBRTC)
-    // =========================================================================
-    
-    // Executa verificação ao carregar
-    verifyAccessAndLoadData().then(accessGranted => {
-        if (accessGranted) {
-            console.log('Acesso concedido. Iniciando WebRTC...');
-            if(accessMsgContainer) accessMsgContainer.style.display = 'none';
-            
-            // Referência à sessão no Firestore (para troca de sinais)
-            // Em produção real, bookings e sessions podem ser coleções separadas, 
-            // mas aqui usaremos o mesmo ID para simplificar.
             roomRef = db.collection('sessions').doc(bookingId);
+            const doc = await roomRef.get();
             
-            initPlayerView();
-        }
-    });
+            if (!doc.exists) {
+                alert("Esta sessão ainda não foi iniciada pelo Host.");
+                return;
+            }
 
-    async function initPlayerView() {
-        document.getElementById('player-view').classList.remove('hidden');
-        await setupWebRTC();
-        setupPlayerListeners();
+            // A. Iniciar WebRTC (Responder ao Host)
+            await startPlayerWebRTC();
+
+            // B. Configurar Listeners (Timer, Mídia, Decisões)
+            setupRealtimeListeners();
+
+            // Remove Loading
+            loadingOverlay.style.display = 'none';
+
+        } catch (e) {
+            console.error("Erro init:", e);
+            alert("Erro ao conectar: " + e.message);
+        }
     }
 
-    async function setupWebRTC() {
+    // =========================================================================
+    // WEBRTC (LADO JOGADOR / ANSWER)
+    // =========================================================================
+    async function startPlayerWebRTC() {
         pc = new RTCPeerConnection(servers);
 
-        // 1. Configura Mídia Local (Câmera/Mic)
-        await setupLocalMedia();
-
-        // 2. Configura Recepção Remota (Vídeo do Host)
-        pc.ontrack = event => {
-            if (event.streams && event.streams[0]) {
-                remoteVideo.srcObject = event.streams[0];
-            } else {
-                remoteVideo.srcObject = new MediaStream(event.track);
-            }
-        };
-
-        // 3. Responde à oferta do Host
-        await answerOffer();
-    }
-
-    async function setupLocalMedia() {
+        // 1. Pegar Mídia Local
         try {
             localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
             localVideo.srcObject = localStream;
-            
-            // Adiciona trilhas ao PC
-            localStream.getTracks().forEach(track => {
-                pc.addTrack(track, localStream);
-            });
-
-            // Ativa botões de Mute
-            setupMediaControls(true);
-
+            localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+            setupControls();
         } catch (err) {
-            console.error("Erro ao acessar mídia:", err);
-            alert("Não foi possível acessar câmera ou microfone. Verifique as permissões.");
+            console.warn("Sem câmera/mic:", err);
+            // Continua para ver o host
         }
-    }
 
-    async function answerOffer() {
-        // Subcoleções para troca de candidatos ICE
+        // 2. Receber Stream do Host
+        pc.ontrack = event => {
+            console.log("📡 Stream do Host recebido!");
+            if(event.streams && event.streams[0]) {
+                remoteVideo.srcObject = event.streams[0];
+            }
+        };
+
+        // 3. ICE Candidates
         const offerCandidates = roomRef.collection('offerCandidates');
         const answerCandidates = roomRef.collection('answerCandidates');
 
-        // Envia candidatos locais (Jogador) para o Host
         pc.onicecandidate = event => {
-            if (event.candidate) {
+            if(event.candidate) {
                 answerCandidates.add(event.candidate.toJSON());
             }
         };
 
-        // Ouve a oferta do Host
-        roomRef.onSnapshot(async (snapshot) => {
-            const data = snapshot.data();
-            if (!pc.currentRemoteDescription && data?.offer && !isAnswerSent) {
-                console.log('Oferta recebida do Host.');
-                isAnswerSent = true; // Evita loop
+        // 4. Lógica de Sinalização (Ler Offer -> Criar Answer)
+        const roomSnapshot = await roomRef.get();
+        const roomData = roomSnapshot.data();
 
-                const offerDescription = data.offer;
-                await pc.setRemoteDescription(new RTCSessionDescription(offerDescription));
+        if (roomData.offer) {
+            await pc.setRemoteDescription(new RTCSessionDescription(roomData.offer));
+            
+            const answerDescription = await pc.createAnswer();
+            await pc.setLocalDescription(answerDescription);
 
-                const answerDescription = await pc.createAnswer();
-                await pc.setLocalDescription(answerDescription);
+            const answer = {
+                type: answerDescription.type,
+                sdp: answerDescription.sdp
+            };
 
-                const answer = {
-                    type: answerDescription.type,
-                    sdp: answerDescription.sdp,
-                };
+            await roomRef.update({ answer });
+        }
 
-                await roomRef.update({ answer });
-            }
-        });
-
-        // Ouve candidatos remotos (do Host)
+        // 5. Escutar ICE Candidates do Host
         offerCandidates.onSnapshot(snapshot => {
             snapshot.docChanges().forEach(change => {
-                if (change.type === 'added') {
+                if(change.type === 'added') {
                     const candidate = new RTCIceCandidate(change.doc.data());
                     pc.addIceCandidate(candidate);
                 }
@@ -229,174 +146,140 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function setupMediaControls(enable) {
-        const micBtn = document.getElementById('player-mic-btn');
-        const camBtn = document.getElementById('player-cam-btn');
-        
-        if (!micBtn || !camBtn) return;
-
-        micBtn.disabled = !enable;
-        camBtn.disabled = !enable;
-
-        if (enable) {
-            micBtn.classList.add('active');
-            camBtn.classList.add('active');
-        }
-
-        micBtn.onclick = () => {
-            const audioTrack = localStream.getAudioTracks()[0];
-            if (audioTrack) {
-                audioTrack.enabled = !audioTrack.enabled;
-                micBtn.classList.toggle('active', audioTrack.enabled);
-                micBtn.innerHTML = audioTrack.enabled ? '<ion-icon name="mic-outline"></ion-icon>' : '<ion-icon name="mic-off-outline"></ion-icon>';
-            }
-        };
-
-        camBtn.onclick = () => {
-            const videoTrack = localStream.getVideoTracks()[0];
-            if (videoTrack) {
-                videoTrack.enabled = !videoTrack.enabled;
-                camBtn.classList.toggle('active', videoTrack.enabled);
-                camBtn.innerHTML = videoTrack.enabled ? '<ion-icon name="videocam-outline"></ion-icon>' : '<ion-icon name="videocam-off-outline"></ion-icon>';
-            }
-        };
-    }
-
     // =========================================================================
-    // 3. LISTENERS DE INTERAÇÃO (Dicas, Decisões, Timer)
+    // LISTENERS EM TEMPO REAL (INTERATIVIDADE)
     // =========================================================================
-    
-    function setupPlayerListeners() {
-        // Botão Sair
-        document.getElementById('player-exit-btn').onclick = () => {
-            if(confirm("Sair da sala?")) window.location.href = 'dashboard.html';
-        };
-
-        // Botão Dicas (UI)
-        const hintsOverlay = document.getElementById('player-hints-overlay');
-        document.getElementById('player-hints-btn').onclick = () => hintsOverlay.classList.toggle('hidden');
-        document.getElementById('close-hints-btn').onclick = () => hintsOverlay.classList.add('hidden');
-
-        // Listener Global da Sessão (Atualizações do Host)
+    function setupRealtimeListeners() {
         roomRef.onSnapshot(snapshot => {
             const data = snapshot.data();
-            if (!data) return;
+            if(!data) return;
 
-            // Timer
-            if (data.startTime && !timerInterval) {
-                startTimer(data.startTime.toDate());
+            // --- 1. TIMER ---
+            if (data.timer) {
+                updateTimerDisplay(data.timer);
             }
 
-            // Dicas (Atualiza texto se houver)
-            if (data.hints) {
-                if(data.hints['1']) document.querySelector('[data-hint-id="1"]').textContent = data.hints['1'];
-                if(data.hints['2']) document.querySelector('[data-hint-id="2"]').textContent = data.hints['2'];
-                if(data.hints['3']) document.querySelector('[data-hint-id="3"]').textContent = data.hints['3'];
+            // --- 2. MÍDIA AO VIVO ---
+            if (data.liveMedia && data.liveMedia.timestamp) {
+                // Checa se é uma mídia nova (pra não reabrir se usuário fechou e o host não mudou)
+                // Aqui usamos uma lógica simples: sempre que mudar o timestamp, mostra.
+                const lastTs = mediaOverlay.dataset.timestamp;
+                if (String(data.liveMedia.timestamp) !== lastTs) {
+                    showMedia(data.liveMedia);
+                }
             }
 
-            // Decisões
-            if (data.liveDecision) {
-                renderLiveDecision(data.liveDecision, data.decisions || []);
-            }
-
-            // Mídia (Imagem/Video/Audio pop-up)
-            if (data.liveMedia) {
-                showMediaInOverlay(data.liveMedia.src, data.liveMedia.type);
-                // Reseta no banco para não reabrir se recarregar
-                // (Opcional: Host deve controlar isso)
-                // roomRef.update({ liveMedia: null }); 
-            }
-        });
-    }
-
-    function renderLiveDecision(decisionId, allDecisions) {
-        const activeDecision = allDecisions.find(d => d.id === decisionId);
-        if (!activeDecision) return;
-
-        const overlay = document.getElementById('player-decision-overlay');
-        document.getElementById('decision-title').textContent = activeDecision.title;
-        
-        const container = document.getElementById('decision-options-container');
-        container.innerHTML = '';
-
-        activeDecision.options.forEach(opt => {
-            const btn = document.createElement('button');
-            btn.className = 'submit-btn';
-            btn.textContent = opt;
-            btn.onclick = () => {
-                // Envia escolha para o Host
-                roomRef.update({ 
-                    playerChoice: opt,
-                    liveDecision: null // Fecha decisão
-                });
-                overlay.classList.add('hidden');
-            };
-            container.appendChild(btn);
-        });
-
-        overlay.classList.remove('hidden');
-    }
-
-    function showMediaInOverlay(src, type) {
-        const overlay = document.getElementById('player-media-overlay');
-        const content = document.getElementById('media-content');
-        content.innerHTML = '';
-
-        if (type.startsWith('audio')) {
-            // Audio toca em background ou player pequeno
-            const audio = document.createElement('audio');
-            audio.src = src;
-            audio.autoplay = true;
-            content.appendChild(audio);
-            // Poderia mostrar um ícone de "Tocando Áudio..."
-            return;
-        }
-
-        const media = type.startsWith('video') ? document.createElement('video') : document.createElement('img');
-        media.src = src;
-        media.style.maxWidth = '100%';
-        media.style.maxHeight = '80vh';
-        
-        if(type.startsWith('video')) {
-            media.autoplay = true;
-            media.controls = true;
-        }
-
-        content.appendChild(media);
-        overlay.classList.remove('hidden');
-
-        document.getElementById('close-media-btn').onclick = () => {
-            overlay.classList.add('hidden');
-            content.innerHTML = ''; // Para o vídeo/audio
-        };
-    }
-
-    function startTimer(startTime) {
-        const display = document.getElementById('player-timer-overlay');
-        // Exemplo: 28 min totais (21 jogo + 7 extra)
-        const totalSeconds = (21 * 60) + (7 * 60);
-
-        timerInterval = setInterval(() => {
-            const now = new Date();
-            const elapsed = Math.floor((now - startTime) / 1000);
-            let current = totalSeconds - elapsed;
-
-            if (elapsed >= totalSeconds) {
-                current = 0;
-                clearInterval(timerInterval);
-                display.classList.add('time-up'); // CSS classe vermelha
-            }
-
-            // Lógica visual (ex: fica vermelho nos últimos 7 min)
-            if (current <= (7 * 60)) {
-                display.classList.add('extra-time');
+            // --- 3. DECISÕES ---
+            if (data.activeDecision) {
+                showDecision(data.activeDecision);
             } else {
-                current -= (7 * 60); // Mostra tempo regular
+                decisionOverlay.classList.remove('active');
             }
             
-            const m = Math.floor(current / 60);
-            const s = current % 60;
-            display.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-        }, 1000);
+            // --- 4. STATUS DO HOST ---
+            if (data.hostStatus === 'offline') {
+                alert("O Host encerrou a sessão.");
+                window.location.href = 'index.html';
+            }
+        });
     }
+
+    // UI UPDATERS
+    
+    function updateTimerDisplay(timerData) {
+        if (!timerDisplay) return;
+        
+        // Aplica Estilos do Host
+        if(timerData.font) timerDisplay.style.fontFamily = timerData.font;
+        if(timerData.color) timerDisplay.style.color = timerData.color;
+
+        const seconds = timerData.value;
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        const s = seconds % 60;
+
+        let text = '';
+        if (h > 0) {
+            text = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+        } else {
+            text = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+        }
+        timerDisplay.textContent = text;
+    }
+
+    function showMedia(media) {
+        mediaWrapper.innerHTML = '';
+        mediaOverlay.dataset.timestamp = media.timestamp;
+        
+        let el;
+        if (media.type === 'image') {
+            el = document.createElement('img');
+            el.src = media.url;
+            el.className = 'media-content';
+        } else if (media.type === 'video') {
+            el = document.createElement('video');
+            el.src = media.url;
+            el.className = 'media-content';
+            el.controls = true;
+            el.autoplay = true;
+        }
+
+        if (el) {
+            mediaWrapper.appendChild(el);
+            mediaOverlay.classList.add('active');
+        }
+    }
+
+    function showDecision(decision) {
+        decisionQuestion.textContent = decision.question;
+        decisionOptions.innerHTML = '';
+
+        decision.options.forEach((opt, i) => {
+            const btn = document.createElement('button');
+            btn.className = 'decision-btn';
+            btn.textContent = `${String.fromCharCode(65+i)}. ${opt}`;
+            btn.onclick = () => {
+                // Efeito visual de seleção
+                btn.style.background = '#00ff88';
+                btn.style.color = '#000';
+                btn.textContent = "Voto Enviado!";
+                // Opcional: Enviar voto para o banco (ainda não implementado no host)
+                setTimeout(() => decisionOverlay.classList.remove('active'), 1000);
+            };
+            decisionOptions.appendChild(btn);
+        });
+
+        decisionOverlay.classList.add('active');
+    }
+
+    function setupControls() {
+        const micBtn = document.getElementById('player-mic-btn');
+        const camBtn = document.getElementById('player-cam-btn');
+        const leaveBtn = document.getElementById('player-leave-btn');
+
+        if(micBtn) micBtn.onclick = () => {
+            const track = localStream.getAudioTracks()[0];
+            if(track) {
+                track.enabled = !track.enabled;
+                micBtn.classList.toggle('active', !track.enabled);
+                micBtn.innerHTML = track.enabled ? '<ion-icon name="mic-outline"></ion-icon>' : '<ion-icon name="mic-off-outline"></ion-icon>';
+            }
+        }
+
+        if(camBtn) camBtn.onclick = () => {
+            const track = localStream.getVideoTracks()[0];
+            if(track) {
+                track.enabled = !track.enabled;
+                camBtn.classList.toggle('active', !track.enabled);
+                camBtn.innerHTML = track.enabled ? '<ion-icon name="videocam-outline"></ion-icon>' : '<ion-icon name="videocam-off-outline"></ion-icon>';
+            }
+        }
+
+        if(leaveBtn) leaveBtn.onclick = () => {
+            if(confirm("Sair da sala?")) window.location.href = 'index.html';
+        }
+    }
+
+    // INICIA
+    init();
 });

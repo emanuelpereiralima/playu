@@ -2,9 +2,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // =========================================================================
     // 1. CONFIGURAÇÃO E VARIÁVEIS GLOBAIS
     // =========================================================================
+    
+    // Verificação de Segurança (Firebase deve estar carregado via main.js ou firebase-config.js)
+    if (typeof firebase === 'undefined') {
+        console.error("Firebase não encontrado!");
+        return;
+    }
+
     const db = window.db || firebase.firestore();
-    const auth = window.auth;
-    const storage = firebase.storage();
+    const auth = window.auth || firebase.auth();
+    const storage = window.storage || firebase.storage();
 
     // --- ESTADO GLOBAL DO APLICATIVO ---
     
@@ -12,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentGalleryUrls = []; 
     let currentSessionAssets = []; 
     let currentTags = [];
+    let currentDecisions = []; // [NOVO] Array de decisões
     let allKnownTags = new Set(["Ação", "Aventura", "RPG", "Terror", "Estratégia"]);
     
     // Agenda (Separada)
@@ -33,6 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const sessionData = sessionStorage.getItem('loggedInUser');
     if (!sessionData) { window.location.href = 'login.html'; return; }
     const loggedInUser = JSON.parse(sessionData);
+    
     if (loggedInUser.role !== 'admin' && loggedInUser.role !== 'host') {
         alert("Acesso não autorizado."); 
         window.location.href = 'index.html'; 
@@ -68,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // =========================================================================
-    // NOVA FUNÇÃO: PREVIEW DO TIMER (ATUALIZAÇÃO)
+    // 2. NOVA FUNÇÃO: PREVIEW DO TIMER (VISUAL)
     // =========================================================================
     window.updateTimerPreview = () => {
         const font = document.getElementById('edit-timer-font')?.value;
@@ -90,7 +99,84 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // =========================================================================
-    // MODAL DE SESSÕES
+    // 3. NOVA LÓGICA: GERENCIADOR DE DECISÕES
+    // =========================================================================
+    const decisionQ = document.getElementById('decision-question-input');
+    const opt1 = document.getElementById('decision-opt-1');
+    const opt2 = document.getElementById('decision-opt-2');
+    const opt3 = document.getElementById('decision-opt-3');
+    const addDecBtn = document.getElementById('add-decision-btn');
+
+    if(addDecBtn) addDecBtn.onclick = () => {
+        const q = decisionQ.value.trim();
+        const o1 = opt1.value.trim();
+        const o2 = opt2.value.trim();
+        const o3 = opt3.value.trim();
+
+        if(!q || !o1 || !o2) return alert("Preencha a pergunta e pelo menos 2 alternativas.");
+
+        const newDecision = {
+            id: Date.now().toString(),
+            question: q,
+            options: [o1, o2]
+        };
+        if(o3) newDecision.options.push(o3);
+
+        currentDecisions.push(newDecision);
+        renderDecisionsList();
+        
+        // Limpar inputs
+        decisionQ.value = ''; opt1.value = ''; opt2.value = ''; opt3.value = '';
+    };
+
+    window.renderDecisionsList = () => {
+        const list = document.getElementById('decisions-list-container');
+        if(!list) return;
+        list.innerHTML = '';
+
+        if(currentDecisions.length === 0) {
+            list.innerHTML = '<p style="font-size:0.8rem; opacity:0.5; text-align:center;">Nenhuma decisão criada.</p>';
+            return;
+        }
+
+        currentDecisions.forEach((d, i) => {
+            const optsHtml = d.options.map(o => `<span style="background:rgba(255,255,255,0.1); padding:2px 6px; border-radius:4px; font-size:0.8rem;">${o}</span>`).join(' ');
+            
+            list.innerHTML += `
+            <div class="decision-card" style="background:rgba(0,0,0,0.3); padding:10px; border-radius:6px; margin-bottom:8px; border-left:3px solid var(--secondary-color); display:flex; justify-content:space-between; align-items:center;">
+                <div class="decision-card-content">
+                    <div class="decision-question" style="font-weight:bold; color:#fff; margin-bottom:4px;">${d.question}</div>
+                    <div class="decision-preview-opts" style="display:flex; gap:5px; color:#aaa;">${optsHtml}</div>
+                </div>
+                <div style="display:flex; gap:5px;">
+                    <button type="button" class="submit-btn small-btn" onclick="loadDecisionToEdit(${i})" title="Editar (Recarrega nos inputs)">
+                        <ion-icon name="create-outline"></ion-icon>
+                    </button>
+                    <button type="button" class="submit-btn danger-btn small-btn" onclick="removeDecision(${i})" title="Excluir">
+                        <ion-icon name="trash-outline"></ion-icon>
+                    </button>
+                </div>
+            </div>`;
+        });
+    };
+
+    window.removeDecision = (i) => {
+        currentDecisions.splice(i, 1);
+        renderDecisionsList();
+    };
+
+    window.loadDecisionToEdit = (i) => {
+        const d = currentDecisions[i];
+        if(decisionQ) decisionQ.value = d.question;
+        if(opt1) opt1.value = d.options[0] || '';
+        if(opt2) opt2.value = d.options[1] || '';
+        if(opt3) opt3.value = d.options[2] || '';
+        
+        removeDecision(i); // Remove da lista para ser readicionado ao salvar
+    };
+
+    // =========================================================================
+    // 4. MODAL DE SESSÕES (Histórico e Futuras)
     // =========================================================================
     const sessionsModal = document.getElementById('game-sessions-modal');
     const sessionsList = document.getElementById('game-sessions-list');
@@ -103,7 +189,6 @@ document.addEventListener('DOMContentLoaded', () => {
         sessionsModal.classList.remove('hidden');
 
         try {
-            // Busca agendamentos deste jogo
             const snapshot = await db.collection('bookings')
                 .where('gameId', '==', gameId)
                 .get();
@@ -118,7 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let bookings = [];
             snapshot.forEach(doc => bookings.push({ id: doc.id, ...doc.data() }));
 
-            // Ordena por data/hora
+            // Ordena
             bookings.sort((a, b) => new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`));
 
             let hasFuture = false;
@@ -126,7 +211,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             bookings.forEach(bk => {
                 const sessionDate = new Date(`${bk.date}T${bk.time}`);
-                // Tolerância de 2 horas para sessões que acabaram de começar
                 const tolerance = new Date(now.getTime() - (2 * 60 * 60 * 1000));
 
                 if (sessionDate >= tolerance) {
@@ -160,13 +244,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Fechar Modal Sessões
     const closeSess = () => sessionsModal.classList.add('hidden');
     if(document.getElementById('close-sessions-modal')) document.getElementById('close-sessions-modal').onclick = closeSess;
     if(document.getElementById('close-sessions-btn')) document.getElementById('close-sessions-btn').onclick = closeSess;
 
     // =========================================================================
-    // 2. GERENCIAMENTO DE USUÁRIOS
+    // 5. GERENCIAMENTO DE USUÁRIOS
     // =========================================================================
     const userTableBody = document.getElementById('user-table-body');
     const userSearchInput = document.getElementById('user-search-input');
@@ -193,10 +276,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
                 userTableBody.appendChild(tr);
             });
-            // Listeners locais
             document.querySelectorAll('.edit-user-trigger').forEach(btn => btn.addEventListener('click', openEditUserModal));
             if(userSearchInput) triggerUserSearch();
-        } catch (e) { console.error("Erro users:", e); }
+        } catch (e) { console.error(e); }
     }
 
     function openEditUserModal(e) {
@@ -237,19 +319,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
-    // Fechar Modal Usuário
     if(document.getElementById('close-user-modal')) document.getElementById('close-user-modal').onclick = () => editUserModal.classList.add('hidden');
     if(document.getElementById('cancel-edit-btn')) document.getElementById('cancel-edit-btn').onclick = () => editUserModal.classList.add('hidden');
 
 
     // =========================================================================
-    // 3. GERENCIAMENTO DE CONTEÚDO (FAQ & SOBRE)
+    // 6. GERENCIAMENTO DE CONTEÚDO (FAQ & SOBRE)
     // =========================================================================
     const faqList = document.getElementById('faq-list-admin');
     const faqModal = document.getElementById('faq-modal');
     const faqForm = document.getElementById('faq-form');
 
-    // Abas internas de conteúdo
     document.querySelectorAll('.content-tabs .tab-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             if(e.target.closest('#schedule-content')) return; 
@@ -308,7 +388,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if(document.getElementById('close-faq-modal')) document.getElementById('close-faq-modal').onclick = () => faqModal.classList.add('hidden');
     if(document.getElementById('cancel-faq-btn')) document.getElementById('cancel-faq-btn').onclick = () => faqModal.classList.add('hidden');
 
-    // Sobre
     async function loadAboutText() {
         try { const doc = await db.collection('siteContent').doc('about').get(); if(doc.exists) document.getElementById('about-history').value = doc.data().text || ''; } catch(e){}
     }
@@ -319,9 +398,8 @@ document.addEventListener('DOMContentLoaded', () => {
         alert("Sobre atualizado!");
     };
 
-
     // =========================================================================
-    // 4. GERENCIAMENTO DE CURSOS
+    // 7. GERENCIAMENTO DE CURSOS
     // =========================================================================
     const courseList = document.getElementById('course-list-admin');
     const courseModal = document.getElementById('course-modal');
@@ -386,7 +464,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.mod-title').forEach(i => i.oninput = (e) => currentCourseModules[e.target.dataset.i].title = e.target.value);
     }
 
-    // Helpers Globais de Cursos
+    // Helpers Cursos
     window.addModule = () => { currentCourseModules.push({title:'', videos:[]}); renderModulesInput(); };
     window.removeModule = (i) => { if(confirm('Remover?')){currentCourseModules.splice(i,1); renderModulesInput();} };
     window.addVideo = (i) => { currentCourseModules[i].videos.push({title:'', url:''}); renderModulesInput(); };
@@ -407,43 +485,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // =========================================================================
-    // 5. GERENCIAMENTO DE JOGOS & AGENDAS
+    // 8. GERENCIAMENTO DE JOGOS (CRUD & CONFIG)
     // =========================================================================
-    
-    // Referências DOM
     const gameListContainer = document.getElementById('game-list-container');
     const createGameModal = document.getElementById('create-game-modal');
     const createGameForm = document.getElementById('create-game-form');
     const agendaModal = document.getElementById('agenda-modal');
 
-    // Funções Globais de Mídia (Assets)
+    // Funções de Renderização Visual
     window.renderGallery = () => {
         const grid = document.getElementById('gallery-preview-grid');
         if(!grid) return;
         grid.innerHTML = '';
         currentGalleryUrls.forEach((url, i) => {
             grid.innerHTML += `<div class="gallery-item"><img src="${url}"><button type="button" class="gallery-remove-btn" onclick="removeGalleryItem(${i})">✕</button></div>`;
-        });
-    };
-
-    window.renderSessionAssets = () => {
-        const list = document.getElementById('assets-crud-list'); 
-        if(!list) return;
-        list.innerHTML = '';
-        if(currentSessionAssets.length === 0) {
-            list.innerHTML = '<p style="padding:10px;text-align:center;opacity:0.5;">Sem arquivos.</p>'; return;
-        }
-        currentSessionAssets.forEach((a, i) => {
-            let thumb = a.type.includes('image') ? `<img src="${a.url}" class="crud-item-thumb">` : `<div class="crud-item-thumb"><ion-icon name="videocam"></ion-icon></div>`;
-            list.innerHTML += `
-            <div class="crud-item">
-                ${thumb}
-                <div class="crud-item-info"><div class="crud-item-name">${a.name}</div><div class="crud-item-type">${a.type}</div></div>
-                <div class="crud-actions">
-                    <button type="button" class="submit-btn small-btn" onclick="window.open('${a.url}')"><ion-icon name="eye"></ion-icon></button>
-                    <button type="button" class="submit-btn danger-btn small-btn" onclick="removeSessionAsset(${i})"><ion-icon name="trash"></ion-icon></button>
-                </div>
-            </div>`;
         });
     };
 
@@ -462,33 +517,21 @@ document.addEventListener('DOMContentLoaded', () => {
             wrapper.insertBefore(el, input);
         });
     }
-   
 
-    // =========================================================================
-    // 3. CARREGAMENTO DE JOGOS
-    // =========================================================================
-    
+    // Carregar Lista de Jogos
     window.loadAllGames = async function() {
         if(!gameListContainer) return;
         gameListContainer.innerHTML = '<div class="loader"></div>';
         
         try {
-            // 1. Busca Jogos
             const gamesSnap = await db.collection('games').get();
-            
-            // 2. Definir "Hoje" corretamente (Fuso Local)
             const now = new Date();
             const year = now.getFullYear();
             const month = String(now.getMonth() + 1).padStart(2, '0');
             const day = String(now.getDate()).padStart(2, '0');
             const todayStr = `${year}-${month}-${day}`; 
 
-            // 3. Busca Agendamentos do Banco (De hoje em diante)
-            const bookingsSnap = await db.collection('bookings')
-                .where('date', '>=', todayStr)
-                .get();
-
-            // 4. Filtragem Refinada
+            const bookingsSnap = await db.collection('bookings').where('date', '>=', todayStr).get();
             const gamesWithSessions = new Set();
             const toleranceTime = new Date(now.getTime() - (2 * 60 * 60 * 1000));
 
@@ -496,13 +539,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = doc.data();
                 if (data.gameId && data.status !== 'cancelled') {
                     const sessionDateTime = new Date(`${data.date}T${data.time}`);
-                    if (sessionDateTime >= toleranceTime) {
-                        gamesWithSessions.add(data.gameId);
-                    }
+                    if (sessionDateTime >= toleranceTime) gamesWithSessions.add(data.gameId);
                 }
             });
 
-            // 5. Renderiza a Lista
             gameListContainer.innerHTML = '';
             if(gamesSnap.empty) { gameListContainer.innerHTML = '<p>Nenhum jogo.</p>'; return; }
             
@@ -512,38 +552,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 const hasFutureSession = gamesWithSessions.has(doc.id);
                 const sessionBtnState = hasFutureSession ? '' : 'disabled';
-                const sessionBtnStyle = hasFutureSession 
-                    ? 'background:var(--secondary-color); color:#fff; border:none;' 
-                    : 'background:rgba(255,255,255,0.05); color:#666; border:1px solid #444; cursor:not-allowed; opacity:0.6;'; 
+                const sessionBtnStyle = hasFutureSession ? 'background:var(--secondary-color); color:#fff; border:none;' : 'background:rgba(255,255,255,0.05); color:#666; border:1px solid #444; cursor:not-allowed; opacity:0.6;'; 
 
                 const card = document.createElement('div'); card.className = 'game-card';
-                
                 card.innerHTML = `
                     <button class="delete-corner-btn delete-game-trigger" data-id="${doc.id}" data-name="${g.name}"><ion-icon name="trash-outline"></ion-icon></button>
-                    
                     <img src="${g.coverImage||'assets/images/logo.png'}" class="game-card-img" style="height:150px; object-fit: cover;">
-                    
                     <div class="game-card-content">
                         <div style="margin-bottom:1rem;">
                             <h3 style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${g.name}</h3>
                             <small>${g.status==='available'?'<span style="color:#00ff88">● On</span>':'<span style="color:#ffbb00">● Off</span>'}</small>
                         </div>
-                        
                         <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
                             <button class="submit-btn small-btn edit-game-trigger" data-id="${doc.id}">Editar</button>
                             <button class="submit-btn small-btn schedule-game-trigger" data-id="${doc.id}" style="background:var(--primary-color-dark); border:1px solid #444;">Agenda</button>
-                                                      
-                            <button class="submit-btn small-btn test-room-trigger" data-id="${doc.id}" data-name="${g.name}" style="background:rgba(0,255,136,0.1); color:#00ff88; border:1px solid #00ff88;">
-                                <ion-icon name="flask-outline"></ion-icon> Testar
-                            </button>
-
-                              <button class="submit-btn small-btn sessions-game-trigger" 
-                                    data-id="${doc.id}" 
-                                    data-name="${g.name}" 
-                                    ${sessionBtnState} 
-                                    style="${sessionBtnStyle} display: flex; align-items: center; justify-content: center; gap: 5px;">
-                                <ion-icon name="list-outline"></ion-icon> Sessões
-                            </button>
+                            <button class="submit-btn small-btn test-room-trigger" data-id="${doc.id}" data-name="${g.name}" style="background:rgba(0,255,136,0.1); color:#00ff88; border:1px solid #00ff88;"><ion-icon name="flask-outline"></ion-icon> Testar</button>
+                            <button class="submit-btn small-btn sessions-game-trigger" data-id="${doc.id}" data-name="${g.name}" ${sessionBtnState} style="${sessionBtnStyle} display: flex; align-items: center; justify-content: center; gap: 5px;"><ion-icon name="list-outline"></ion-icon> Sessões</button>
                         </div>
                     </div>`;
                 gameListContainer.appendChild(card);
@@ -551,8 +575,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch(e) { console.error(e); }
     };
 
-
-    // DELEGATION LISTENER
     if(gameListContainer) {
         gameListContainer.addEventListener('click', (e) => {
             const editBtn = e.target.closest('.edit-game-trigger');
@@ -567,21 +589,20 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- FUNÇÃO DE ABRIR MODAL DE JOGO (ATUALIZADA) ---
+    // --- ABRIR MODAL DE EDIÇÃO/CRIAÇÃO ---
     window.openGameModal = async (gameId) => {
         createGameForm.reset();
         document.getElementById('game-id').value = gameId || '';
         
-        // Reset local
-        currentTags = []; currentGalleryUrls = []; currentSessionAssets = [];
+        // Reset Globals
+        currentTags = []; currentGalleryUrls = []; currentSessionAssets = []; currentDecisions = [];
         tempAssetFile = null;
-        renderTags(); window.renderGallery(); window.renderSessionAssets();
+        renderTags(); window.renderGallery(); window.renderSessionAssets(); window.renderDecisionsList();
         
-        // Esconder previews
+        // Reset Visuals
         const coverPreview = document.getElementById('admin-cover-preview');
         if(coverPreview) coverPreview.style.display = 'none';
         
-        // Reset Vida Extra
         const chkExtra = document.getElementById('check-extra-life');
         const extraCont = document.getElementById('extra-life-config-container');
         if(chkExtra) { chkExtra.checked = false; if(extraCont) extraCont.classList.add('hidden'); }
@@ -606,18 +627,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     set('new-game-short-desc', d.shortDescription); set('new-game-full-desc', d.fullDescription);
                     set('new-game-cover', d.coverImage); set('new-game-trailer', d.videoPreview);
                     
-                    // CARREGAMENTO DAS CONFIGURAÇÕES DO TIMER
+                    // Config Timer
                     const timerSettings = d.timerSettings || {};
                     set('edit-timer-type', timerSettings.type || 'regressive');
                     set('edit-timer-font', timerSettings.font || "'Orbitron', sans-serif");
                     set('edit-timer-color', timerSettings.color || '#ff0000');
-                    // Atualiza o preview visual
                     if(window.updateTimerPreview) window.updateTimerPreview();
 
+                    // Previews e Arrays
                     if(d.coverImage && coverPreview) { coverPreview.src = d.coverImage; coverPreview.style.display = 'block'; }
                     if(d.tags) { currentTags = d.tags; renderTags(); }
                     if(d.galleryImages) { currentGalleryUrls = d.galleryImages; window.renderGallery(); }
                     if(d.sessionAssets) { currentSessionAssets = d.sessionAssets; window.renderSessionAssets(); }
+                    if(d.decisions) { currentDecisions = d.decisions; window.renderDecisionsList(); }
                     
                     if(d.hasExtraLife && chkExtra) {
                         chkExtra.checked = true;
@@ -630,18 +652,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if(title) title.textContent = "Criar Novo Jogo";
             if(saveBtn) saveBtn.textContent = "Criar Jogo";
             if(delBtn) delBtn.classList.add('hidden');
-            // Reset do preview do timer para padrão
             if(window.updateTimerPreview) window.updateTimerPreview();
         }
         createGameModal.classList.remove('hidden');
     };
 
-    // --- FUNÇÃO DE ABRIR MODAL AGENDA ---
     window.openScheduleModal = async (gameId) => {
-        currentAgendaGameId = gameId;
-        currentAgendaData = {};
-        
-        // Reset UI Agenda
+        currentAgendaGameId = gameId; currentAgendaData = {};
         const viewCal = document.getElementById('schedule-view-calendar');
         const viewBulk = document.getElementById('schedule-view-bulk');
         const tabCal = document.getElementById('tab-calendar-view');
@@ -665,7 +682,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch(e) { alert("Erro ao abrir agenda."); }
     };
 
-    // --- UPLOAD HANDLER GENÉRICO ---
     function setupUpload(inputId, type, cb) {
         const input = document.getElementById(inputId);
         if(!input) return;
@@ -674,7 +690,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if(!files.length) return;
             let stat = input.parentElement.querySelector('.form-hint') || document.getElementById(inputId.replace('input','status'));
             if(stat) stat.textContent = "Enviando...";
-            
             try {
                 const promises = files.map(async f => {
                     const ref = storage.ref().child(`uploads/${Date.now()}_${f.name}`);
@@ -687,175 +702,84 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch(e) { if(stat) stat.textContent = "Erro."; }
         };
     }
-
-    setupUpload('admin-cover-upload', 'image', (r) => {
-        document.getElementById('new-game-cover').value = r[0].url;
-        document.getElementById('admin-cover-preview').src = r[0].url;
-        document.getElementById('admin-cover-preview').style.display = 'block';
-    });
+    setupUpload('admin-cover-upload', 'image', (r) => { document.getElementById('new-game-cover').value = r[0].url; document.getElementById('admin-cover-preview').src = r[0].url; document.getElementById('admin-cover-preview').style.display = 'block'; });
     setupUpload('gallery-upload-input', 'image', (r) => { currentGalleryUrls.push(...r.map(x=>x.url)); window.renderGallery(); });
     setupUpload('admin-trailer-upload', 'video', (r) => { document.getElementById('new-game-trailer').value = r[0].url; });
 
-
-    // =========================================================================
-    // LÓGICA DO CRUD DE ASSETS (FOTO / VÍDEO / ÁUDIO)
-    // =========================================================================
-    
-    // Elementos
+    // --- UPLOAD DE ASSETS (CRUD) ---
     const assetNameInput = document.getElementById('asset-name-input');
     const assetAddBtn = document.getElementById('add-asset-btn');
     const assetStatus = document.getElementById('assets-upload-status');
     const selectedFileDisplay = document.getElementById('selected-file-display');
     const assetFilenameText = document.getElementById('asset-filename-text');
     const clearAssetBtn = document.getElementById('clear-asset-selection');
-
-    // Inputs Específicos
     const inputImage = document.getElementById('upload-asset-image');
     const inputVideo = document.getElementById('upload-asset-video');
     const inputAudio = document.getElementById('upload-asset-audio');
-
-    // Variáveis Temporárias
     let tempAssetType = null;
 
-    // Função auxiliar para lidar com a seleção
     function handleAssetSelection(e, type) {
         const file = e.target.files[0];
         if (file) {
-            tempAssetFile = file;
-            tempAssetType = type;
-            
-            // Preenche nome se vazio
-            if (assetNameInput && !assetNameInput.value) {
-                assetNameInput.value = file.name.split('.')[0];
-            }
-
-            // Atualiza UI
+            tempAssetFile = file; tempAssetType = type;
+            if (assetNameInput && !assetNameInput.value) assetNameInput.value = file.name.split('.')[0];
             if (selectedFileDisplay) selectedFileDisplay.classList.remove('hidden');
             if (assetFilenameText) assetFilenameText.textContent = `${type.toUpperCase()}: ${file.name}`;
-            if (assetAddBtn) {
-                assetAddBtn.disabled = false;
-                assetAddBtn.classList.remove('secondary-btn');
-                assetAddBtn.classList.add('primary-btn'); // Destaque
-            }
+            if (assetAddBtn) { assetAddBtn.disabled = false; assetAddBtn.classList.remove('secondary-btn'); assetAddBtn.classList.add('primary-btn'); }
         }
     }
-
-    // Listeners para cada tipo
     if(inputImage) inputImage.addEventListener('change', (e) => handleAssetSelection(e, 'image'));
     if(inputVideo) inputVideo.addEventListener('change', (e) => handleAssetSelection(e, 'video'));
     if(inputAudio) inputAudio.addEventListener('change', (e) => handleAssetSelection(e, 'audio'));
 
-    // Botão Limpar Seleção
     if(clearAssetBtn) clearAssetBtn.addEventListener('click', () => {
-        tempAssetFile = null;
-        tempAssetType = null;
-        if(inputImage) inputImage.value = '';
-        if(inputVideo) inputVideo.value = '';
-        if(inputAudio) inputAudio.value = '';
+        tempAssetFile = null; tempAssetType = null;
+        if(inputImage) inputImage.value = ''; if(inputVideo) inputVideo.value = ''; if(inputAudio) inputAudio.value = '';
         selectedFileDisplay.classList.add('hidden');
-        assetAddBtn.disabled = true;
-        assetAddBtn.classList.add('secondary-btn');
-        assetAddBtn.classList.remove('primary-btn');
+        assetAddBtn.disabled = true; assetAddBtn.classList.add('secondary-btn'); assetAddBtn.classList.remove('primary-btn');
     });
 
-    // Botão Adicionar (Upload + Save to Array)
     if(assetAddBtn) assetAddBtn.addEventListener('click', async () => {
         const name = assetNameInput.value.trim();
-        if(!name) return alert("Digite um nome para a mídia.");
-        if(!tempAssetFile) return alert("Selecione um arquivo.");
-        
-        assetStatus.textContent = "Enviando...";
-        assetAddBtn.disabled = true;
-
+        if(!name || !tempAssetFile) return alert("Preencha o nome e selecione um arquivo.");
+        assetStatus.textContent = "Enviando..."; assetAddBtn.disabled = true;
         try {
-            // Define pasta baseada no tipo
             let folder = 'game-assets-misc';
             if(tempAssetType === 'image') folder = 'game-assets-images';
             if(tempAssetType === 'video') folder = 'game-assets-videos';
             if(tempAssetType === 'audio') folder = 'game-assets-audio';
-
             const ref = storage.ref().child(`${folder}/${Date.now()}_${tempAssetFile.name}`);
             await ref.put(tempAssetFile);
             const url = await ref.getDownloadURL();
-
-            // Adiciona ao array local
-            currentSessionAssets.push({ 
-                name: name, 
-                url: url, 
-                type: tempAssetType 
-            });
-
-            // Atualiza Lista Visual
+            currentSessionAssets.push({ name: name, url: url, type: tempAssetType });
             window.renderSessionAssets();
-
-            // Reset UI
-            assetNameInput.value = '';
-            tempAssetFile = null;
-            tempAssetType = null;
-            selectedFileDisplay.classList.add('hidden');
+            assetNameInput.value = ''; tempAssetFile = null; tempAssetType = null; selectedFileDisplay.classList.add('hidden');
             inputImage.value = ''; inputVideo.value = ''; inputAudio.value = '';
-            
-            assetStatus.textContent = "Adicionado com sucesso!";
-            setTimeout(() => { assetStatus.textContent = ''; }, 2000);
-
-        } catch(e) { 
-            console.error(e); 
-            assetStatus.textContent = "Erro ao enviar."; 
-        } finally {
-            // Mantém desabilitado até nova seleção
-            assetAddBtn.disabled = true;
-            assetAddBtn.classList.add('secondary-btn');
-            assetAddBtn.classList.remove('primary-btn');
-        }
+            assetStatus.textContent = "Sucesso!"; setTimeout(() => { assetStatus.textContent = ''; }, 2000);
+        } catch(e) { console.error(e); assetStatus.textContent = "Erro."; } 
+        finally { assetAddBtn.disabled = true; assetAddBtn.classList.add('secondary-btn'); assetAddBtn.classList.remove('primary-btn'); }
     });
 
-    // Renderizador da Lista
     window.renderSessionAssets = () => {
         const list = document.getElementById('assets-crud-list');
         if(!list) return;
         list.innerHTML = '';
-        
-        if(currentSessionAssets.length === 0) {
-            list.innerHTML = '<p style="padding:10px;text-align:center;opacity:0.5;font-size:0.9rem">Nenhuma mídia adicionada.</p>';
-            return;
-        }
-
+        if(currentSessionAssets.length === 0) { list.innerHTML = '<p style="padding:10px;text-align:center;opacity:0.5;font-size:0.9rem">Nenhuma mídia adicionada.</p>'; return; }
         currentSessionAssets.forEach((a, i) => {
-            let thumb = '';
-            // Ícone apropriado por tipo
-            if(a.type === 'image') thumb = `<img src="${a.url}" class="crud-item-thumb">`;
-            else if(a.type === 'video') thumb = `<div class="crud-item-thumb" style="color:#00ff88"><ion-icon name="videocam"></ion-icon></div>`;
-            else if(a.type === 'audio') thumb = `<div class="crud-item-thumb" style="color:#ffbb00"><ion-icon name="musical-notes"></ion-icon></div>`;
-            else thumb = `<div class="crud-item-thumb"><ion-icon name="document"></ion-icon></div>`;
-
-            list.innerHTML += `
-            <div class="crud-item">
-                ${thumb}
-                <div class="crud-item-info">
-                    <div class="crud-item-name">${a.name}</div>
-                    <div class="crud-item-type" style="font-size:0.7rem; opacity:0.7;">${a.type.toUpperCase()}</div>
-                </div>
-                <div class="crud-actions">
-                    <button type="button" class="submit-btn small-btn" onclick="window.open('${a.url}', '_blank')" title="Ver/Ouvir"><ion-icon name="eye"></ion-icon></button>
-                    <button type="button" class="submit-btn danger-btn small-btn" onclick="removeSessionAsset(${i})" title="Excluir"><ion-icon name="trash"></ion-icon></button>
-                </div>
-            </div>`;
+            let thumb = a.type === 'image' ? `<img src="${a.url}" class="crud-item-thumb">` : `<div class="crud-item-thumb"><ion-icon name="document"></ion-icon></div>`;
+            if(a.type==='video') thumb = `<div class="crud-item-thumb"><ion-icon name="videocam"></ion-icon></div>`;
+            if(a.type==='audio') thumb = `<div class="crud-item-thumb"><ion-icon name="musical-notes"></ion-icon></div>`;
+            list.innerHTML += `<div class="crud-item">${thumb}<div class="crud-item-info"><div class="crud-item-name">${a.name}</div><div class="crud-item-type">${a.type.toUpperCase()}</div></div><div class="crud-actions"><button type="button" class="submit-btn small-btn" onclick="window.open('${a.url}', '_blank')"><ion-icon name="eye"></ion-icon></button><button type="button" class="submit-btn danger-btn small-btn" onclick="removeSessionAsset(${i})"><ion-icon name="trash"></ion-icon></button></div></div>`;
         });
     };
 
-    // Tag Keydown
     const tagIn = document.getElementById('tag-input-field');
-    if(tagIn) tagIn.onkeydown = (e) => {
-        if(e.key==='Enter'||e.key===',') { e.preventDefault(); const v=tagIn.value.trim(); if(v&&!currentTags.includes(v)){currentTags.push(v);renderTags();} tagIn.value=''; }
-    };
+    if(tagIn) tagIn.onkeydown = (e) => { if(e.key==='Enter'||e.key===',') { e.preventDefault(); const v=tagIn.value.trim(); if(v&&!currentTags.includes(v)){currentTags.push(v);renderTags();} tagIn.value=''; } };
 
     const chkExtra = document.getElementById('check-extra-life');
-    if(chkExtra) chkExtra.onchange = (e) => {
-        const box = document.getElementById('extra-life-config-container');
-        if(e.target.checked) box.classList.remove('hidden'); else box.classList.add('hidden');
-    };
+    if(chkExtra) chkExtra.onchange = (e) => { const box = document.getElementById('extra-life-config-container'); if(e.target.checked) box.classList.remove('hidden'); else box.classList.add('hidden'); };
 
-    // --- SALVAR JOGO (ATUALIZADO COM TIMER) ---
+    // --- SALVAR JOGO (SUBMIT) ---
     if(createGameForm) createGameForm.onsubmit = async (e) => {
         e.preventDefault();
         const id = document.getElementById('game-id').value;
@@ -879,7 +803,8 @@ document.addEventListener('DOMContentLoaded', () => {
             sessionAssets: currentSessionAssets,
             isPaused: document.getElementById('new-game-status').value === 'paused',
             
-            // DADOS DO TIMER
+            // Novos Campos
+            decisions: currentDecisions,
             timerSettings: {
                 type: document.getElementById('edit-timer-type').value,
                 font: document.getElementById('edit-timer-font').value,
@@ -904,9 +829,8 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // =========================================================================
-    // 6. LÓGICA DA AGENDA
+    // 9. LÓGICA DA AGENDA (CALENDÁRIO)
     // =========================================================================
-    
     function renderAdminCalendar() {
         const grid = document.getElementById('admin-calendar-grid');
         if(!grid) return;
@@ -914,44 +838,23 @@ document.addEventListener('DOMContentLoaded', () => {
         grid.innerHTML = '';
         const m = currentAdminDate.getMonth();
         const y = currentAdminDate.getFullYear();
-        
         document.getElementById('admin-month-header').textContent = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(currentAdminDate);
 
         const firstDay = new Date(y, m, 1).getDay();
         const daysInMonth = new Date(y, m + 1, 0).getDate();
         
-        // Células vazias
-        for(let i = 0; i < firstDay; i++) {
-            const empty = document.createElement('div');
-            empty.className = 'calendar-day';
-            empty.style.opacity = '0';
-            empty.style.cursor = 'default';
-            grid.appendChild(empty);
-        }
+        for(let i = 0; i < firstDay; i++) { const empty = document.createElement('div'); empty.className = 'calendar-day'; empty.style.opacity = '0'; empty.style.cursor = 'default'; grid.appendChild(empty); }
 
-        // Data de Hoje
-        const today = new Date();
-        today.setHours(0,0,0,0);
+        const today = new Date(); today.setHours(0,0,0,0);
 
         for(let d = 1; d <= daysInMonth; d++) {
             const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-            const el = document.createElement('div');
-            el.className = 'calendar-day';
-            el.textContent = d;
-            el.dataset.date = dateStr;
-
+            const el = document.createElement('div'); el.className = 'calendar-day'; el.textContent = d; el.dataset.date = dateStr;
             const dateObj = new Date(y, m, d);
-
-            if(dateObj < today) {
-                // Passado (sem ação)
-            } else {
+            if(dateObj < today) { /* Passado */ } else {
                 el.classList.add('available');
-                if(currentAgendaData[dateStr] && currentAgendaData[dateStr].length > 0) {
-                    el.classList.add('has-schedule');
-                }
-                if(editingDateStr === dateStr) {
-                    el.classList.add('selected');
-                }
+                if(currentAgendaData[dateStr] && currentAgendaData[dateStr].length > 0) el.classList.add('has-schedule');
+                if(editingDateStr === dateStr) el.classList.add('selected');
                 el.onclick = () => openSingleDayEditor(dateStr);
             }
             grid.appendChild(el);
@@ -966,37 +869,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const modal = document.getElementById('single-day-editor');
         modal.classList.remove('hidden');
-        
         const dateParts = dateStr.split('-');
         document.getElementById('editing-date-display').textContent = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
-        
-        renderSlots();
-        updateTimeSelectOptions(dateStr);
+        renderSlots(); updateTimeSelectOptions(dateStr);
     }
 
     function updateTimeSelectOptions(selectedDateStr) {
         const select = document.getElementById('single-time-input');
         if(!select) return;
-
         select.innerHTML = '<option value="">Selecionar horário...</option>';
-
         const now = new Date();
         const isToday = selectedDateStr === now.toISOString().split('T')[0];
-        const currentHour = now.getHours();
-        const currentMin = now.getMinutes();
+        const currentHour = now.getHours(); const currentMin = now.getMinutes();
 
         for(let h = 0; h < 24; h++) {
             for(let m = 0; m < 60; m += 30) { 
-                if (isToday) {
-                    if (h < currentHour || (h === currentHour && m < currentMin)) {
-                        continue; 
-                    }
-                }
+                if (isToday) { if (h < currentHour || (h === currentHour && m < currentMin)) continue; }
                 const timeStr = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
-                const option = document.createElement('option');
-                option.value = timeStr;
-                option.textContent = timeStr;
-                select.appendChild(option);
+                const option = document.createElement('option'); option.value = timeStr; option.textContent = timeStr; select.appendChild(option);
             }
         }
     }
@@ -1005,31 +895,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const list = document.getElementById('single-day-slots');
         list.innerHTML = '';
         const times = currentAgendaData[editingDateStr] || [];
-        
-        if(times.length === 0) {
-            list.innerHTML = '<span style="font-size:0.8rem; opacity:0.6;">Nenhum horário marcado.</span>';
-        }
-
-        times.sort().forEach((t, i) => {
-            list.innerHTML += `<div class="tag-capsule"><span>${t}</span><span onclick="removeSlot(${i})">&times;</span></div>`;
-        });
+        if(times.length === 0) list.innerHTML = '<span style="font-size:0.8rem; opacity:0.6;">Nenhum horário marcado.</span>';
+        times.sort().forEach((t, i) => { list.innerHTML += `<div class="tag-capsule"><span>${t}</span><span onclick="removeSlot(${i})">&times;</span></div>`; });
     }
 
-    window.removeSlot = (i) => { 
-        currentAgendaData[editingDateStr].splice(i, 1); 
-        renderSlots(); 
-    };
+    window.removeSlot = (i) => { currentAgendaData[editingDateStr].splice(i, 1); renderSlots(); };
 
     if(document.getElementById('add-single-time-btn')) {
         document.getElementById('add-single-time-btn').onclick = () => {
             const v = document.getElementById('single-time-input').value;
             if(v) { 
                 if(!currentAgendaData[editingDateStr]) currentAgendaData[editingDateStr] = [];
-                if(!currentAgendaData[editingDateStr].includes(v)) {
-                    currentAgendaData[editingDateStr].push(v); 
-                    currentAgendaData[editingDateStr].sort();
-                    renderSlots(); 
-                }
+                if(!currentAgendaData[editingDateStr].includes(v)) { currentAgendaData[editingDateStr].push(v); currentAgendaData[editingDateStr].sort(); renderSlots(); }
             }
         };
     }
@@ -1037,50 +914,25 @@ document.addEventListener('DOMContentLoaded', () => {
     if(document.getElementById('save-single-day-btn')) {
         document.getElementById('save-single-day-btn').onclick = async () => {
             if(!currentAgendaGameId) return;
-            if(currentAgendaData[editingDateStr] && currentAgendaData[editingDateStr].length === 0) {
-                delete currentAgendaData[editingDateStr];
-            }
+            if(currentAgendaData[editingDateStr] && currentAgendaData[editingDateStr].length === 0) delete currentAgendaData[editingDateStr];
             try {
                 await db.collection('games').doc(currentAgendaGameId).update({ availability: currentAgendaData });
                 document.getElementById('single-day-editor').classList.add('hidden');
                 document.querySelector('.calendar-day.selected')?.classList.remove('selected');
                 renderAdminCalendar(); 
-            } catch(e) {
-                console.error(e);
-                alert("Erro ao salvar agenda.");
-            }
+            } catch(e) { alert("Erro ao salvar agenda."); }
         };
     }
 
-    if(document.getElementById('clear-day-btn')) {
-        document.getElementById('clear-day-btn').onclick = () => {
-            if(confirm("Remover todos os horários deste dia?")) {
-                delete currentAgendaData[editingDateStr];
-                renderSlots();
-            }
-        };
-    }
+    if(document.getElementById('clear-day-btn')) document.getElementById('clear-day-btn').onclick = () => { if(confirm("Remover todos?")) { delete currentAgendaData[editingDateStr]; renderSlots(); } };
+    if(document.getElementById('close-day-editor-btn')) document.getElementById('close-day-editor-btn').onclick = () => { document.getElementById('single-day-editor').classList.add('hidden'); document.querySelector('.calendar-day.selected')?.classList.remove('selected'); };
 
-    if(document.getElementById('close-day-editor-btn')) {
-        document.getElementById('close-day-editor-btn').onclick = () => {
-            document.getElementById('single-day-editor').classList.add('hidden');
-            document.querySelector('.calendar-day.selected')?.classList.remove('selected');
-        };
-    }
-
-    // Navegação Mês
     if(document.getElementById('admin-prev-month')) document.getElementById('admin-prev-month').onclick = () => { currentAdminDate.setMonth(currentAdminDate.getMonth()-1); renderAdminCalendar(); };
     if(document.getElementById('admin-next-month')) document.getElementById('admin-next-month').onclick = () => { currentAdminDate.setMonth(currentAdminDate.getMonth()+1); renderAdminCalendar(); };
     
-    // Bulk Actions
-    if(document.getElementById('add-bulk-time-btn')) document.getElementById('add-bulk-time-btn').onclick = () => {
-        const v = document.getElementById('bulk-time-input').value;
-        if(v && !bulkTimesArray.includes(v)) { bulkTimesArray.push(v); renderBulkTimes(); }
-    };
-    function renderBulkTimes() {
-        const l = document.getElementById('bulk-times-list'); l.innerHTML='';
-        bulkTimesArray.forEach((t, i) => l.innerHTML+=`<div class="tag-capsule"><span>${t}</span><span onclick="removeBulkTime(${i})">&times;</span></div>`);
-    }
+    // Bulk
+    if(document.getElementById('add-bulk-time-btn')) document.getElementById('add-bulk-time-btn').onclick = () => { const v = document.getElementById('bulk-time-input').value; if(v && !bulkTimesArray.includes(v)) { bulkTimesArray.push(v); renderBulkTimes(); } };
+    function renderBulkTimes() { const l = document.getElementById('bulk-times-list'); l.innerHTML=''; bulkTimesArray.forEach((t, i) => l.innerHTML+=`<div class="tag-capsule"><span>${t}</span><span onclick="removeBulkTime(${i})">&times;</span></div>`); }
     window.removeBulkTime = (i) => { bulkTimesArray.splice(i,1); renderBulkTimes(); };
     
     if(document.getElementById('apply-bulk-schedule-btn')) document.getElementById('apply-bulk-schedule-btn').onclick = async () => {
@@ -1088,7 +940,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const e = document.getElementById('bulk-end-date').value;
         const days = []; document.querySelectorAll('#schedule-view-bulk input:checked').forEach(c=>days.push(parseInt(c.value)));
         if(!s || !e || !days.length || !bulkTimesArray.length) return alert("Preencha tudo");
-        
         let loop = new Date(s+'T00:00:00'), end = new Date(e+'T00:00:00');
         while(loop <= end) {
             if(days.includes(loop.getDay())) {
@@ -1102,31 +953,26 @@ document.addEventListener('DOMContentLoaded', () => {
         alert("Aplicado!"); document.getElementById('tab-calendar-view').click();
     };
 
-    // Close Modals
     const closeMod = (id, mid) => { const e=document.getElementById(id); if(e) e.onclick = () => document.getElementById(mid).classList.add('hidden'); };
     closeMod('close-create-game-modal','create-game-modal'); closeMod('cancel-create-game-btn','create-game-modal');
     closeMod('close-agenda-modal','agenda-modal');
     if(document.getElementById('open-create-game-modal-btn')) document.getElementById('open-create-game-modal-btn').onclick = () => window.openGameModal(null);
 
-    // Abas Agenda
     if(document.getElementById('tab-calendar-view')) document.getElementById('tab-calendar-view').onclick = (e) => {
-        document.getElementById('schedule-view-calendar').classList.remove('hidden');
-        document.getElementById('schedule-view-bulk').classList.add('hidden');
-        e.target.classList.add('active'); document.getElementById('tab-bulk-add').classList.remove('active');
-        renderAdminCalendar();
+        document.getElementById('schedule-view-calendar').classList.remove('hidden'); document.getElementById('schedule-view-bulk').classList.add('hidden');
+        e.target.classList.add('active'); document.getElementById('tab-bulk-add').classList.remove('active'); renderAdminCalendar();
     };
     if(document.getElementById('tab-bulk-add')) document.getElementById('tab-bulk-add').onclick = (e) => {
-        document.getElementById('schedule-view-calendar').classList.add('hidden');
-        document.getElementById('schedule-view-bulk').classList.remove('hidden');
+        document.getElementById('schedule-view-calendar').classList.add('hidden'); document.getElementById('schedule-view-bulk').classList.remove('hidden');
         e.target.classList.add('active'); document.getElementById('tab-calendar-view').classList.remove('active');
     };
 
-    // Test & Delete
     window.createFixedTestRoom = async (id, name) => {
         const bid = `test-${id}`;
         await db.collection('bookings').doc(bid).set({ type:'test', gameId:id, gameName:name, hostId:loggedInUser.username, date: new Date().toISOString(), status:'confirmed' });
         window.location.href = `sala-host.html?bookingId=${bid}&mode=test`;
     };
+
     window.openDeleteConfirmModal = (id, name) => {
         const m = document.getElementById('delete-confirm-modal');
         const i = document.getElementById('delete-verification-input');
