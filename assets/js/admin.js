@@ -625,6 +625,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     set('new-game-name', d.name); set('new-game-status', d.status);
                     set('new-game-duration', d.sessionDuration); set('new-game-price', d.price);
                     set('new-game-short-desc', d.shortDescription); set('new-game-full-desc', d.fullDescription);
+                    document.getElementById('new-game-duration').value = d.sessionDuration;
+                    document.getElementById('new-game-max-players').value = d.maxPlayers || 1; // Padrão 1 se não existir
                     set('new-game-cover', d.coverImage); set('new-game-trailer', d.videoPreview);
                     
                     // Config Timer
@@ -842,6 +844,8 @@ document.addEventListener('DOMContentLoaded', () => {
             fullDescription: document.getElementById('new-game-full-desc').value,
             coverImage: document.getElementById('new-game-cover').value,
             videoPreview: document.getElementById('new-game-trailer').value,
+            sessionDuration: document.getElementById('new-game-duration').value,
+            maxPlayers: parseInt(document.getElementById('new-game-max-players').value) || 1,
             galleryImages: currentGalleryUrls,
             sessionAssets: currentSessionAssets,
             isPaused: document.getElementById('new-game-status').value === 'paused',
