@@ -1,209 +1,64 @@
 <!DOCTYPE html>
-<html lang="pt-br" data-theme="dark">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pagamento - PlayU</title>
+    <title>Finalizar Pagamento - PlayU</title>
     <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="icon" href="assets/images/logo.png" type="image/png">
-    <style>
-        .payment-container {
-            display: grid;
-            grid-template-columns: 1fr 1.5fr;
-            gap: 2rem;
-            max-width: 1000px;
-            margin: 2rem auto;
-        }
-        .booking-summary {
-            background-color: var(--card-bg-color);
-            padding: 2rem;
-            border-radius: 12px;
-            border: 1px solid var(--border-color);
-            height: fit-content;
-        }
-        .booking-summary img {
-            width: 100%;
-            height: 200px;
-            object-fit: cover;
-            border-radius: 8px;
-            margin-bottom: 1rem;
-        }
-        .summary-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 0.5rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-        .summary-total {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: var(--secondary-color);
-            text-align: right;
-            margin-top: 1rem;
-        }
-        .payment-form-container {
-            background-color: var(--primary-color-dark);
-            padding: 2rem;
-            border-radius: 12px;
-        }
-        .payment-methods {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-        .payment-method-btn {
-            flex: 1;
-            padding: 1rem;
-            background: var(--bg-color);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            cursor: pointer;
-            text-align: center;
-            transition: all 0.3s;
-        }
-        .payment-method-btn.active {
-            background: var(--secondary-color);
-            color: white;
-            border-color: var(--secondary-color);
-        }
-        .card-preview {
-            background: linear-gradient(135deg, #333, #000);
-            height: 180px;
-            border-radius: 12px;
-            margin-bottom: 1.5rem;
-            position: relative;
-            padding: 1.5rem;
-            color: white;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-        }
-        @media (max-width: 768px) {
-            .payment-container { grid-template-columns: 1fr; }
-            .booking-summary { order: -1; }
-        }
-    </style>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="assets/js/firebase-config.js"></script>
+    <script src="assets/js/main.js"></script>
 </head>
 <body>
 
-    <header class="header" style="position: relative;">
-        <nav class="nav container">
-            <a href="index.html" class="nav__logo"><img src="assets/images/logo.png" alt="play.u Logo"></a>
-            <div class="nav__right-group">
-                <span style="font-weight: 500;">Checkout Seguro <ion-icon name="lock-closed"></ion-icon></span>
-            </div>
-        </nav>
-    </header>
+    <div id="payment-loading" class="loading-overlay">
+        <div class="loader"></div>
+        <p style="margin-top: 15px; color: #fff;">Verificando disponibilidade...</p>
+    </div>
 
-    <main class="main-content" style="padding-top: 2rem;">
-        <div class="container">
-            <h1 class="page-title">Finalizar Agendamento</h1>
+    <div id="payment-content" class="container hidden" style="max-width: 800px; margin: 50px auto; padding: 20px;">
+        <h2>Finalizar Agendamento</h2>
+
+        <div class="checkout-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 20px;">
             
-            <div class="payment-container">
-                <div class="booking-summary">
-                    <h3>Resumo</h3>
-                    <img id="summary-img" src="" alt="Capa do Jogo">
-                    <h4 id="summary-game-name" style="margin-bottom: 1rem;">Carregando...</h4>
-                    
-                    <div class="summary-row">
-                        <span>Data:</span>
-                        <strong id="summary-date">--/--/----</strong>
+            <div class="order-summary" style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 8px;">
+                <h3 style="border-bottom: 1px solid #444; padding-bottom: 10px;">Resumo</h3>
+                
+                <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+                    <img id="checkout-cover" src="" style="width: 80px; height: 80px; object-fit: cover; border-radius: 4px;">
+                    <div>
+                        <h4 id="checkout-game-name" style="margin: 0; color: var(--secondary-color);">Carregando...</h4>
+                        <p id="checkout-datetime" style="font-size: 0.9rem; color: #ccc; margin-top: 5px;">--/--/---- às --:--</p>
                     </div>
-                    <div class="summary-row">
-                        <span>Horário:</span>
-                        <strong id="summary-time">--:--</strong>
-                    </div>
-                    <div class="summary-row">
-                        <span>Host:</span>
-                        <strong>PlayU Oficial</strong>
-                    </div>
-                    
-                    <div class="summary-total" id="summary-price">R$ 0,00</div>
                 </div>
 
-                <div class="payment-form-container">
-                    <h3>Forma de Pagamento</h3>
-                    <div class="payment-methods">
-                        <div class="payment-method-btn active" onclick="selectMethod('card')">
-                            <ion-icon name="card-outline" style="font-size: 1.5rem; display:block; margin: 0 auto 5px;"></ion-icon> Cartão de Crédito
-                        </div>
-                        <div class="payment-method-btn" onclick="selectMethod('pix')">
-                            <ion-icon name="qr-code-outline" style="font-size: 1.5rem; display:block; margin: 0 auto 5px;"></ion-icon> PIX
-                        </div>
-                    </div>
-
-                    <div id="card-form">
-                        <div class="card-preview">
-                            <div style="font-size: 1.2rem; margin-bottom: 2rem; letter-spacing: 2px;">•••• •••• •••• ••••</div>
-                            <div style="display: flex; justify-content: space-between;">
-                                <div>
-                                    <small style="opacity: 0.7; font-size: 0.7rem;">NOME</small>
-                                    <div style="font-weight: bold;">SEU NOME AQUI</div>
-                                </div>
-                                <div>
-                                    <small style="opacity: 0.7; font-size: 0.7rem;">VAL</small>
-                                    <div style="font-weight: bold;">MM/AA</div>
-                                </div>
-                            </div>
-                            <ion-icon name="logo-mastercard" style="position: absolute; bottom: 1.5rem; right: 1.5rem; font-size: 2rem; opacity: 0.8;"></ion-icon>
-                        </div>
-
-                        <form id="payment-form">
-                            <div class="form-group">
-                                <label>Número do Cartão</label>
-                                <input type="text" placeholder="0000 0000 0000 0000" maxlength="19" required>
-                            </div>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label>Validade</label>
-                                    <input type="text" placeholder="MM/AA" maxlength="5" required>
-                                </div>
-                                <div class="form-group">
-                                    <label>CVV</label>
-                                    <input type="text" placeholder="123" maxlength="3" required>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label>Nome no Cartão</label>
-                                <input type="text" placeholder="Como impresso no cartão" required>
-                            </div>
-                            <button type="submit" class="submit-btn" style="width: 100%; margin-top: 1rem;">Pagar Agora</button>
-                        </form>
-                    </div>
-
-                    <div id="pix-area" class="hidden" style="text-align: center; padding: 2rem;">
-                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=PlayU-Pagamento-Simulado" alt="QR Code Pix" style="border-radius: 8px; margin-bottom: 1rem;">
-                        <p>Escaneie o QR Code para pagar</p>
-                        <p style="font-size: 0.9rem; opacity: 0.7;">O pagamento será aprovado automaticamente após a leitura.</p>
-                        <button id="simulate-pix-btn" class="submit-btn" style="margin-top: 1rem;">Simular Pagamento Confirmado</button>
-                    </div>
-
+                <div style="display: flex; justify-content: space-between; font-size: 1.1rem; border-top: 1px solid #444; padding-top: 10px;">
+                    <strong>Total:</strong>
+                    <strong id="checkout-total-price" style="color: #00ff88;">R$ 0,00</strong>
                 </div>
+            </div>
+
+            <div class="payment-methods">
+                <h3>Pagamento</h3>
+                <div class="method-selector" style="margin-bottom: 20px;">
+                    <label style="display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 6px; cursor: pointer; border: 1px solid var(--secondary-color);">
+                        <input type="radio" name="payment" checked> 
+                        <span>PIX (Aprovação Imediata)</span>
+                    </label>
+                </div>
+
+                <button id="confirm-payment-btn" class="submit-btn" style="width: 100%; font-size: 1.1rem;">
+                    Pagar e Agendar
+                </button>
+                <p id="payment-status" style="text-align: center; margin-top: 10px; color: #aaa;"></p>
             </div>
         </div>
-    </main>
+    </div>
 
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script src="assets/js/firebase-config.js"></script>
-    <script>
-        const version = new Date().getTime();
-        document.write(`<script src="assets/js/pagamento.js?v=${version}"><\/script>`);
-    </script>
-    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
-    <script>
-        function selectMethod(method) {
-            document.querySelectorAll('.payment-method-btn').forEach(btn => btn.classList.remove('active'));
-            if(method === 'card') {
-                document.querySelector('.payment-method-btn:first-child').classList.add('active');
-                document.getElementById('card-form').classList.remove('hidden');
-                document.getElementById('pix-area').classList.add('hidden');
-            } else {
-                document.querySelector('.payment-method-btn:last-child').classList.add('active');
-                document.getElementById('card-form').classList.add('hidden');
-                document.getElementById('pix-area').classList.remove('hidden');
-            }
-        }
-    </script>
+    <script src="assets/js/pagamento.js"></script>
+
 </body>
 </html>

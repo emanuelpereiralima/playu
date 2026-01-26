@@ -1,126 +1,122 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const db = window.db || firebase.firestore();
-    const auth = window.auth;
+    console.log("💳 Iniciando Checkout...");
 
-    // 1. Verificação de Segurança
-    const userSession = sessionStorage.getItem('loggedInUser');
-    const pendingBookingStr = sessionStorage.getItem('pendingBooking');
+    const db = firebase.firestore();
+    const auth = firebase.auth();
 
-    if (!userSession) {
-        alert("Sessão expirada. Faça login novamente.");
-        window.location.href = 'login.html';
-        return;
-    }
+    // Elementos da Interface
+    const loadingOverlay = document.getElementById('payment-loading');
+    const contentDiv = document.getElementById('payment-content');
     
-    if (!pendingBookingStr) {
-        alert("Nenhum agendamento encontrado.");
+    const gameNameEl = document.getElementById('checkout-game-name');
+    const dateTimeEl = document.getElementById('checkout-datetime');
+    const priceEl = document.getElementById('checkout-total-price');
+    const coverEl = document.getElementById('checkout-cover');
+    const confirmBtn = document.getElementById('confirm-payment-btn');
+    const statusText = document.getElementById('payment-status');
+
+    // Variável para armazenar preço real vindo do banco (Segurança)
+    let finalPrice = 0;
+
+    // 1. RECUPERAR DADOS DA SESSÃO (INTENÇÃO DE COMPRA)
+    const sessionData = sessionStorage.getItem('checkoutData');
+    
+    if (!sessionData) {
+        alert("Nenhum agendamento iniciado. Redirecionando para a home.");
         window.location.href = 'index.html';
         return;
     }
 
-    const loggedInUser = JSON.parse(userSession);
-    const bookingData = JSON.parse(pendingBookingStr);
+    const checkoutData = JSON.parse(sessionData);
 
-    // 2. Preencher Resumo na Tela
-    document.getElementById('summary-game-name').textContent = bookingData.gameName;
-    document.getElementById('summary-date').textContent = bookingData.date.split('-').reverse().join('/');
-    document.getElementById('summary-time').textContent = bookingData.time;
-    document.getElementById('summary-price').textContent = bookingData.price;
-    
-    const imgEl = document.getElementById('summary-img');
-    if(imgEl) imgEl.src = bookingData.coverImage || 'assets/images/logo.png';
-
-    // 3. Função para Finalizar o Agendamento
-    async function finalizeBooking(method) {
-        const btn = document.querySelector('button[type="submit"]') || document.getElementById('simulate-pix-btn');
-        const originalText = btn.textContent;
-        btn.textContent = "Processando...";
-        btn.disabled = true;
+    // 2. VERIFICAR AUTENTICAÇÃO E DADOS NO FIREBASE
+    auth.onAuthStateChanged(async (user) => {
+        if (!user) {
+            // Se perdeu o login no meio do caminho
+            alert("Sessão expirada. Faça login novamente.");
+            window.location.href = 'login.html';
+            return;
+        }
 
         try {
-            // A. Buscar o E-mail do Host (Baseado no hostId salvo anteriormente)
-            let hostEmail = "admin@playu.com"; // Fallback
-            
-            if (bookingData.hostId) {
-                const hostDoc = await db.collection('users').doc(bookingData.hostId).get();
-                if (hostDoc.exists) {
-                    hostEmail = hostDoc.data().email;
-                }
+            // 3. BUSCAR DADOS REAIS DO JOGO NO FIREBASE
+            // (Isso evita que alguém edite o sessionStorage para mudar o preço)
+            const doc = await db.collection('games').doc(checkoutData.gameId).get();
+
+            if (!doc.exists) {
+                alert("Erro: Jogo não encontrado no sistema.");
+                window.location.href = 'index.html';
+                return;
             }
 
-            // B. Salvar Agendamento na coleção 'bookings'
-            const finalBooking = {
-                gameId: bookingData.gameId,
-                gameName: bookingData.gameName,
-                hostId: bookingData.hostId,
-                userId: loggedInUser.username,
-                userName: loggedInUser.name,
-                userEmail: loggedInUser.email,
-                date: bookingData.date,
-                time: bookingData.time,
-                price: bookingData.price,
-                paymentMethod: method,
-                paymentStatus: 'paid',
-                status: 'confirmed',
-                bookingDate: firebase.firestore.FieldValue.serverTimestamp()
-            };
+            const gameRealData = doc.data();
+            finalPrice = parseFloat(gameRealData.price || 0);
 
-            await db.collection('bookings').add(finalBooking);
+            // 4. PREENCHER A TELA
+            gameNameEl.textContent = gameRealData.name;
+            coverEl.src = gameRealData.coverImage || 'assets/images/logo.png';
+            
+            // Formata Data
+            const dateParts = checkoutData.date.split('-'); // YYYY-MM-DD
+            const dateFormatted = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+            dateTimeEl.textContent = `${dateFormatted} às ${checkoutData.time}`;
 
-            // C. Disparar Email via Extensão (Escrevendo na coleção 'mail')
-            // A extensão lê este documento e envia o email automaticamente
-            await db.collection('mail').add({
-                to: hostEmail, // Envia para o Host
-                cc: loggedInUser.email, // Cópia para o Jogador (opcional)
-                message: {
-                    subject: `Nova Sessão Confirmada: ${bookingData.gameName}`,
-                    html: `
-                        <div style="font-family: Arial, sans-serif; color: #333;">
-                            <h2 style="color: #E94560;">Novo Agendamento Recebido!</h2>
-                            <p>Olá Host, você tem uma nova sessão confirmada.</p>
-                            <hr>
-                            <p><strong>Jogo:</strong> ${bookingData.gameName}</p>
-                            <p><strong>Jogador:</strong> ${loggedInUser.name} (${loggedInUser.email})</p>
-                            <p><strong>Data:</strong> ${bookingData.date.split('-').reverse().join('/')}</p>
-                            <p><strong>Horário:</strong> ${bookingData.time}</p>
-                            <p><strong>Valor:</strong> ${bookingData.price}</p>
-                            <hr>
-                            <p>Acesse seu painel para iniciar a sala.</p>
-                        </div>
-                    `
-                }
-            });
+            // Formata Preço
+            priceEl.textContent = finalPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-            console.log("Solicitação de email enviada para a fila.");
-
-            // D. Limpeza e Redirecionamento
-            sessionStorage.removeItem('pendingBooking');
-            sessionStorage.removeItem('redirectAfterLogin');
-
-            alert(`Pagamento aprovado!\n\nO agendamento foi confirmado e o e-mail enviado.`);
-            window.location.href = 'dashboard.html';
+            // 5. REMOVER LOADING E MOSTRAR CONTEÚDO
+            loadingOverlay.classList.add('hidden'); // classe do style.css que dá display:none
+            loadingOverlay.style.display = 'none'; // Garantia extra inline
+            contentDiv.classList.remove('hidden');
 
         } catch (error) {
-            console.error("Erro crítico:", error);
-            alert("Erro ao processar. Tente novamente.");
-            btn.textContent = originalText;
-            btn.disabled = false;
+            console.error("Erro ao carregar dados:", error);
+            alert("Erro de conexão com o servidor.");
         }
-    }
+    });
 
-    // 4. Event Listeners
-    const paymentForm = document.getElementById('payment-form');
-    if (paymentForm) {
-        paymentForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            finalizeBooking('Credit Card');
-        });
-    }
+    // 6. LÓGICA DO BOTÃO PAGAR
+    confirmBtn.onclick = async () => {
+        const user = auth.currentUser;
+        if (!user) return;
 
-    const pixBtn = document.getElementById('simulate-pix-btn');
-    if (pixBtn) {
-        pixBtn.addEventListener('click', () => {
-            finalizeBooking('PIX');
-        });
-    }
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = "Processando...";
+        statusText.textContent = "Validando pagamento...";
+
+        try {
+            // Simulação de delay de pagamento (Pix/Gateway)
+            await new Promise(r => setTimeout(r, 2000));
+
+            // CRIA O AGENDAMENTO FINAL NO BANCO
+            await db.collection('bookings').add({
+                gameId: checkoutData.gameId,
+                gameName: gameNameEl.textContent, // Pega o nome validado
+                userId: user.uid,
+                userName: user.displayName || user.email,
+                userEmail: user.email,
+                date: checkoutData.date,
+                time: checkoutData.time,
+                price: finalPrice, // Usa o preço validado
+                status: 'confirmed', 
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            statusText.textContent = "Pagamento aprovado!";
+            statusText.style.color = "#00ff88";
+
+            // Limpa a sessão
+            sessionStorage.removeItem('checkoutData');
+
+            alert("Sucesso! Seu jogo está agendado.");
+            window.location.href = 'minha-conta.html'; // Redireciona para dashboard do usuário
+
+        } catch (error) {
+            console.error(error);
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = "Pagar e Agendar";
+            statusText.textContent = "Erro ao processar. Tente novamente.";
+            statusText.style.color = "#ff4444";
+        }
+    };
 });
