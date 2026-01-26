@@ -1,23 +1,35 @@
 document.addEventListener('DOMContentLoaded', () => {
     console.log("👤 Dashboard do Jogador Iniciado...");
 
-    // Verifica Firebase
-    if (typeof firebase === 'undefined') return console.error("Firebase não carregado.");
+    // Verifica se o Firebase foi carregado corretamente
+    if (typeof firebase === 'undefined') {
+        console.error("Firebase SDK não encontrado.");
+        return;
+    }
+
+    // Aguarda o main.js inicializar o window.db e window.auth
+    // Caso o main.js demore, podemos tentar pegar direto do firebase global
+    const db = window.db || firebase.firestore();
+    const auth = window.auth || firebase.auth();
     
-    const db = firebase.firestore();
-    const auth = firebase.auth();
-    const bookingsContainer = document.getElementById('bookings-list-container');
-    const userGreeting = document.getElementById('user-greeting-name'); // Se houver elemento de "Olá, Fulano"
+    const bookingsContainer = document.getElementById('my-bookings-container');
+    const userGreeting = document.getElementById('user-greeting');
 
     // Verifica Autenticação
     auth.onAuthStateChanged(async (user) => {
         if (!user) {
+            // Se não estiver logado, manda pro login
             window.location.href = 'login.html';
             return;
         }
 
-        if(userGreeting) userGreeting.textContent = user.displayName ? user.displayName.split(' ')[0] : 'Jogador';
+        // Atualiza saudação
+        if(userGreeting) {
+            const firstName = user.displayName ? user.displayName.split(' ')[0] : 'Jogador';
+            userGreeting.textContent = `Olá, ${firstName}`;
+        }
 
+        // Carrega os agendamentos
         loadUserBookings(user.uid);
     });
 
@@ -26,14 +38,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // =================================================================
     async function loadUserBookings(userId) {
         if (!bookingsContainer) return;
+        
+        bookingsContainer.innerHTML = '<div class="loader"></div>';
 
         try {
-            // Busca agendamentos do usuário
-            // Ordena por data e hora (string YYYY-MM-DD funciona bem na ordenação)
+            // 1. Busca agendamentos APENAS filtrando pelo usuário
+            // Removemos o orderBy daqui para evitar erro de índice do Firestore
             const snapshot = await db.collection('bookings')
                 .where('userId', '==', userId)
-                .orderBy('date', 'desc') // Mais recentes/futuros primeiro
-                .orderBy('time', 'asc')
                 .get();
 
             bookingsContainer.innerHTML = '';
@@ -48,60 +60,94 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // Renderiza Cards
+            // 2. Converte para Array e Ordena no JavaScript
+            let bookings = [];
             snapshot.forEach(doc => {
-                const booking = doc.data();
-                createBookingCard(doc.id, booking);
+                bookings.push({ id: doc.id, ...doc.data() });
             });
 
-            // Inicia o "Relógio" que verifica a cada 30 segundos se libera o botão
+            // Ordena: Mais recentes/futuros primeiro
+            bookings.sort((a, b) => {
+                const dateA = new Date(`${a.date}T${a.time}`);
+                const dateB = new Date(`${b.date}T${b.time}`);
+                return dateB - dateA; // Decrescente
+            });
+
+            // 3. Renderiza os Cards
+            // Garante o grid layout
+            bookingsContainer.style.display = 'grid';
+            bookingsContainer.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
+            bookingsContainer.style.gap = '20px';
+
+            bookings.forEach(booking => {
+                createBookingCard(booking);
+            });
+
+            // Inicia o loop de verificação de horário (para liberar o botão)
             startLiveCheck();
 
         } catch (error) {
             console.error("Erro ao buscar agendamentos:", error);
-            bookingsContainer.innerHTML = '<p>Erro ao carregar seus jogos.</p>';
+            bookingsContainer.innerHTML = '<p style="color: #ff4444; text-align: center;">Erro ao carregar seus jogos. Tente recarregar a página.</p>';
         }
     }
 
     // =================================================================
     // CRIAR HTML DO CARD
     // =================================================================
-    async function createBookingCard(bookingId, data) {
-        // Tenta buscar a capa do jogo (se não tiver salvo no booking)
-        let coverImage = 'assets/images/logo.png';
-        
-        // Se já salvamos a capa no momento da compra (recomendado), usa ela.
-        // Se não, poderíamos buscar no 'games' collection, mas para ser rápido usaremos placeholder ou lógica simples.
-        // Vamos assumir que você ajustou o checkout para salvar 'cover' ou faremos uma busca lazy (opcional).
-        
+    function createBookingCard(data) {
+        // Formata data (YYYY-MM-DD -> DD/MM/YYYY)
         const dateParts = data.date.split('-');
         const dateFormatted = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
         
+        // Define imagem de capa (fallback se não tiver)
+        const coverUrl = data.cover || 'assets/images/logo.png';
+
         const card = document.createElement('div');
-        card.className = 'booking-card';
-        card.dataset.date = data.date; // Data ISO YYYY-MM-DD
-        card.dataset.time = data.time; // Hora HH:MM
-        card.dataset.id = bookingId;
+        card.className = 'booking-card'; // Classe CSS definida anteriormente
+        
+        // Dados para o timer
+        card.dataset.date = data.date; 
+        card.dataset.time = data.time; 
+        card.dataset.id = data.id;
+
+        // Estilos inline de backup
+        card.style.cssText = `
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.2s;
+        `;
+        
+        // Hover effect via JS events já que inline css não suporta hover pseudo-class facilmente
+        card.onmouseover = () => { card.style.transform = 'translateY(-5px)'; card.style.borderColor = 'var(--secondary-color)'; };
+        card.onmouseout = () => { card.style.transform = 'none'; card.style.borderColor = 'rgba(255, 255, 255, 0.1)'; };
 
         card.innerHTML = `
-            <div class="booking-card-header" style="background-image: url('${data.cover || 'assets/images/logo.png'}');">
-                <div class="booking-status-badge" style="background:${getStatusColor(data.status)}">
+            <div class="booking-card-header" style="height: 140px; background-image: url('${coverUrl}'); background-size: cover; background-position: center; position: relative;">
+                <div class="booking-status-badge" style="position:absolute; top:10px; right:10px; background:rgba(0,0,0,0.8); padding:4px 8px; border-radius:4px; font-size:0.75rem; font-weight:bold; color:${getStatusColor(data.status)}; border: 1px solid ${getStatusColor(data.status)}">
                     ${translateStatus(data.status)}
                 </div>
             </div>
-            <div class="booking-card-body">
-                <div class="booking-title">${data.gameName}</div>
+            <div class="booking-card-body" style="padding: 15px; flex: 1; display: flex; flex-direction: column;">
+                <div class="booking-title" style="font-size: 1.1rem; font-weight: bold; color: #fff; margin-bottom: 5px;">${data.gameName}</div>
                 
-                <div class="booking-info">
+                <div style="color: #aaa; font-size: 0.9rem; margin-bottom: 5px; display: flex; align-items: center; gap: 5px;">
                     <ion-icon name="calendar-outline"></ion-icon> ${dateFormatted}
                 </div>
-                <div class="booking-info">
+                <div style="color: #aaa; font-size: 0.9rem; margin-bottom: 10px; display: flex; align-items: center; gap: 5px;">
                     <ion-icon name="time-outline"></ion-icon> ${data.time}
                 </div>
                 
-                <div class="booking-timer-countdown" id="countdown-${bookingId}">Calculando...</div>
+                <div class="booking-timer-countdown" id="countdown-${data.id}" style="margin-top: auto; font-size: 0.85rem; color: var(--secondary-color); font-weight: bold; margin-bottom: 10px;">
+                    Calculando tempo...
+                </div>
                 
-                <button id="btn-${bookingId}" class="enter-room-btn" disabled onclick="enterRoom('${bookingId}')">
+                <button id="btn-${data.id}" class="enter-room-btn" disabled onclick="window.location.href='sala.html?bookingId=${data.id}'" 
+                        style="width: 100%; padding: 10px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; background: #333; color: #666; transition: 0.3s;">
                     <ion-icon name="lock-closed-outline"></ion-icon> Aguarde...
                 </button>
             </div>
@@ -109,68 +155,56 @@ document.addEventListener('DOMContentLoaded', () => {
 
         bookingsContainer.appendChild(card);
         
-        // Roda a verificação inicial para este card
+        // Atualiza status imediatamente
         updateCardStatus(card);
     }
 
     // =================================================================
-    // LÓGICA DE TEMPO E LIBERAÇÃO DO BOTÃO
+    // LÓGICA DE TEMPO (LIBERAÇÃO DO BOTÃO)
     // =================================================================
     function startLiveCheck() {
-        // Roda imediatamente
-        checkAllCards();
-        // Roda a cada 15 segundos
-        setInterval(checkAllCards, 15000);
-    }
-
-    function checkAllCards() {
-        document.querySelectorAll('.booking-card').forEach(card => updateCardStatus(card));
+        // Roda a cada 10 segundos
+        setInterval(() => {
+            document.querySelectorAll('.booking-card').forEach(card => updateCardStatus(card));
+        }, 10000);
     }
 
     function updateCardStatus(card) {
         const btn = card.querySelector('.enter-room-btn');
         const countdownEl = card.querySelector('.booking-timer-countdown');
-        const bookingId = card.dataset.id;
 
-        // Cria objeto Date da sessão
-        // data.date é "2026-01-26", data.time é "14:00"
-        const sessionDate = new Date(`${card.dataset.date}T${card.dataset.time}:00`);
+        // Cria data da sessão
+        const dateStr = card.dataset.date; // YYYY-MM-DD
+        const timeStr = card.dataset.time; // HH:MM
+        const sessionDate = new Date(`${dateStr}T${timeStr}:00`);
         const now = new Date();
 
-        // Diferença em milissegundos
+        // Diferença em minutos
         const diffMs = sessionDate - now;
         const diffMinutes = Math.floor(diffMs / 60000);
 
-        // REGRA DE NEGÓCIO:
-        // - Libera 10 minutos antes (diffMinutes <= 10)
-        // - Mantém liberado durante a sessão (diffMinutes negativo mas não muito antigo, ex: -120 min)
-        // - Bloqueia se já passou muito tempo (ex: -180 min, jogo acabou)
-
-        const TEN_MINUTES = 10;
-        const SESSION_DURATION = 120; // Assumindo sessão de 2h, botão some depois
-
-        if (diffMinutes > TEN_MINUTES) {
-            // Ainda falta muito
+        // Regra: Libera 10 min antes (diff <= 10) até 2h depois (diff > -120)
+        
+        if (diffMinutes > 10) {
+            // FUTURO (Falta mais de 10 min)
             btn.disabled = true;
-            btn.classList.remove('active');
+            btn.style.background = '#333';
+            btn.style.color = '#666';
+            btn.style.boxShadow = 'none';
             btn.innerHTML = '<ion-icon name="lock-closed-outline"></ion-icon> Em breve';
             
-            // Lógica de visualização do tempo
-            if (diffMinutes > 1440) {
-                const days = Math.floor(diffMinutes / 1440);
-                countdownEl.textContent = `Faltam ${days} dias`;
-            } else if (diffMinutes > 60) {
-                const hours = Math.floor(diffMinutes / 60);
-                countdownEl.textContent = `Faltam ${hours} horas`;
-            } else {
-                countdownEl.textContent = `Faltam ${diffMinutes} minutos`;
-            }
+            if (diffMinutes > 1440) countdownEl.textContent = `Faltam ${Math.floor(diffMinutes/1440)} dias`;
+            else if (diffMinutes > 60) countdownEl.textContent = `Faltam ${Math.floor(diffMinutes/60)} horas`;
+            else countdownEl.textContent = `Faltam ${diffMinutes} minutos`;
+            
             countdownEl.style.color = '#aaa';
 
-        } else if (diffMinutes <= TEN_MINUTES && diffMinutes > -SESSION_DURATION) {
-            // ESTÁ NA HORA! (Entre 10min antes e 2h depois)
+        } else if (diffMinutes <= 10 && diffMinutes > -120) {
+            // AGORA (Entre 10 min antes e 2h depois)
             btn.disabled = false;
-            btn.classList.add('active');
+            btn.style.background = '#00ff88';
+            btn.style.color = '#000';
+            btn.style.boxShadow = '0 0 15px rgba(0,255,136,0.5)';
             btn.innerHTML = 'ENTRAR NA SALA <ion-icon name="arrow-forward-outline"></ion-icon>';
             
             if (diffMinutes > 0) {
@@ -178,39 +212,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 countdownEl.style.color = '#00ff88';
             } else {
                 countdownEl.textContent = `AO VIVO AGORA!`;
-                countdownEl.style.color = '#ff0055'; // Vermelho "Live"
-                countdownEl.classList.add('pulse-text'); // Opcional: animação css
+                countdownEl.style.color = '#ff0055';
             }
 
         } else {
-            // Jogo muito antigo (Acabou)
+            // PASSADO (Mais de 2h depois)
             btn.disabled = true;
-            btn.classList.remove('active');
+            btn.style.background = '#333';
+            btn.style.color = '#666';
+            btn.style.boxShadow = 'none';
             btn.innerHTML = 'Finalizado';
+            
             countdownEl.textContent = 'Sessão encerrada';
             countdownEl.style.color = '#666';
         }
     }
 
-    // =================================================================
-    // HELPERS
-    // =================================================================
-    window.enterRoom = (bookingId) => {
-        // Redireciona para a sala
-        window.location.href = `sala.html?bookingId=${bookingId}`;
-    };
-
-    function getStatusColor(status) {
-        if(status === 'confirmed' || status === 'paid') return '#00ff88'; // Verde
-        if(status === 'pending') return '#ffbb00'; // Amarelo
-        if(status === 'cancelled') return '#ff4444'; // Vermelho
-        return '#666';
+    // Helpers
+    function getStatusColor(s) {
+        if(s === 'confirmed' || s === 'paid') return '#00ff88'; // Verde
+        if(s === 'pending') return '#ffbb00'; // Amarelo
+        if(s === 'cancelled') return '#ff4444'; // Vermelho
+        return '#aaa';
     }
 
-    function translateStatus(status) {
-        if(status === 'confirmed' || status === 'paid') return 'Confirmado';
-        if(status === 'pending') return 'Pendente';
-        if(status === 'cancelled') return 'Cancelado';
-        return status;
+    function translateStatus(s) {
+        if(s === 'confirmed' || s === 'paid') return 'Confirmado';
+        if(s === 'pending') return 'Pendente';
+        if(s === 'cancelled') return 'Cancelado';
+        return s;
     }
 });
