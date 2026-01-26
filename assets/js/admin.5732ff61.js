@@ -244,6 +244,36 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // =========================================================================
+    // CORREÇÃO: FECHAR MODAL DE SESSÕES
+    // =========================================================================
+    // Força o funcionamento dos botões de fechar especificamente para este modal
+    const sessionsModalObj = document.getElementById('game-sessions-modal');
+    
+    if (sessionsModalObj) {
+        // 1. Procura o botão "X" no topo (classe padrão close-overlay-btn)
+        const closeX = sessionsModalObj.querySelector('.close-overlay-btn');
+        if (closeX) {
+            closeX.onclick = () => sessionsModalObj.classList.add('hidden');
+        }
+
+        // 2. Procura qualquer botão no rodapé que diga "Fechar" ou "Sair"
+        const footerBtns = sessionsModalObj.querySelectorAll('.modal-footer button, button');
+        footerBtns.forEach(btn => {
+            // Verifica se é um botão de fechar (pelo texto ou classe)
+            if (btn.textContent.includes('Fechar') || btn.textContent.includes('Sair') || btn.classList.contains('close-modal-btn')) {
+                btn.onclick = () => sessionsModalObj.classList.add('hidden');
+            }
+        });
+
+        // 3. (Opcional) Fechar ao clicar fora do conteúdo (no fundo escuro)
+        sessionsModalObj.addEventListener('click', (e) => {
+            if (e.target === sessionsModalObj) {
+                sessionsModalObj.classList.add('hidden');
+            }
+        });
+    }
+
     const closeSess = () => sessionsModal.classList.add('hidden');
     if(document.getElementById('close-sessions-modal')) document.getElementById('close-sessions-modal').onclick = closeSess;
     if(document.getElementById('close-sessions-btn')) document.getElementById('close-sessions-btn').onclick = closeSess;
@@ -575,17 +605,54 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch(e) { console.error(e); }
     };
 
-    if(gameListContainer) {
+    // =========================================================================
+    // CORREÇÃO: EVENT LISTENER UNIFICADO (DELEGAÇÃO DE EVENTOS)
+    // =========================================================================
+    if (gameListContainer) {
         gameListContainer.addEventListener('click', (e) => {
+            // Usa .closest para pegar o botão mesmo se clicar no ícone ou texto dentro dele
             const editBtn = e.target.closest('.edit-game-trigger');
             const agendaBtn = e.target.closest('.schedule-game-trigger');
+            const sessionsBtn = e.target.closest('.sessions-game-trigger'); // O erro provavelmente estava aqui (falta de captura)
             const testBtn = e.target.closest('.test-room-trigger');
             const delBtn = e.target.closest('.delete-game-trigger');
 
-            if(editBtn) window.openGameModal(editBtn.dataset.id);
-            if(agendaBtn) window.openScheduleModal(agendaBtn.dataset.id);
-            if(testBtn) window.createFixedTestRoom(testBtn.dataset.id, testBtn.dataset.name);
-            if(delBtn) window.openDeleteConfirmModal(delBtn.dataset.id, delBtn.dataset.name);
+            // 1. Botão EDITAR
+            if (editBtn) {
+                e.preventDefault();
+                window.openGameModal(editBtn.dataset.id);
+            }
+
+            // 2. Botão AGENDA (Calendário)
+            if (agendaBtn) {
+                e.preventDefault();
+                console.log("📅 Abrindo agenda para:", agendaBtn.dataset.id); // Debug
+                window.openScheduleModal(agendaBtn.dataset.id);
+            }
+
+            // 3. Botão SESSÕES (Lista de bookings)
+            if (sessionsBtn) {
+                e.preventDefault();
+                console.log("📋 Abrindo sessões para:", sessionsBtn.dataset.id); // Debug
+                // Verifica se a função existe antes de chamar
+                if (typeof window.openGameSessionsModal === 'function') {
+                    window.openGameSessionsModal(sessionsBtn.dataset.id, sessionsBtn.dataset.name);
+                } else {
+                    console.error("Função openGameSessionsModal não encontrada!");
+                }
+            }
+
+            // 4. Botão TESTAR SALA
+            if (testBtn) {
+                e.preventDefault();
+                window.createFixedTestRoom(testBtn.dataset.id, testBtn.dataset.name);
+            }
+
+            // 5. Botão EXCLUIR
+            if (delBtn) {
+                e.preventDefault();
+                window.openDeleteConfirmModal(delBtn.dataset.id, delBtn.dataset.name);
+            }
         });
     }
 
