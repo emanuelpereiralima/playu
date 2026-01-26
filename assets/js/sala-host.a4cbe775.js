@@ -34,6 +34,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- VARIÁVEIS DE ESTADO ---
     let roomRef = null;
+    let currentFacingMode = 'user'; // 'user' = Frontal, 'environment' = Traseira
     let localStream = null;   // Stream atual (pode ser Webcam ou Vídeo)
     let cameraStream = null;  // Backup da Webcam original
     let pc = null;
@@ -120,6 +121,125 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (error) {
             console.error("Erro fatal:", error);
             alert("Erro ao iniciar sessão: " + error.message);
+        }
+    }
+
+    // =========================================================================
+    // 2. MÍDIA LOCAL, CONTROLES E TROCA DE CÂMERA
+    // =========================================================================
+    async function setupLocalMedia() {
+        try {
+            // Configuração inicial (Câmera Frontal por padrão)
+            const constraints = { 
+                video: { facingMode: currentFacingMode }, 
+                audio: true 
+            };
+            
+            localStream = await navigator.mediaDevices.getUserMedia(constraints);
+            cameraStream = localStream; 
+
+            if (localVideo) {
+                localVideo.srcObject = localStream;
+                localVideo.muted = true; // Host não ouve a si mesmo
+            }
+
+            // --- BOTÃO MICROFONE ---
+            if (micBtn) micBtn.onclick = () => {
+                const track = localStream.getAudioTracks()[0];
+                if (track) {
+                    track.enabled = !track.enabled;
+                    micBtn.innerHTML = track.enabled ? '<ion-icon name="mic-outline"></ion-icon>' : '<ion-icon name="mic-off-outline"></ion-icon>';
+                    micBtn.classList.toggle('active', !track.enabled);
+                }
+            };
+
+           if (camBtn) camBtn.onclick = () => {
+                const track = localStream.getVideoTracks()[0];
+                if (track) {
+                    track.enabled = !track.enabled;
+                    
+                    // --- LÓGICA DO GIF ---
+                    if (track.enabled) {
+                        // Câmera Ligada: Remove transparência (Esconde GIF)
+                        localVideo.classList.remove('camera-off');
+                        camBtn.innerHTML = '<ion-icon name="videocam-outline"></ion-icon>';
+                    } else {
+                        // Câmera Desligada: Adiciona transparência (Mostra GIF)
+                        localVideo.classList.add('camera-off');
+                        camBtn.innerHTML = '<ion-icon name="videocam-off-outline"></ion-icon>';
+                    }
+                    camBtn.classList.toggle('active', !track.enabled);
+                }
+            };
+
+            // --- NOVO: BOTÃO TROCAR CÂMERA (SWAP) ---
+            const switchBtn = document.getElementById('switch-cam-btn');
+            if (switchBtn) {
+                switchBtn.onclick = async () => {
+                    if (!localStream) return;
+
+                    // 1. Inverte o modo
+                    currentFacingMode = (currentFacingMode === 'user') ? 'environment' : 'user';
+                    console.log("🔄 Trocando câmera para:", currentFacingMode);
+
+                    // 2. Para as trilhas de vídeo atuais
+                    localStream.getVideoTracks().forEach(track => track.stop());
+
+                    try {
+                        // 3. Pede novo stream com o novo modo
+                        const newStream = await navigator.mediaDevices.getUserMedia({
+                            video: { facingMode: currentFacingMode },
+                            audio: true // Mantém áudio
+                        });
+
+                        // 4. Atualiza o vídeo local
+                        localVideo.srcObject = newStream;
+                        
+                        // 5. Atualiza as referências globais
+                        // Preserva o estado do microfone (se estava mudo, continua mudo)
+                        const oldAudioState = micBtn.classList.contains('active'); // ou verifique track.enabled
+                        
+                        localStream = newStream;
+                        cameraStream = newStream;
+
+                        // 6. Atualiza a conexão WebRTC (Envia nova imagem para o Jogador)
+                        if (pc) {
+                            const videoTrack = newStream.getVideoTracks()[0];
+                            const sender = pc.getSenders().find(s => s.track.kind === 'video');
+                            if (sender) {
+                                sender.replaceTrack(videoTrack);
+                            }
+                            
+                            // Garante que o áudio também seja atualizado no sender
+                            const audioTrack = newStream.getAudioTracks()[0];
+                            const audioSender = pc.getSenders().find(s => s.track.kind === 'audio');
+                            if(audioSender) {
+                                audioSender.replaceTrack(audioTrack);
+                            }
+                        }
+
+                        // Animação visual no ícone
+                        switchBtn.style.transform = "rotate(180deg)";
+                        setTimeout(() => switchBtn.style.transform = "rotate(0deg)", 300);
+
+                    } catch (err) {
+                        console.error("Erro ao trocar câmera:", err);
+                        alert("Não foi possível trocar de câmera.");
+                    }
+                };
+            }
+
+            // --- BOTÃO ENCERRAR ---
+            if (endBtn) endBtn.onclick = () => {
+                if (confirm("Encerrar sessão?")) {
+                    roomRef.update({ hostStatus: 'offline' });
+                    window.location.href = 'admin.html';
+                }
+            };
+
+        } catch (err) {
+            console.error("Erro mídia:", err);
+            alert("Erro ao acessar câmera/microfone. Verifique as permissões.");
         }
     }
 
@@ -382,101 +502,66 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
 // =========================================================================
-    // 5.1. FUNÇÕES DE VÍDEO NA CÂMERA (COM ÁUDIO)
+    // 5.1. FUNÇÕES DE VÍDEO NA CÂMERA (CORRIGIDO CORS)
     // =========================================================================
     async function playVideoInHostCamera(videoUrl) {
         if (!localVideo) return;
 
-        // 1. Backup da Câmera e Microfone originais
+        // 1. Salva a câmera original se ainda não tiver salvo
         if (!cameraStream && localStream) {
             cameraStream = localStream; 
         }
 
-        console.log("🎬 Trocando câmera/mic por vídeo:", videoUrl);
+        console.log("🎬 Substituindo câmera por vídeo:", videoUrl);
 
         try {
-            localVideo.crossOrigin = "anonymous"; // Importante para CORS
+            // CORREÇÃO DO ERRO SECURITY ERROR:
+            // Precisamos definir crossOrigin ANTES de definir o src
+            localVideo.crossOrigin = "anonymous"; 
             
             // 2. Define o vídeo no elemento local
-            localVideo.srcObject = null;
+            localVideo.srcObject = null; // Remove stream da webcam
             localVideo.src = videoUrl;
-            
-            // IMPORTANTE: Host precisa ouvir o vídeo, então desmutamos.
-            // (Use fones de ouvido para evitar que o som do vídeo entre no seu microfone físico se algo der errado)
-            localVideo.muted = false; 
+            localVideo.muted = true; // Host não ouve o áudio (evita eco), mas stream envia
             localVideo.loop = false;
             
             await localVideo.play();
 
-            // 3. Captura o stream do vídeo (Imagem + Áudio)
+            // 3. Captura o stream do elemento de vídeo
             let videoStream = null;
+            
+            // Tenta capturar de formas diferentes dependendo do navegador
             if (localVideo.captureStream) {
                 videoStream = localVideo.captureStream();
             } else if (localVideo.mozCaptureStream) {
                 videoStream = localVideo.mozCaptureStream();
+            } else {
+                console.error("Navegador não suporta captureStream");
+                restoreCamera();
+                return;
             }
 
+            // 4. Substitui a trilha de vídeo na conexão WebRTC
             if (videoStream && pc) {
-                const senders = pc.getSenders();
-
-                // 4. Substitui a trilha de VÍDEO
                 const videoTrack = videoStream.getVideoTracks()[0];
+                const senders = pc.getSenders();
                 const videoSender = senders.find(s => s.track && s.track.kind === 'video');
-                if (videoSender && videoTrack) {
+                
+                if (videoSender) {
                     videoSender.replaceTrack(videoTrack);
+                    console.log("📡 Vídeo sendo transmitido para os jogadores.");
                 }
 
-                // 5. Substitui a trilha de ÁUDIO (Para o jogador ouvir o som do vídeo, não o mic)
-                const audioTrack = videoStream.getAudioTracks()[0];
-                const audioSender = senders.find(s => s.track && s.track.kind === 'audio');
-                if (audioSender && audioTrack) {
-                    audioSender.replaceTrack(audioTrack);
-                    console.log("🔊 Áudio do microfone substituído pelo áudio do vídeo.");
-                }
-
-                // 6. Quando acabar, restaura tudo
+                // Quando o vídeo acabar, restaura a webcam automaticamente
                 localVideo.onended = () => {
                     console.log("Video acabou. Restaurando...");
                     restoreCamera();
                 };
             }
         } catch (e) {
-            console.error("Erro ao tocar vídeo:", e);
-            alert("Erro ao reproduzir mídia. Verifique permissões/CORS.");
+            console.error("Erro ao tocar vídeo na câmera:", e);
+            alert("Erro de permissão de vídeo (CORS). Verifique o console ou a configuração do Storage.");
             restoreCamera();
-        }
-    }
-
-    async function restoreCamera() {
-        if (!cameraStream || !localVideo) {
-            console.warn("Backup da câmera não encontrado.");
-            return;
-        }
-
-        console.log("📷 Restaurando Webcam e Microfone...");
-        
-        // 1. Restaura visual local
-        localVideo.src = "";
-        localVideo.srcObject = cameraStream;
-        localVideo.muted = true; // Muta localmente para evitar eco da própria voz
-        
-        if (pc) {
-            const senders = pc.getSenders();
-
-            // 2. Restaura trilha de VÍDEO da Webcam
-            const camVideoTrack = cameraStream.getVideoTracks()[0];
-            const videoSender = senders.find(s => s.track && s.track.kind === 'video');
-            if (videoSender && camVideoTrack) {
-                videoSender.replaceTrack(camVideoTrack);
-            }
-
-            // 3. Restaura trilha de ÁUDIO do Microfone
-            const camAudioTrack = cameraStream.getAudioTracks()[0];
-            const audioSender = senders.find(s => s.track && s.track.kind === 'audio');
-            if (audioSender && camAudioTrack) {
-                audioSender.replaceTrack(camAudioTrack);
-                console.log("🎤 Microfone restaurado.");
-            }
         }
     }
 
