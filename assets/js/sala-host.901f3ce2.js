@@ -34,34 +34,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- VARIÁVEIS DE ESTADO ---
     let roomRef = null;
-    let localStream = null;
+    let localStream = null;   // Stream atual (pode ser Webcam ou Vídeo)
+    let cameraStream = null;  // Backup da Webcam original
     let pc = null;
-// Configuração ICE (STUN e TURN)
+    
+    // Configuração ICE (STUN e TURN)
     const servers = {
         iceServers: [
-            // Servidores STUN do Google (Descobrem o IP)
             { urls: 'stun:stun1.l.google.com:19302' },
             { urls: 'stun:stun2.l.google.com:19302' },
-            
-            // Servidores TURN Gratuitos (OpenRelay) - Repassam o vídeo
-            // IMPORTANTE: Para produção, crie sua conta gratuita em metered.ca
-            {
-                urls: "turn:openrelay.metered.ca:80",
-                username: "openrelayproject",
-                credential: "openrelayproject"
-            },
-            {
-                urls: "turn:openrelay.metered.ca:443",
-                username: "openrelayproject",
-                credential: "openrelayproject"
-            },
-            {
-                urls: "turn:openrelay.metered.ca:443?transport=tcp",
-                username: "openrelayproject",
-                credential: "openrelayproject"
-            }
+            // TURN servers (exemplo Metered.ca)
+            { urls: "turn:openrelay.metered.ca:80", username: "openrelayproject", credential: "openrelayproject" },
+            { urls: "turn:openrelay.metered.ca:443", username: "openrelayproject", credential: "openrelayproject" },
+            { urls: "turn:openrelay.metered.ca:443?transport=tcp", username: "openrelayproject", credential: "openrelayproject" }
         ]
     };
+
     // Estado do Timer
     let timerInterval = null;
     let timerSeconds = 0;
@@ -98,10 +86,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             console.log("🔍 Conectando à sessão:", bookingId);
             
-            // Referência da Sala no Firestore
             roomRef = db.collection('sessions').doc(bookingId);
             
-            // Garante que o documento existe
             const sessionDoc = await roomRef.get();
             if (!sessionDoc.exists) {
                 await roomRef.set({ 
@@ -112,10 +98,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 await roomRef.update({ hostStatus: 'online' });
             }
 
-            // Lógica do Link de Convite (Modal Flutuante)
             setupInviteLink();
 
-            // Carrega dados do Jogo (Mídias, Decisões, Timer)
             const bookingDoc = await db.collection('bookings').doc(bookingId).get();
             if (bookingDoc.exists) {
                 const data = bookingDoc.data();
@@ -126,10 +110,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 console.warn("Agendamento não encontrado (Modo Teste ou Erro).");
             }
 
-            // Inicia Câmera e WebRTC
             await startHost();
 
-            // Remove Loading
             if (loadingOverlay) {
                 loadingOverlay.style.opacity = '0';
                 setTimeout(() => loadingOverlay.style.display = 'none', 500);
@@ -142,35 +124,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // =========================================================================
-    // 2. LÓGICA DE CONVITE (LINK FLUTUANTE)
+    // 2. LÓGICA DE CONVITE
     // =========================================================================
     function setupInviteLink() {
         if (!bookingId) return;
 
-        // 1. Gera o Link com guest=true
         const guestLink = `${window.location.origin}/sala.html?bookingId=${bookingId}&guest=true`;
         if (inviteInput) inviteInput.value = guestLink;
 
-        // 2. Configura Timer para fechar modal (2 minutos)
         if (inviteModal) {
-            inviteModal.classList.remove('hidden'); // Garante que abre
+            inviteModal.classList.remove('hidden');
             setTimeout(() => {
                 inviteModal.classList.add('hidden');
-            }, 120000); // 120.000 ms = 2 minutos
+            }, 120000);
         }
 
-        // 3. Botão para Reabrir (na Sidebar)
         if (reopenBtn) {
-            reopenBtn.onclick = () => {
-                inviteModal.classList.remove('hidden');
-            };
+            reopenBtn.onclick = () => inviteModal.classList.remove('hidden');
         }
 
-        // 4. Botão Copiar
         if (copyBtn && inviteInput) {
             copyBtn.onclick = () => {
                 inviteInput.select();
-                inviteInput.setSelectionRange(0, 99999); // Mobile
+                inviteInput.setSelectionRange(0, 99999);
                 navigator.clipboard.writeText(guestLink).then(() => {
                     const originalIcon = copyBtn.innerHTML;
                     copyBtn.classList.add('copied');
@@ -189,20 +165,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     // =========================================================================
     async function loadGameData(gameId) {
         try {
-            const doc = await db.collection('games').doc(gameId).get();
-            if (!doc.exists) return;
-
-            const game = doc.data();
-
-            // A. Renderizar Mídias (Assets)
-            renderAssets(game.sessionAssets || []);
-
-            // B. Renderizar Decisões (Enquetes)
-            renderDecisions(game.decisions || []);
-
-            // C. Configurar Timer
-            setupTimer(game);
-
+            // Usa onSnapshot para atualizações em tempo real (opcional, mas recomendado)
+            db.collection('games').doc(gameId).onSnapshot(doc => {
+                if (!doc.exists) return;
+                const game = doc.data();
+                renderAssets(game.sessionAssets || []);
+                renderDecisions(game.decisions || []);
+                // Configura timer apenas na primeira carga para não resetar
+                if (!timerRunning && timerSeconds === 0) setupTimer(game);
+            });
         } catch (e) {
             console.error("Erro ao carregar dados do jogo:", e);
         }
@@ -218,10 +189,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         timerConfig.font = settings.font || "'Orbitron', sans-serif";
         timerConfig.color = settings.color || '#ff0000';
         
-        // Define tempo inicial
         if (timerConfig.type === 'regressive') {
             const duration = parseInt(game.sessionDuration) || 60;
-            timerConfig.initialTime = duration * 60; // Converte para segundos
+            timerConfig.initialTime = duration * 60;
             timerSeconds = timerConfig.initialTime;
         } else {
             timerConfig.initialTime = 0;
@@ -270,7 +240,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 timerSeconds++;
             } else {
                 if (timerSeconds > 0) timerSeconds--;
-                else stopTimer(); // Acabou o tempo
+                else stopTimer();
             }
             updateTimerDisplay();
             syncTimerToFirebase();
@@ -291,7 +261,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         syncTimerToFirebase();
     }
 
-    // Função Global para Ajuste Rápido (+1m, -5m)
     window.adjustTimer = (minutes) => {
         timerSeconds += (minutes * 60);
         if (timerSeconds < 0) timerSeconds = 0;
@@ -310,7 +279,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Envia estado para o banco (para o jogador ver)
     function syncTimerToFirebase() {
         if (!roomRef) return;
         roomRef.update({
@@ -323,17 +291,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                 color: timerConfig.color,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             }
-        }).catch(err => console.log("Skip sync frame"));
+        }).catch(err => {});
     }
 
-    // Listeners do Timer
     if (startBtn) startBtn.onclick = startTimer;
     if (pauseBtn) pauseBtn.onclick = stopTimer;
     if (resetBtn) resetBtn.onclick = resetTimer;
 
 
     // =========================================================================
-    // 5. RENDERIZAÇÃO DE MÍDIAS (ASSETS)
+    // 5. RENDERIZAÇÃO DE MÍDIAS (ASSETS) COM VÍDEO NA CÂMERA
     // =========================================================================
     function renderAssets(assets) {
         if (!assetsList) return;
@@ -364,20 +331,33 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <div style="flex:1; overflow:hidden;">
                     <div style="font-size:0.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${asset.name}</div>
                 </div>
-                <ion-icon name="send-outline"></ion-icon>
+                ${asset.type === 'video' ? '<ion-icon name="play-circle-outline" title="Tocar na Câmera"></ion-icon>' : '<ion-icon name="send-outline"></ion-icon>'}
             `;
 
             btn.onclick = () => {
+                // Envia para a tela do jogador (pop-up ou background)
                 sendMediaToPlayer(asset, btn);
+
+                // SE FOR VÍDEO, TOCA NA CÂMERA DO HOST
+                if (asset.type === 'video') {
+                    playVideoInHostCamera(asset.url);
+                }
             };
             assetsList.appendChild(btn);
         });
+
+        // Botão para restaurar a câmera (aparece sempre no final da lista)
+        const stopBtn = document.createElement('button');
+        stopBtn.className = 'submit-btn small-btn danger-btn';
+        stopBtn.style.cssText = "width: 100%; margin-top: 15px; background: #333; border: 1px solid #444;";
+        stopBtn.innerHTML = '<ion-icon name="stop-circle-outline"></ion-icon> Restaurar Webcam';
+        stopBtn.onclick = restoreCamera;
+        assetsList.appendChild(stopBtn);
     }
 
     async function sendMediaToPlayer(asset, btnElement) {
         if (!roomRef) return;
         
-        // Feedback Visual
         btnElement.style.background = 'rgba(0, 255, 136, 0.2)';
         btnElement.style.borderColor = '#00ff88';
 
@@ -395,16 +375,138 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error("Erro ao enviar mídia:", e);
         }
 
-        // Remove destaque
         setTimeout(() => {
             btnElement.style.background = 'rgba(255,255,255,0.05)';
             btnElement.style.borderColor = 'transparent';
         }, 500);
     }
 
+// =========================================================================
+    // 5.1. FUNÇÕES DE VÍDEO NA CÂMERA (COM ÁUDIO)
+    // =========================================================================
+    async function playVideoInHostCamera(videoUrl) {
+        if (!localVideo) return;
+
+        // 1. Backup da Câmera e Microfone originais
+        if (!cameraStream && localStream) {
+            cameraStream = localStream; 
+        }
+
+        console.log("🎬 Trocando câmera/mic por vídeo:", videoUrl);
+
+        try {
+            localVideo.crossOrigin = "anonymous"; // Importante para CORS
+            
+            // 2. Define o vídeo no elemento local
+            localVideo.srcObject = null;
+            localVideo.src = videoUrl;
+            
+            // IMPORTANTE: Host precisa ouvir o vídeo, então desmutamos.
+            // (Use fones de ouvido para evitar que o som do vídeo entre no seu microfone físico se algo der errado)
+            localVideo.muted = false; 
+            localVideo.loop = false;
+            
+            await localVideo.play();
+
+            // 3. Captura o stream do vídeo (Imagem + Áudio)
+            let videoStream = null;
+            if (localVideo.captureStream) {
+                videoStream = localVideo.captureStream();
+            } else if (localVideo.mozCaptureStream) {
+                videoStream = localVideo.mozCaptureStream();
+            }
+
+            if (videoStream && pc) {
+                const senders = pc.getSenders();
+
+                // 4. Substitui a trilha de VÍDEO
+                const videoTrack = videoStream.getVideoTracks()[0];
+                const videoSender = senders.find(s => s.track && s.track.kind === 'video');
+                if (videoSender && videoTrack) {
+                    videoSender.replaceTrack(videoTrack);
+                }
+
+                // 5. Substitui a trilha de ÁUDIO (Para o jogador ouvir o som do vídeo, não o mic)
+                const audioTrack = videoStream.getAudioTracks()[0];
+                const audioSender = senders.find(s => s.track && s.track.kind === 'audio');
+                if (audioSender && audioTrack) {
+                    audioSender.replaceTrack(audioTrack);
+                    console.log("🔊 Áudio do microfone substituído pelo áudio do vídeo.");
+                }
+
+                // 6. Quando acabar, restaura tudo
+                localVideo.onended = () => {
+                    console.log("Video acabou. Restaurando...");
+                    restoreCamera();
+                };
+            }
+        } catch (e) {
+            console.error("Erro ao tocar vídeo:", e);
+            alert("Erro ao reproduzir mídia. Verifique permissões/CORS.");
+            restoreCamera();
+        }
+    }
+
+    async function restoreCamera() {
+        if (!cameraStream || !localVideo) {
+            console.warn("Backup da câmera não encontrado.");
+            return;
+        }
+
+        console.log("📷 Restaurando Webcam e Microfone...");
+        
+        // 1. Restaura visual local
+        localVideo.src = "";
+        localVideo.srcObject = cameraStream;
+        localVideo.muted = true; // Muta localmente para evitar eco da própria voz
+        
+        if (pc) {
+            const senders = pc.getSenders();
+
+            // 2. Restaura trilha de VÍDEO da Webcam
+            const camVideoTrack = cameraStream.getVideoTracks()[0];
+            const videoSender = senders.find(s => s.track && s.track.kind === 'video');
+            if (videoSender && camVideoTrack) {
+                videoSender.replaceTrack(camVideoTrack);
+            }
+
+            // 3. Restaura trilha de ÁUDIO do Microfone
+            const camAudioTrack = cameraStream.getAudioTracks()[0];
+            const audioSender = senders.find(s => s.track && s.track.kind === 'audio');
+            if (audioSender && camAudioTrack) {
+                audioSender.replaceTrack(camAudioTrack);
+                console.log("🎤 Microfone restaurado.");
+            }
+        }
+    }
+
+    async function restoreCamera() {
+        if (!cameraStream || !localVideo) {
+            console.warn("Nenhum backup de câmera encontrado.");
+            return;
+        }
+
+        console.log("📷 Restaurando Webcam...");
+        
+        // Volta o srcObject para a câmera
+        localVideo.src = "";
+        localVideo.srcObject = cameraStream;
+        
+        // Substitui a trilha WebRTC de volta para a câmera
+        if (pc) {
+            const videoTrack = cameraStream.getVideoTracks()[0];
+            const senders = pc.getSenders();
+            const videoSender = senders.find(s => s.track && s.track.kind === 'video');
+            
+            if (videoSender) {
+                videoSender.replaceTrack(videoTrack);
+            }
+        }
+    }
+
 
     // =========================================================================
-    // 6. RENDERIZAÇÃO DE DECISÕES (ENQUETES)
+    // 6. RENDERIZAÇÃO DE DECISÕES
     // =========================================================================
     function renderDecisions(decisions) {
         if (!decisionsList) return;
@@ -461,7 +563,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.log("Decisão enviada:", decision.question);
         } catch (e) {
             console.error("Erro ao enviar decisão:", e);
-            alert("Erro ao enviar decisão.");
         }
 
         setTimeout(() => {
@@ -469,7 +570,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }, 500);
     }
 
-    // Função Global para limpar a decisão da tela do jogador
     window.clearPlayerDecision = async () => {
         if(!roomRef) return;
         try {
@@ -487,13 +587,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         pc = new RTCPeerConnection(servers);
 
         try {
-            // Tenta pegar vídeo e áudio
             localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
             
-            // Mostra no elemento de vídeo local
+            // Salva backup da câmera para poder restaurar depois do vídeo
+            cameraStream = localStream; 
+
             if (localVideo) localVideo.srcObject = localStream;
             
-            // Adiciona as tracks na conexão Peer
             localStream.getTracks().forEach(track => {
                 pc.addTrack(track, localStream);
             });
@@ -505,15 +605,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             alert("Aviso: Não foi possível acessar a câmera ou microfone. Verifique as permissões do navegador.");
         }
 
-        // Quando receber vídeo do Jogador Remoto
         pc.ontrack = (event) => {
-            console.log("📡 Stream remoto recebido!");
             if (event.streams && event.streams[0]) {
                 if (remoteVideo) remoteVideo.srcObject = event.streams[0];
             }
         };
 
-        // ICE Candidates
         const offerCandidates = roomRef.collection('offerCandidates');
         const answerCandidates = roomRef.collection('answerCandidates');
 
@@ -523,18 +620,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         };
 
-        // Criar Oferta
         const offerDescription = await pc.createOffer();
         await pc.setLocalDescription(offerDescription);
 
-        const offer = {
-            sdp: offerDescription.sdp,
-            type: offerDescription.type,
-        };
+        await roomRef.set({ 
+            offer: {
+                sdp: offerDescription.sdp,
+                type: offerDescription.type,
+            } 
+        }, { merge: true });
 
-        await roomRef.set({ offer }, { merge: true });
-
-        // Escuta a Resposta
         roomRef.onSnapshot((snapshot) => {
             const data = snapshot.data();
             if (!pc.currentRemoteDescription && data?.answer) {
@@ -543,7 +638,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        // Escuta Candidatos ICE
         answerCandidates.onSnapshot((snapshot) => {
             snapshot.docChanges().forEach((change) => {
                 if (change.type === 'added') {
@@ -577,10 +671,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const track = localStream.getVideoTracks()[0];
                 if (track) {
                     track.enabled = !track.enabled;
-                    camBtn.classList.toggle('active', !track.enabled);
-                    camBtn.innerHTML = track.enabled 
-                        ? '<ion-icon name="videocam-outline"></ion-icon>' 
-                        : '<ion-icon name="videocam-off-outline"></ion-icon>';
+                    
+                    // --- LÓGICA DO GIF ---
+                    if (track.enabled) {
+                        // Câmera ligada: Mostra vídeo, esconde GIF (video opacidade 1)
+                        localVideo.classList.remove('camera-off');
+                        camBtn.innerHTML = '<ion-icon name="videocam-outline"></ion-icon>';
+                        camBtn.classList.remove('active'); // Remove estilo de desativado
+                    } else {
+                        // Câmera desligada: Esconde vídeo, revela GIF (video opacidade 0)
+                        localVideo.classList.add('camera-off');
+                        camBtn.innerHTML = '<ion-icon name="videocam-off-outline"></ion-icon>';
+                        camBtn.classList.add('active'); // Adiciona estilo de desativado
+                    }
                 }
             };
         }

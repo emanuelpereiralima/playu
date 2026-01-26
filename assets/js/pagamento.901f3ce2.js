@@ -24,9 +24,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Variáveis de Estado
     let finalPrice = 0;
-    let gameRealData = null; // Para armazenar dados frescos do banco
+    let gameRealData = null;
 
-    // 1. RECUPERAR DADOS DA SESSÃO (INTENÇÃO DE COMPRA)
+    // 1. RECUPERAR DADOS DA SESSÃO
     const sessionData = sessionStorage.getItem('checkoutData');
     
     if (!sessionData) {
@@ -37,10 +37,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const checkoutData = JSON.parse(sessionData);
 
-    // 2. VERIFICAR AUTENTICAÇÃO E DADOS NO FIREBASE
+    // 2. VERIFICAR AUTENTICAÇÃO E DADOS
     auth.onAuthStateChanged(async (user) => {
         if (!user) {
-            // Se perdeu o login no meio do caminho, salva a intenção e manda logar
             sessionStorage.setItem('pendingCheckout', sessionData);
             alert("Sessão expirada. Faça login novamente.");
             window.location.href = 'login.html';
@@ -48,8 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            // 3. BUSCAR DADOS REAIS DO JOGO NO FIREBASE (SEGURANÇA)
-            // Impede manipulação de preço via console do navegador
+            // 3. BUSCAR DADOS REAIS DO JOGO
             const doc = await db.collection('games').doc(checkoutData.gameId).get();
 
             if (!doc.exists) {
@@ -59,39 +57,33 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             gameRealData = doc.data();
-            
-            // Define o preço real (Fallback para 0 se não definido)
             finalPrice = parseFloat(gameRealData.price || 0);
 
-            // 4. PREENCHER A TELA COM DADOS VALIDADOS
+            // 4. PREENCHER TELA
             if(gameNameEl) gameNameEl.textContent = gameRealData.name;
             
-            // Capa: Prioriza a do banco, senão usa a da sessão, senão placeholder
             const coverUrl = gameRealData.coverImage || checkoutData.cover || 'assets/images/logo.png';
             if(coverEl) coverEl.src = coverUrl;
             
-            // Formata Data (YYYY-MM-DD -> DD/MM/YYYY)
             const dateParts = checkoutData.date.split('-'); 
             const dateFormatted = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
             if(dateTimeEl) dateTimeEl.textContent = `${dateFormatted} às ${checkoutData.time}`;
 
-            // Formata Preço
             if(priceEl) priceEl.textContent = finalPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-            // 5. REMOVER LOADING E MOSTRAR CONTEÚDO
             if(loadingOverlay) {
                 loadingOverlay.classList.add('hidden');
-                loadingOverlay.style.display = 'none'; // Garantia extra
+                loadingOverlay.style.display = 'none';
             }
             if(contentDiv) contentDiv.classList.remove('hidden');
 
         } catch (error) {
             console.error("Erro ao carregar dados:", error);
-            alert("Erro de conexão com o servidor. Tente recarregar.");
+            alert("Erro de conexão. Tente recarregar.");
         }
     });
 
-    // 6. LÓGICA DO BOTÃO PAGAR
+    // 5. PROCESSAR PAGAMENTO
     if(confirmBtn) confirmBtn.onclick = async () => {
         const user = auth.currentUser;
         if (!user) return;
@@ -101,17 +93,23 @@ document.addEventListener('DOMContentLoaded', () => {
         if(statusText) statusText.textContent = "Validando pagamento...";
 
         try {
-            // SIMULAÇÃO DE PAGAMENTO (Aqui entraria Stripe/MercadoPago)
-            await new Promise(r => setTimeout(r, 1500)); // Delay simulado
+            // Simulação de delay de pagamento
+            await new Promise(r => setTimeout(r, 1500)); 
 
-            // Garante URL da capa para salvar no histórico
             const finalCover = gameRealData.coverImage || 'assets/images/logo.png';
 
-            // CRIA O AGENDAMENTO FINAL NO BANCO
+            // --- LÓGICA DE LINK ÚNICO ---
+            // Gera um ID determinístico para a sala: session_JOGO_DATA_HORA
+            const uniqueSessionId = `session_${checkoutData.gameId}_${checkoutData.date}_${checkoutData.time.replace(':', '-')}`;
+
+            // Salva no Banco
             await db.collection('bookings').add({
                 gameId: checkoutData.gameId,
-                gameName: gameRealData.name, // Nome validado
-                cover: finalCover, // IMPORTANTE: Salva a capa para o Dashboard
+                gameName: gameRealData.name,
+                cover: finalCover,
+                
+                // ID DA SALA COMPARTILHADA
+                sessionId: uniqueSessionId,
                 
                 userId: user.uid,
                 userName: user.displayName || user.email,
@@ -120,8 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 date: checkoutData.date,
                 time: checkoutData.time,
                 price: finalPrice,
-                
-                status: 'confirmed', // Em produção: 'pending' até webhook de pagto
+                status: 'confirmed',
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
 
@@ -130,12 +127,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 statusText.style.color = "#00ff88";
             }
 
-            // Limpa a sessão
             sessionStorage.removeItem('checkoutData');
             sessionStorage.removeItem('pendingCheckout');
 
             alert("Sucesso! Seu jogo está agendado.");
-            // Redireciona para dashboard (usando o nome correto do arquivo)
             window.location.href = 'dashboard.html'; 
 
         } catch (error) {

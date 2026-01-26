@@ -767,6 +767,106 @@ img, video {
     100% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0); }
 }
 
+/* --- EFEITO BACKGROUND GIF --- */
+.video-wrapper {
+    position: relative; /* Garante que os absolutes fiquem aqui dentro */
+    background: #000;   /* Fundo preto padrão */
+    overflow: hidden;
+}
+
+/* O GIF fica sempre rodando no fundo */
+.video-bg-gif {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Cobre toda a área */
+    z-index: 0;        /* Fica atrás */
+    opacity: 0.5;      /* Um pouco escuro para não ofuscar */
+}
+
+/* O Vídeo fica na frente */
+.video-wrapper video {
+    position: relative;
+    z-index: 1;        /* Fica na frente */
+    transition: opacity 0.3s ease; /* Suaviza o liga/desliga */
+    background: transparent; /* Importante */
+}
+
+/* Classe que será adicionada via JS quando desligar a câmera */
+.video-wrapper video.camera-off {
+    opacity: 0; /* Torna o vídeo invisível, revelando o GIF atrás */
+}
+
+/* --- CAMADAS (LAYERS) --- */
+
+/* 1. Container Principal dos Controles do Jogador */
+.player-controls-bar, .host-controls-bar {
+    position: relative; /* Ou fixed/absolute dependendo do seu layout */
+    z-index: 2000 !important; /* MÁXIMA PRIORIDADE: Fica acima de tudo */
+}
+
+/* 2. Overlay de Mídia (Vídeo/Áudio que o Host manda) */
+#media-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #000; /* Fundo preto imersivo */
+    z-index: 1000; /* Fica acima do jogo, mas ABAIXO dos controles */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+}
+
+/* Garante que o vídeo do overlay ocupe o espaço mas não cubra os botões se eles forem fixos */
+#media-overlay video, 
+#media-overlay img {
+    max-width: 100%;
+    max-height: 100%;
+    pointer-events: none; /* O jogador não clica no vídeo */
+}
+
+/* 3. GIF e Vídeo da Câmera (Ficam no fundo) */
+.video-wrapper {
+    z-index: 10;
+}
+
+/* --- OVERLAY DE MÍDIA FULLSCREEN --- */
+#media-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;  /* Largura total da viewport */
+    height: 100vh; /* Altura total da viewport */
+    background: #000;
+    z-index: 1000; /* Fica atrás dos controles (que são 2000) */
+    overflow: hidden;
+    padding: 0 !important; /* Garante que não haja espaçamento */
+    margin: 0 !important;
+}
+
+/* O vídeo/imagem se comporta como um background */
+#media-overlay video, 
+#media-overlay img {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 100%;
+    
+    /* MÁGICA DO FULLSCREEN: */
+    object-fit: cover; /* Cobre tudo (pode cortar bordas para preencher) */
+    /* Se preferir ver o video todo com faixas pretas, mude para: object-fit: contain; */
+    
+    object-position: center; /* Centraliza o conteúdo */
+    transform: translate(-50%, -50%); /* Garante centralização exata */
+    pointer-events: none; /* Jogador não clica */
+}
+
 .player-decision-overlay {
     position: absolute;
     bottom: 140px;

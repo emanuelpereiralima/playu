@@ -58,6 +58,55 @@ document.addEventListener('DOMContentLoaded', () => {
         if(auth) auth.signOut(); 
         window.location.href = 'index.html';
     });
+    
+    document.body.addEventListener('click', (e) => {
+        // Encontra o botão clicado, mesmo se o clique for no ícone <ion-icon>
+        const btn = e.target.closest('button'); 
+        
+        if (!btn) return; // Se não for botão, ignora
+
+        // 1. AÇÃO: AGENDA
+        if (btn.classList.contains('schedule-game-trigger')) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log("📅 Botão Agenda clicado. ID:", btn.dataset.id);
+            
+            if (typeof window.openScheduleModal === 'function') {
+                window.openScheduleModal(btn.dataset.id);
+            } else {
+                console.error("Erro: Função window.openScheduleModal não encontrada.");
+            }
+        }
+
+        // 2. AÇÃO: SESSÕES
+        if (btn.classList.contains('sessions-game-trigger')) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log("📋 Botão Sessões clicado. ID:", btn.dataset.id);
+            
+            if (typeof window.openGameSessionsModal === 'function') {
+                window.openGameSessionsModal(btn.dataset.id, btn.dataset.name);
+            } else {
+                console.error("Erro: Função window.openGameSessionsModal não encontrada.");
+            }
+        }
+
+        // 3. AÇÃO: EXCLUIR
+        if (btn.classList.contains('delete-game-trigger')) {
+            e.preventDefault();
+            if (typeof window.openDeleteConfirmModal === 'function') {
+                window.openDeleteConfirmModal(btn.dataset.id, btn.dataset.name);
+            }
+        }
+
+        // 4. AÇÃO: EDITAR (Garantia extra)
+        if (btn.classList.contains('edit-game-trigger')) {
+            e.preventDefault();
+            if (typeof window.openGameModal === 'function') {
+                window.openGameModal(btn.dataset.id);
+            }
+        }
+    });
 
     // --- NAVEGAÇÃO ENTRE ABAS DO DASHBOARD ---
     window.switchAdminTab = (tabId) => {
@@ -244,10 +293,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // =========================================================================
-    // CORREÇÃO: FECHAR MODAL DE SESSÕES
-    // =========================================================================
-    // Força o funcionamento dos botões de fechar especificamente para este modal
     const sessionsModalObj = document.getElementById('game-sessions-modal');
     
     if (sessionsModalObj) {
