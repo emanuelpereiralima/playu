@@ -261,23 +261,151 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    function renderAssets(list) {
-        if(!assetsList) return;
+// =========================================================================
+    // 5. RENDERIZAÇÃO DE MÍDIAS (AGRUPADA COM VOLUME)
+    // =========================================================================
+    
+    // Objeto para armazenar os volumes atuais de cada seção (0 a 1)
+    const sectionVolumes = {
+        video: 1.0,
+        audio: 1.0,
+        image: 1.0
+    };
+
+    function renderAssets(assets) {
+        if (!assetsList) return;
         assetsList.innerHTML = '';
-        list.forEach(a => {
-            const b = document.createElement('div');
-            b.className = 'asset-btn';
-            b.style.cssText = 'background:rgba(255,255,255,0.1); padding:10px; margin-bottom:5px; cursor:pointer; display:flex; align-items:center; gap:10px;';
-            let icon = a.type === 'video' ? 'videocam' : (a.type === 'audio' ? 'musical-notes' : 'image');
-            b.innerHTML = `<ion-icon name="${icon}-outline" style="color:#00ff88;"></ion-icon><div style="flex:1;">${a.name}</div><ion-icon name="play-circle"></ion-icon>`;
-            
-            b.onclick = () => {
-                roomRef.update({ liveMedia: { ...a, timestamp: firebase.firestore.FieldValue.serverTimestamp() } });
-                if(a.type === 'video') playVideoInHostCamera(a.url);
-            };
-            assetsList.appendChild(b);
+
+        if (!assets || assets.length === 0) {
+            assetsList.innerHTML = '<p style="padding:10px; color:#aaa; font-size:0.9rem;">Nenhuma mídia cadastrada.</p>';
+            return;
+        }
+
+        // 1. Agrupar Assets
+        const groups = {
+            video: { label: 'Vídeos', icon: 'videocam', items: [] },
+            audio: { label: 'Áudios', icon: 'musical-notes', items: [] },
+            image: { label: 'Imagens', icon: 'image', items: [] }
+        };
+
+        assets.forEach(asset => {
+            if (groups[asset.type]) {
+                groups[asset.type].items.push(asset);
+            }
         });
-        const rBtn = document.createElement('button'); rBtn.className='submit-btn small-btn danger-btn'; rBtn.innerText='Restaurar Webcam'; rBtn.onclick=restoreCamera; assetsList.appendChild(rBtn);
+
+        // 2. Renderizar Seções
+        Object.keys(groups).forEach(type => {
+            const group = groups[type];
+            if (group.items.length === 0) return; // Pula se vazio
+
+            // Container da Seção
+            const section = document.createElement('div');
+            section.className = 'assets-section';
+
+            // Cabeçalho (Título + Volume)
+            // Nota: Imagens não precisam de volume, então escondemos o slider se for imagem
+            const showVolume = type !== 'image';
+            
+            const headerHTML = `
+                <div class="section-header">
+                    <div class="section-title">
+                        <ion-icon name="${group.icon}-outline"></ion-icon> ${group.label}
+                    </div>
+                    ${showVolume ? `
+                    <div class="volume-control-area">
+                        <ion-icon name="volume-medium-outline" style="font-size:1rem; color:#aaa;"></ion-icon>
+                        <input type="range" min="0" max="100" value="100" class="volume-slider" data-type="${type}">
+                    </div>
+                    ` : ''}
+                </div>
+                <div class="section-items-container"></div>
+            `;
+            
+            section.innerHTML = headerHTML;
+            assetsList.appendChild(section);
+
+            // Listener do Slider
+            if (showVolume) {
+                const slider = section.querySelector('.volume-slider');
+                slider.oninput = (e) => {
+                    const vol = e.target.value / 100; // Converte 0-100 para 0.0-1.0
+                    sectionVolumes[type] = vol;
+                    // Opcional: Atualizar ícone de volume dinamicamente
+                };
+            }
+
+            // 3. Renderizar Itens dentro da Seção
+            const container = section.querySelector('.section-items-container');
+            
+            group.items.forEach(asset => {
+                const btn = document.createElement('div');
+                btn.className = 'asset-btn';
+                btn.style.cssText = `
+                    display: flex; align-items: center; gap: 10px;
+                    background: rgba(255,255,255,0.05); padding: 8px 10px;
+                    border-radius: 4px; cursor: pointer; margin-bottom: 5px;
+                    border: 1px solid transparent; transition: 0.2s;
+                `;
+                
+                btn.innerHTML = `
+                    <div style="flex:1; overflow:hidden;">
+                        <div style="font-size:0.85rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${asset.name}</div>
+                    </div>
+                    <ion-icon name="${type === 'video' ? 'play-circle-outline' : 'send-outline'}" style="color:#00ff88;"></ion-icon>
+                `;
+
+                btn.onclick = () => {
+                    // Pega o volume atual desta seção
+                    const currentVol = sectionVolumes[type] !== undefined ? sectionVolumes[type] : 1.0;
+                    
+                    sendMediaToPlayer(asset, btn, currentVol);
+
+                    // Se for vídeo, toca no Host também (com o volume ajustado)
+                    if (asset.type === 'video') {
+                        playVideoInHostCamera(asset.url);
+                        if(localVideo) localVideo.volume = currentVol; // Ajusta volume local também
+                    }
+                };
+                container.appendChild(btn);
+            });
+        });
+
+        // Botão Restaurar Webcam (sempre no final)
+        const stopBtn = document.createElement('button');
+        stopBtn.className = 'submit-btn small-btn danger-btn';
+        stopBtn.style.cssText = "width: 100%; margin-top: 15px; background: #333; border: 1px solid #444;";
+        stopBtn.innerHTML = '<ion-icon name="stop-circle-outline"></ion-icon> Restaurar Webcam';
+        stopBtn.onclick = restoreCamera;
+        assetsList.appendChild(stopBtn);
+    }
+
+    async function sendMediaToPlayer(asset, btnElement, volume = 1.0) {
+        if (!roomRef) return;
+        
+        // Feedback visual
+        btnElement.style.background = 'rgba(0, 255, 136, 0.2)';
+        btnElement.style.borderColor = '#00ff88';
+
+        try {
+            await roomRef.update({
+                liveMedia: {
+                    type: asset.type,
+                    url: asset.url,
+                    name: asset.name,
+                    volume: volume, // ENVIA O VOLUME PARA O JOGADOR
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                }
+            });
+            console.log(`Mídia enviada: ${asset.name} (Vol: ${volume})`);
+        } catch (e) {
+            console.error("Erro ao enviar mídia:", e);
+        }
+
+        setTimeout(() => {
+            btnElement.style.background = 'rgba(255,255,255,0.05)';
+            btnElement.style.borderColor = 'transparent';
+        }, 500);
     }
 
     async function playVideoInHostCamera(url) {
