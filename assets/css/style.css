@@ -1039,6 +1039,69 @@ img, video {
     opacity: 0;
 }
 
+/* --- FEEDBACK DE DECISÃO (HOST) --- */
+#host-decision-feedback {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1500; /* Acima do vídeo */
+    background: rgba(0, 0, 0, 0.85);
+    border: 2px solid var(--secondary-color);
+    border-radius: 10px;
+    padding: 15px 25px;
+    text-align: center;
+    min-width: 300px;
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+    animation: slideDown 0.3s ease-out;
+}
+
+#host-decision-feedback.hidden {
+    display: none;
+}
+
+.feedback-label {
+    font-size: 0.75rem;
+    color: #aaa;
+    letter-spacing: 1px;
+    font-weight: bold;
+    display: block;
+    margin-bottom: 5px;
+}
+
+#feedback-question {
+    color: #fff;
+    margin: 5px 0 10px 0;
+    font-size: 1.1rem;
+}
+
+#feedback-timer {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.5rem;
+    color: var(--secondary-color);
+    margin-bottom: 10px;
+}
+
+.cancel-decision-btn {
+    background: transparent;
+    border: 1px solid #ff4444;
+    color: #ff4444;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+
+.cancel-decision-btn:hover {
+    background: #ff4444;
+    color: white;
+}
+
+@keyframes slideDown {
+    from { top: -50px; opacity: 0; }
+    to { top: 20px; opacity: 1; }
+}
+
 .player-decision-overlay {
     position: absolute;
     bottom: 140px;
@@ -2264,6 +2327,100 @@ aspect-ratio: 1;
     align-items: center;
     justify-content: center;
     color: #fff;
+}
+
+/* --- TIMER DO JOGADOR (FIXO E VISÍVEL) --- */
+#player-timer-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.85); /* Fundo escuro forte */
+    padding: 15px 25px;
+    border-radius: 12px;
+    border: 2px solid #00ff88; /* Borda verde neon */
+    z-index: 9999 !important; /* MÁXIMA PRIORIDADE VISUAL */
+    text-align: center;
+    box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+}
+
+/* --- SEÇÕES DE ASSETS COM VOLUME --- */
+.assets-section {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 15px;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.section-title {
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.volume-control-area {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.volume-slider {
+    width: 80px;
+    height: 4px;
+    background: #444;
+    border-radius: 2px;
+    outline: none;
+}
+
+.volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--secondary-color); /* #00ff88 */
+    cursor: pointer;
+}
+
+#timer-label {
+    font-size: 0.7rem;
+    color: #aaa;
+    letter-spacing: 1px;
+    margin-bottom: 5px;
+    font-family: sans-serif;
+}
+
+#player-timer-display {
+    font-family: 'Orbitron', sans-serif, monospace; /* Fonte digital */
+    font-size: 2rem;
+    color: #fff;
+    line-height: 1;
+    font-weight: bold;
+}
+
+/* Responsividade para Celular */
+@media (max-width: 600px) {
+    #player-timer-container {
+        top: 10px;
+        right: 50%;
+        transform: translateX(50%); /* Centraliza no topo */
+        padding: 10px 20px;
+        width: auto;
+    }
+    #player-timer-display {
+        font-size: 1.5rem;
+    }
 }
 
 .crud-item-info {
