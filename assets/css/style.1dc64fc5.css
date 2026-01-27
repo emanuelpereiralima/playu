@@ -788,10 +788,16 @@ img, video {
 
 /* O Vídeo fica na frente */
 .video-wrapper video {
-    position: relative;
-    z-index: 1;        /* Fica na frente */
-    transition: opacity 0.3s ease; /* Suaviza o liga/desliga */
-    background: transparent; /* Importante */
+width: 100%;
+    height: 100%;
+    
+    /* A MÁGICA: 'cover' estica o vídeo para cobrir tudo, cortando o excesso */
+    object-fit: cover !important; 
+    
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
 }
 
 /* Classe que será adicionada via JS quando desligar a câmera */
