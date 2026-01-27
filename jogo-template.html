@@ -16,7 +16,7 @@
             </a>
             <div class="nav__right-group">
                 <div class="nav__controls">
-                    <a href="/index.html" class="control-btn">
+                    <a href="/index.html" class="submit-btn small-btn danger-btn">
                         <ion-icon name="arrow-back-outline"></ion-icon> Voltar ao Início
                     </a>
                     <div class="theme-switcher">
@@ -55,15 +55,13 @@
             </div>
 
             <div id="game-trailer-section" class="trailer-container hidden" style="margin-top: 4rem;">
-                <h2 class="section-title" style="text-align:center; border:none;">Trailer Oficial</h2>
+                <h2 class="section-title" style="text-align:center; border:none;">Teaser</h2>
                 <div class="trailer-wrapper" id="trailer-embed-wrapper"></div>
             </div>
 
             <hr class="form-divider" style="margin: 4rem 0;">
-
-            <div class="booking-section">
-    <h2>Agende sua Sessão</h2>
-    
+<h2>Agende sua Sessão</h2>
+    <div class="booking-section">
     <div class="calendar-wrapper">
         <div id="game-calendar-container">
             <div class="calendar-header">
@@ -77,20 +75,18 @@
             <div id="calendar-grid" class="calendar-grid"></div>
         </div>
 
+        <div id="time-selection-container" class="hidden" style="margin-top: 20px;">
+        <h4>Horários para <span id="selected-date-display" style="color:var(--secondary-color)"></span></h4>
+        <div id="time-slots-grid" class="time-slots-grid"></div>
+        </div>
+        
         <div id="calendar-overlay" class="calendar-paused-overlay hidden">
             <ion-icon name="calendar-outline" style="font-size: 3rem; color: #666; margin-bottom: 1rem;"></ion-icon>
             <h3>Agenda Indisponível</h3>
             <p>Não há sessões disponíveis para este jogo no momento. Fique de olho nas próximas datas!</p>
         </div>
     </div>
-    
-    <div id="time-selection-container" class="hidden" style="margin-top: 20px;">
-        <h4>Horários para <span id="selected-date-display" style="color:var(--secondary-color)"></span></h4>
-        <div id="time-slots-grid" class="time-slots-grid"></div>
-    </div>
 </div>
-
-        </div>
 
         <div class="container hidden" id="game-not-found" style="text-align: center; margin-top: 8rem;">
             <h1>Jogo não encontrado</h1>
