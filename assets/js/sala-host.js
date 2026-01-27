@@ -133,56 +133,124 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // =========================================================================
-    // 2. MÍDIA LOCAL
+// =========================================================================
+    // 2. MÍDIA LOCAL, CONTROLES E TROCA DE CÂMERA
     // =========================================================================
     async function setupLocalMedia() {
         try {
-            const constraints = { video: { facingMode: currentFacingMode }, audio: true };
+            // CONFIGURAÇÃO DE RESOLUÇÃO 16:9
+            const constraints = { 
+                video: { 
+                    facingMode: currentFacingMode,
+                    width: { ideal: 1280 },  // Tenta HD
+                    height: { ideal: 720 },  // Tenta HD
+                    aspectRatio: { ideal: 1.7777777778 } // Força proporção 16:9
+                }, 
+                audio: true 
+            };
+            
             localStream = await navigator.mediaDevices.getUserMedia(constraints);
             cameraStream = localStream; 
 
             if (localVideo) {
                 localVideo.srcObject = localStream;
-                localVideo.muted = true;
+                localVideo.muted = true; // Host não ouve a si mesmo
             }
 
-            // Configura Botões (Mic, Cam, Swap)
-            if(micBtn) micBtn.onclick = () => toggleTrack('audio');
-            if(camBtn) camBtn.onclick = () => toggleTrack('video');
-            
-            if(switchBtn) switchBtn.onclick = async () => {
-                if(!localStream) return;
-                currentFacingMode = (currentFacingMode === 'user') ? 'environment' : 'user';
-                localStream.getVideoTracks().forEach(t => t.stop());
-                
-                const newStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: currentFacingMode }, audio: true });
-                localVideo.srcObject = newStream;
-                
-                // Mantém estado do áudio
-                const audioTrack = newStream.getAudioTracks()[0];
-                if(audioTrack) audioTrack.enabled = !micBtn.classList.contains('active'); // Lógica inversa da classe active (active = mudo/off)
-
-                localStream = newStream;
-                cameraStream = newStream;
-                
-                // Atualiza conexão
-                if(pc) {
-                    const senders = pc.getSenders();
-                    const vSender = senders.find(s => s.track.kind === 'video');
-                    const aSender = senders.find(s => s.track.kind === 'audio');
-                    if(vSender) vSender.replaceTrack(newStream.getVideoTracks()[0]);
-                    if(aSender && audioTrack) aSender.replaceTrack(audioTrack);
+            // --- BOTÃO MICROFONE ---
+            if (micBtn) micBtn.onclick = () => {
+                const track = localStream.getAudioTracks()[0];
+                if (track) {
+                    track.enabled = !track.enabled;
+                    micBtn.innerHTML = track.enabled ? '<ion-icon name="mic-outline"></ion-icon>' : '<ion-icon name="mic-off-outline"></ion-icon>';
+                    micBtn.classList.toggle('active', !track.enabled);
                 }
             };
 
-            if(endBtn) endBtn.onclick = () => {
-                if(confirm("Encerrar?")) {
+            // --- BOTÃO CÂMERA (COM GIF) ---
+            if (camBtn) camBtn.onclick = () => {
+                const track = localStream.getVideoTracks()[0];
+                if (track) {
+                    track.enabled = !track.enabled;
+                    
+                    if (track.enabled) {
+                        localVideo.classList.remove('camera-off');
+                        camBtn.innerHTML = '<ion-icon name="videocam-outline"></ion-icon>';
+                    } else {
+                        localVideo.classList.add('camera-off');
+                        camBtn.innerHTML = '<ion-icon name="videocam-off-outline"></ion-icon>';
+                    }
+                    camBtn.classList.toggle('active', !track.enabled);
+                }
+            };
+
+            // --- BOTÃO TROCAR CÂMERA (SWAP) ---
+            if (switchBtn) {
+                switchBtn.onclick = async () => {
+                    if (!localStream) return;
+
+                    currentFacingMode = (currentFacingMode === 'user') ? 'environment' : 'user';
+                    
+                    // Para a trilha atual
+                    localStream.getVideoTracks().forEach(track => track.stop());
+
+                    try {
+                        // Solicita nova câmera mantendo 16:9
+                        const newConstraints = {
+                            video: { 
+                                facingMode: currentFacingMode,
+                                width: { ideal: 1980 },
+                                height: { ideal: 1080 },
+                                aspectRatio: { ideal: 1.7777777778 }
+                            },
+                            audio: true
+                        };
+
+                        const newStream = await navigator.mediaDevices.getUserMedia(newConstraints);
+
+                        localVideo.srcObject = newStream;
+                        
+                        // Mantém estado do áudio (Mudo/Ativo)
+                        const oldAudioState = !micBtn.classList.contains('active'); 
+                        newStream.getAudioTracks()[0].enabled = oldAudioState;
+
+                        localStream = newStream;
+                        cameraStream = newStream;
+
+                        // Atualiza WebRTC
+                        if (pc) {
+                            const videoTrack = newStream.getVideoTracks()[0];
+                            const sender = pc.getSenders().find(s => s.track.kind === 'video');
+                            if (sender) sender.replaceTrack(videoTrack);
+                            
+                            const audioTrack = newStream.getAudioTracks()[0];
+                            const audioSender = pc.getSenders().find(s => s.track.kind === 'audio');
+                            if (audioSender) audioSender.replaceTrack(audioTrack);
+                        }
+
+                        // Animação
+                        switchBtn.style.transform = "rotate(180deg)";
+                        setTimeout(() => switchBtn.style.transform = "rotate(0deg)", 300);
+
+                    } catch (err) {
+                        console.error("Erro switch cam:", err);
+                        alert("Não foi possível trocar de câmera.");
+                    }
+                };
+            }
+
+            // --- BOTÃO ENCERRAR ---
+            if (endBtn) endBtn.onclick = () => {
+                if (confirm("Encerrar sessão?")) {
                     roomRef.update({ hostStatus: 'offline' });
                     window.location.href = 'admin.html';
                 }
             };
-        } catch (e) { console.error("Erro mídia:", e); }
+
+        } catch (err) {
+            console.error("Erro mídia:", err);
+            alert("Erro ao acessar câmera/microfone. Verifique permissões.");
+        }
     }
 
     function toggleTrack(kind) {

@@ -317,7 +317,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             content.muted = false;
             content.setAttribute('playsinline', ''); 
             content.setAttribute('webkit-playsinline', '');
-            
+            content.volume = (media.volume !== undefined) ? media.volume : 1.0;
             content.onended = () => modal.remove();
             
             content.play().catch(e => {
