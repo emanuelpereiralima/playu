@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sala do Host - PlayU</title>
     
-    <link rel="stylesheet" href="assets/css/style.a4cbe775.css">
+    <link rel="stylesheet" href="assets/css/style.c4acd2e5.css">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
     
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
@@ -17,7 +17,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
 
     <script src="assets/js/firebase-config.js"></script>
-    <script src="assets/js/main.a4cbe775.js"></script>
+    <script src="assets/js/main.c4acd2e5.js"></script>
 </head>
 <body class="host-room-body">
 
@@ -39,6 +39,15 @@
                 <video id="host-remote-video" autoplay playsinline></video>
                 <div class="video-label">Jogador</div>
             </div>
+            
+            <div id="host-decision-feedback" class="hidden">
+                <div class="feedback-content">
+                    <span class="feedback-label">DECISÃO EM ANDAMENTO</span>
+                    <h3 id="feedback-question">Pergunta aqui?</h3>
+                    <div id="feedback-timer">30s</div>
+                    <button onclick="window.clearPlayerDecision()" class="cancel-decision-btn">Cancelar Agora</button>
+                </div>
+            </div>
 
             <div class="host-controls-bar">
                 <button id="host-mic-btn" class="control-btn" title="Microfone">
@@ -57,6 +66,7 @@
                     <ion-icon name="call-outline"></ion-icon>
                 </button>
             </div>
+            
         </div>
 
         <div class="host-sidebar">
@@ -156,6 +166,6 @@
         }
     </script>
 
-    <script src="assets/js/sala-host.a4cbe775.js"></script>
+    <script src="assets/js/sala-host.c4acd2e5.js"></script>
 </body>
 </html>

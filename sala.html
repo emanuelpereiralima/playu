@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sala de Jogo - PlayU</title>
     
-    <link rel="stylesheet" href="assets/css/style.a4cbe775.css">
+    <link rel="stylesheet" href="assets/css/style.c4acd2e5.css">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
     
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
@@ -16,7 +16,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     
     <script src="assets/js/firebase-config.js"></script>
-    <script src="assets/js/main.a4cbe775.js"></script>
+    <script src="assets/js/main.c4acd2e5.js"></script>
 </head>
 <body class="player-room-body">
 
@@ -32,8 +32,9 @@
                 <img src="assets/images/GIF Play.U.gif" class="video-bg-gif" alt="Aguardando...">
 
 
-        <div id="player-timer" class="player-timer-overlay">00:00</div>
-
+        <div id="player-timer-container">
+            <div id="player-timer-display">00:00</div>
+        </div>
         <div id="player-media-overlay" class="player-media-overlay">
             <button class="close-media-btn" onclick="closeMedia()">&times;</button>
             <div id="media-content-wrapper">
@@ -55,7 +56,7 @@
         </div>
     </div>
 
-    <script src="assets/js/sala.a4cbe775.js"></script>
+    <script src="assets/js/sala.c4acd2e5.js"></script>
 
 </body>
 </html>
