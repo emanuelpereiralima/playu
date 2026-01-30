@@ -107,6 +107,55 @@ document.addEventListener('DOMContentLoaded', async () => {
         if(dom.desc) dom.desc.textContent = gameData.fullDescription || gameData.shortDescription || '';
         if(dom.tags && gameData.tags) dom.tags.textContent = Array.isArray(gameData.tags) ? gameData.tags.join(' • ') : gameData.tags;
 
+        const status = gameData.status || 'available';
+
+        if (status === 'paused') {
+            // Pega o elemento pai do grid (o container principal do calendário)
+            const calendarWrapper = dom.calendarGrid ? dom.calendarGrid.parentNode : null;
+
+            if (calendarWrapper) {
+                // Garante que o pai tenha posição relativa para o filho absoluto funcionar
+                calendarWrapper.style.position = 'relative'; 
+                calendarWrapper.style.overflow = 'hidden'; // Garante bordas arredondadas
+
+                // Cria o Overlay
+                const overlay = document.createElement('div');
+                overlay.style.cssText = `
+                    position: absolute;
+                    top: 0; left: 0;
+                    width: 100%; height: 100%;
+                    background: rgba(0, 0, 0, 0.85); /* Fundo escuro transparente */
+                    backdrop-filter: blur(4px); /* Efeito de desfoque no fundo */
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 50;
+                    border-radius: 15px;
+                `;
+
+                overlay.innerHTML = `
+                    <ion-icon name="construct-outline" style="font-size: 3.5rem; color: #ffbb00; margin-bottom: 15px;"></ion-icon>
+                    <h3 style="font-family: 'Orbitron', sans-serif; color: #fff; margin-bottom: 10px; font-size: 1.5rem; text-transform: uppercase;">Jogo Pausado</h3>
+                    <p style="color: #ccc; text-align: center; max-width: 80%; line-height: 1.4;">
+                        Este jogo está temporariamente indisponível para novos agendamentos.<br>
+                        <span style="font-size: 0.85rem; color: #777; margin-top: 10px; display: block;">Tente novamente mais tarde.</span>
+                    </p>
+                `;
+
+                // Adiciona o overlay POR CIMA do calendário
+                calendarWrapper.appendChild(overlay);
+
+                // Desabilita visualmente os botões de navegação do mês
+                if(dom.prevMonthBtn) dom.prevMonthBtn.style.opacity = '0';
+                if(dom.nextMonthBtn) dom.nextMonthBtn.style.opacity = '0';
+                
+                // Adiciona badge no título
+                if(dom.title) {
+                    dom.title.innerHTML += ` <span style="font-size: 0.5em; vertical-align: middle; background: #ffbb00; color: #000; padding: 2px 8px; border-radius: 4px; margin-left: 10px;">PAUSADO</span>`;
+                }
+            }}
+
         if (gameData.galleryImages?.length > 0 && dom.carouselSection) {
             dom.carouselSection.classList.remove('hidden');
             if(dom.carouselTrack) {

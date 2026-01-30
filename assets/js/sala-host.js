@@ -445,27 +445,159 @@ document.addEventListener('DOMContentLoaded', async () => {
     if(resetBtn) resetBtn.onclick = () => { stopTimer(); timerSeconds=initialTimer; updateTimerDisplay(); syncTimer(); };
     function stopTimer() { timerRunning=false; clearInterval(timerInterval); syncTimer(); }
 
+    
+    // =================================================================
+    // 6. GESTÃO DE DECISÕES (TIMER, VOTOS E RESULTADO)
+    // =================================================================
+    let decisionTimerInterval = null;
+    let decisionTimeLeft = 0;
+    let currentDecisionId = null;
+
     function renderDecisions(list) {
         decisionsList.innerHTML = '';
-        list.forEach(d => {
+        list.forEach((d, index) => {
             const el = document.createElement('div'); el.className='decision-card';
-            el.innerHTML = `<b>${d.question}</b>`;
-            el.onclick = () => roomRef.update({ activeDecision: { ...d, timestamp: firebase.firestore.FieldValue.serverTimestamp() }});
+            el.innerHTML = `
+                <div style="display:flex; justify-content:space-between;">
+                    <b>${d.question}</b>
+                    <small>${d.time || 30}s</small>
+                </div>`;
+            
+            // Ao clicar, inicia a decisão
+            el.onclick = () => startDecision(d, index);
             decisionsList.appendChild(el);
         });
     }
-    window.clearPlayerDecision = () => roomRef.update({ activeDecision: null });
 
-    function listenToActiveDecision() {
-        roomRef.onSnapshot(doc => {
-            const d = doc.data();
-            if(d?.activeDecision && decisionFeedback) {
-                decisionFeedback.classList.remove('hidden');
-                document.getElementById('feedback-question').innerText = d.activeDecision.question;
-            } else if(decisionFeedback) {
-                decisionFeedback.classList.add('hidden');
+    async function startDecision(decisionData, index) {
+        if(decisionTimerInterval) clearInterval(decisionTimerInterval);
+        
+        const duration = parseInt(decisionData.time) || 30; // Tempo padrão 30s
+        decisionTimeLeft = duration;
+        currentDecisionId = `dec_${Date.now()}`; // ID único para esta rodada
+
+        // 1. Limpa votos anteriores
+        const voteRef = roomRef.collection('decision_votes');
+        const oldVotes = await voteRef.get();
+        const batch = db.batch();
+        oldVotes.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
+
+        // 2. Envia Decisão para a Sala (Estado: ATIVO)
+        await roomRef.update({ 
+            activeDecision: {
+                id: currentDecisionId,
+                question: decisionData.question,
+                options: decisionData.options,
+                endTime: Date.now() + (duration * 1000), // Prazo final exato
+                status: 'active',
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
             }
         });
+
+        // 3. Atualiza Feedback Visual no Host
+        if(decisionFeedback) {
+            decisionFeedback.classList.remove('hidden');
+            feedbackQuestion.innerText = `EM VOTAÇÃO: ${decisionData.question}`;
+            document.getElementById('feedback-timer').innerText = `${duration}s`;
+        }
+
+        // 4. Inicia Monitoramento (Timer + Votos)
+        monitorDecision(decisionData);
+    }
+
+    function monitorDecision(decisionData) {
+        // A. Timer Local
+        decisionTimerInterval = setInterval(async () => {
+            decisionTimeLeft--;
+            
+            // Atualiza UI Host
+            const timerDisplay = document.getElementById('feedback-timer');
+            if(timerDisplay) timerDisplay.innerText = `${decisionTimeLeft}s`;
+
+            // Verifica Fim do Tempo
+            if (decisionTimeLeft <= 0) {
+                finishDecision(decisionData);
+            }
+        }, 1000);
+
+        // B. Monitorar Votos em Tempo Real
+        const unsubscribe = roomRef.collection('decision_votes')
+            .where('decisionId', '==', currentDecisionId)
+            .onSnapshot(async snapshot => {
+                // Conta quantos jogadores estão online (aproximado)
+                // Se quiser precisão, use a coleção 'participants' que criamos antes
+                const participantsSnap = await roomRef.collection('participants').get();
+                const totalPlayers = participantsSnap.size || 1; // Fallback 1
+                
+                const currentVotes = snapshot.size;
+
+                // Se todos votaram, encerra imediatamente
+                if (currentVotes > 0 && currentVotes >= totalPlayers) {
+                    finishDecision(decisionData);
+                    unsubscribe(); // Para de ouvir
+                }
+            });
+    }
+
+    async function finishDecision(decisionData) {
+        clearInterval(decisionTimerInterval);
+        
+        console.log("🛑 Encerrando votação...");
+
+        // 1. Contar Votos
+        const votesSnap = await roomRef.collection('decision_votes')
+            .where('decisionId', '==', currentDecisionId)
+            .get();
+
+        const counts = {};
+        decisionData.options.forEach(opt => counts[opt] = 0); // Zera contadores
+
+        votesSnap.forEach(doc => {
+            const vote = doc.data().option;
+            if (counts[vote] !== undefined) counts[vote]++;
+        });
+
+        // 2. Determinar Vencedor
+        let winner = "Empate";
+        let maxVotes = -1;
+        
+        Object.entries(counts).forEach(([opt, count]) => {
+            if (count > maxVotes) {
+                maxVotes = count;
+                winner = opt;
+            } else if (count === maxVotes) {
+                winner = "Empate"; // Lógica simples de empate
+            }
+        });
+
+        // 3. Atualizar Sala com Resultado
+        await roomRef.update({
+            activeDecision: {
+                ...decisionData,
+                status: 'finished',
+                winner: winner,
+                votes: counts
+            }
+        });
+
+        // 4. Feedback Auditivo (Host)
+        speakResult(winner);
+
+        // 5. Esconde painel de controle após 5s
+        setTimeout(() => {
+            if(decisionFeedback) decisionFeedback.classList.add('hidden');
+            window.clearPlayerDecision(); // Limpa tela
+        }, 8000);
+    }
+
+    function speakResult(text) {
+        if ('speechSynthesis' in window) {
+            const msg = new SpeechSynthesisUtterance();
+            msg.text = text === "Empate" ? "A votação terminou em empate." : `A opção escolhida foi: ${text}`;
+            msg.lang = 'pt-BR';
+            window.speechSynthesis.speak(msg);
+        }
     }
 
     function setupInviteLink(id) {

@@ -39,6 +39,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let pc = null;
     let lastMediaTimestamp = 0;
     let lastDecisionTimestamp = 0;
+    let localDecisionInterval = null;
     
     const connectionTime = Date.now();
 
@@ -267,10 +268,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (!doc.exists) return;
             const data = doc.data();
 
-            // Timer
+            // ... (Lógica de Timer e Mídia mantém igual) ...
             if (data.timer) updateTimer(data.timer);
-
-            // Mídia (Trava de Tempo)
             if (data.liveMedia && data.liveMedia.timestamp) {
                 const eventTime = data.liveMedia.timestamp.toMillis();
                 if (eventTime > connectionTime && eventTime !== lastMediaTimestamp) {
@@ -279,20 +278,138 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
 
-            // Decisão
-            if (data.activeDecision && data.activeDecision.timestamp) {
-                const dt = data.activeDecision.timestamp.toMillis();
-                if (dt > connectionTime && dt !== lastDecisionTimestamp) {
-                    lastDecisionTimestamp = dt;
-                    showDecision(data.activeDecision);
+            // --- LÓGICA DE DECISÃO ---
+            if (data.activeDecision) {
+                const d = data.activeDecision;
+                
+                // 1. Nova Decisão Ativa
+                if (d.status === 'active') {
+                    // Verifica se é uma decisão nova pelo ID ou Timestamp
+                    const dt = d.timestamp ? d.timestamp.toMillis() : 0;
+                    if (dt > lastDecisionTimestamp) {
+                        lastDecisionTimestamp = dt;
+                        showDecisionUI(d);
+                    }
+                } 
+                // 2. Decisão Finalizada (Mostrar Resultado)
+                else if (d.status === 'finished') {
+                    showResultUI(d);
                 }
             } else {
-                if (data.activeDecision === null) {
-                    const c = document.getElementById('decision-container');
-                    if (c) c.classList.add('hidden');
-                }
+                // Se null, limpa tudo
+                const c = document.getElementById('decision-container');
+                const r = document.getElementById('decision-result');
+                if (c) c.classList.add('hidden');
+                if (r) r.remove();
+                if (localDecisionInterval) clearInterval(localDecisionInterval);
             }
         });
+    }
+
+    // =========================================================================
+    // UI DE VOTAÇÃO (COM TIMER VISUAL)
+    // =========================================================================
+    function showDecisionUI(decision) {
+        // Limpa resultados anteriores
+        const oldRes = document.getElementById('decision-result');
+        if(oldRes) oldRes.remove();
+
+        let container = document.getElementById('decision-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'decision-container';
+            container.style.cssText = "position:fixed; bottom:100px; left:50%; transform:translateX(-50%); z-index:2500; width:90%; max-width:500px;";
+            document.body.appendChild(container);
+        }
+        
+        const buttonsHtml = decision.options.map(opt => 
+            `<button class="submit-btn" style="flex:1; margin:5px;" onclick="sendVote('${decision.id}', '${opt.replace(/'/g, "\\'")}')">${opt}</button>`
+        ).join('');
+
+        container.innerHTML = `
+            <div style="background:rgba(0,0,0,0.9); padding:20px; border-radius:10px; border:2px solid #00ff88; text-align:center; box-shadow:0 0 20px rgba(0,255,136,0.2);">
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                    <span style="color:#aaa;">Votação</span>
+                    <span id="player-decision-timer" style="color:#00ff88; font-weight:bold;">--s</span>
+                </div>
+                <h3 style="color:#fff; margin-bottom:15px; font-family:'Orbitron', sans-serif;">${decision.question}</h3>
+                <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+                    ${buttonsHtml}
+                </div>
+            </div>
+        `;
+        container.classList.remove('hidden');
+
+        // Timer Local do Jogador (Apenas Visual)
+        if(localDecisionInterval) clearInterval(localDecisionInterval);
+        
+        const updatePlayerTimer = () => {
+            const now = Date.now();
+            const left = Math.max(0, Math.ceil((decision.endTime - now) / 1000));
+            const timerEl = document.getElementById('player-decision-timer');
+            if(timerEl) timerEl.textContent = `${left}s`;
+            if(left <= 0) clearInterval(localDecisionInterval);
+        };
+        
+        localDecisionInterval = setInterval(updatePlayerTimer, 1000);
+        updatePlayerTimer(); // Roda imediatamente
+    }
+
+    // Função Global para Enviar Voto
+    window.sendVote = async (decisionId, option) => {
+        const container = document.getElementById('decision-container');
+        if(container) container.innerHTML = `<div style="padding:20px; background:rgba(0,0,0,0.8); color:#fff; border-radius:10px; text-align:center;">Voto enviado: <b>${option}</b><br>Aguardando resultado...</div>`;
+        
+        try {
+            // Salva na subcoleção 'decision_votes'
+            await roomRef.collection('decision_votes').doc(myId).set({
+                decisionId: decisionId,
+                userId: myId,
+                option: option,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        } catch (e) {
+            console.error("Erro ao votar:", e);
+        }
+    };
+
+    // =========================================================================
+    // UI DE RESULTADO
+    // =========================================================================
+    function showResultUI(decision) {
+        // Esconde votação
+        const voteContainer = document.getElementById('decision-container');
+        if(voteContainer) voteContainer.classList.add('hidden');
+        if(localDecisionInterval) clearInterval(localDecisionInterval);
+
+        // Cria Overlay de Resultado
+        const oldRes = document.getElementById('decision-result');
+        if(oldRes) oldRes.remove();
+
+        const resultOverlay = document.createElement('div');
+        resultOverlay.id = 'decision-result';
+        resultOverlay.className = 'decision-result-overlay';
+
+        // Formata votos (Ex: Opção A: 5 | Opção B: 2)
+        const statsHtml = Object.entries(decision.votes || {}).map(([opt, count]) => 
+            `<div>${opt}: <b>${count}</b></div>`
+        ).join('<div style="margin:0 10px; color:#555;">|</div>');
+
+        resultOverlay.innerHTML = `
+            <div class="winner-card">
+                <div class="winner-label">A decisão foi:</div>
+                <div class="winner-text">${decision.winner}</div>
+                <div class="winner-stats">${statsHtml}</div>
+                <button class="secondary-btn" style="margin-top:20px;" onclick="this.parentElement.parentElement.remove()">Fechar</button>
+            </div>
+        `;
+
+        document.body.appendChild(resultOverlay);
+
+        // Auto remover após 8 segundos
+        setTimeout(() => {
+            if(resultOverlay.parentNode) resultOverlay.remove();
+        }, 8000);
     }
 
     // =========================================================================
