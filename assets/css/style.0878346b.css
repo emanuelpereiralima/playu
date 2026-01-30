@@ -1,0 +1,2778 @@
+/* ===================================================================
+   ARQUIVO DE ESTILO PRINCIPAL - PLAY.U LIVE ENTERTAINMENT
+   Versão Otimizada e Organizada
+   =================================================================== */
+
+/* =========================================
+   1. IMPORTS E VARIÁVEIS (ROOT)
+   ========================================= */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+:root {
+    /* Cores (Modo Escuro Padrão) */
+    --primary-color: #1A1A2E;
+    --primary-color-dark: #0f0f1b;
+    --secondary-color: #E94560;
+    --bg-color: #161625;
+    --alternate-bg-color: #1A1A2E;
+    --card-bg-color: #1A1A2E;
+    --header-bg-color: #1A1A2E;
+    --text-color: #FFFFFF;
+    --text-color-light: rgba(255, 255, 255, 0.7);
+    --border-color: #E94560;
+    --header-shadow: none;
+
+    /* Tipografia */
+    --body-font: 'Poppins', sans-serif;
+    --h1-font-size: 2.25rem;
+    --h2-font-size: 1.5rem;
+    --normal-font-size: 1rem;
+}
+
+/* Tema Claro */
+html[data-theme='light'] {
+    --bg-color: #F0F0F0;
+    --alternate-bg-color: #FFFFFF;
+    --card-bg-color: #FFFFFF;
+    --header-bg-color: #FFFFFF;
+    --primary-color-dark: #e0e0e0;
+    --text-color: #1A1A2E;
+    --text-color-light: #555555;
+    --border-color: #dddddd;
+    --header-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* =========================================
+   2. RESET E ESTILOS GLOBAIS
+   ========================================= */
+* {
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: var(--body-font);
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background-color 0.3s, color 0.3s;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+ul {
+    list-style: none;
+}
+
+img, video {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Utilitários */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+.hidden { display: none !important; }
+.hidden-section { display: none !important; }
+.active-section { display: block; animation: fadeIn 0.5s; }
+
+.alternate-bg { background-color: var(--alternate-bg-color); }
+.main-content { padding-top: 8rem; padding-bottom: 4rem; }
+
+.page-title {
+    font-size: var(--h1-font-size);
+    color: var(--secondary-color);
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.page-subtitle {
+    text-align: center;
+    max-width: 600px;
+    margin: 0 auto 3rem auto;
+    opacity: 0.8;
+}
+
+.error-message {
+    background-color: rgba(255, 79, 79, 0.2);
+    color: #ff4f4f;
+    border: 1px solid #ff4f4f;
+    border-radius: 8px;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+/* =========================================
+   3. LAYOUT (HEADER & FOOTER)
+   ========================================= */
+.header {
+    position: fixed;
+    top: 0; left: 0; width: 100%;
+    background-color: var(--header-bg-color);
+    z-index: 1000;
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: var(--header-shadow);
+    transition: background-color 0.3s;
+}
+
+.nav {
+    height: 6rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.nav__logo img {
+    width: 200px;
+    transition: transform 0.3s;
+}
+.nav__logo:hover img { transform: scale(1.05); }
+
+.nav__right-group, .nav__links, .nav__controls {
+    display: flex;
+    align-items: center;
+}
+.nav__right-group { gap: 2rem; }
+.nav__links { gap: 2rem; }
+.nav__controls { gap: 1rem; }
+
+.nav__link {
+    font-weight: 600;
+    position: relative;
+    padding-bottom: 0.5rem;
+}
+.nav__link::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; width: 0; height: 2px;
+    background-color: var(--secondary-color);
+    transition: width 0.3s;
+}
+.nav__link:hover::after { width: 100%; }
+
+/* Mobile Menu */
+.mobile-menu-dropdown { display: none; position: relative; }
+.dropdown-toggle {
+    background-color: var(--secondary-color);
+    border: none; color: white;
+    padding: 0.8rem 1rem; border-radius: 5px;
+    cursor: pointer; font-size: 1.5rem;
+    display: flex; align-items: center; justify-content: center;
+    transition: background-color 0.3s;
+}
+.dropdown-toggle:hover { background-color: #d8304d; }
+
+.dropdown-content {
+    display: none; position: absolute;
+    background-color: var(--card-bg-color);
+    min-width: 250px;
+    box-shadow: 0px 8px 16px rgba(0,0,0,0.4);
+    z-index: 1001; right: 0; top: calc(100% + 10px);
+    border-radius: 8px; border: 1px solid var(--border-color);
+    padding: 0.5rem 0;
+}
+.dropdown-content.show { display: block; }
+
+.main-footer {
+    text-align: center; padding: 2rem;
+    background-color: var(--primary-color-dark);
+    border-top: 1px solid var(--border-color);
+    margin-top: 3rem;
+}
+.main-footer p { color: var(--text-color-light); font-size: 0.9rem; margin: 0; }
+
+/* =========================================
+   4. COMPONENTES DE UI
+   ========================================= */
+
+/* --- Botões --- */
+.submit-btn {
+    background-color: var(--secondary-color);
+    color: white;
+    padding: 0.8rem 2rem;
+    border: none; border-radius: 5px;
+    font-weight: 600; cursor: pointer;
+    transition: background-color 0.3s, transform 0.2s;
+    display: inline-flex; align-items: center; justify-content: center;
+}
+.submit-btn:hover { background-color: #d8304d; }
+.submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.submit-btn ion-icon { margin-right: 5px; font-size: 1.1em; }
+
+.submit-btn.secondary-btn {
+    background-color: transparent;
+    border: 1px solid var(--text-color-light);
+    color: var(--text-color-light);
+}
+.submit-btn.secondary-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--text-color);
+}
+
+.submit-btn.danger-btn {
+    background-color: rgba(255, 59, 59, 0.1);
+    border: 1px solid #ff3b3b; color: #ff3b3b;
+}
+.submit-btn.danger-btn:hover { background-color: #ff3b3b; color: white; }
+
+.small-btn { padding: 0.5rem 1rem !important; font-size: 0.9rem; }
+
+/* =========================================
+   ESTILO DA SALA DO HOST (SALA-HOST.HTML)
+   ========================================= */
+.host-room-body {
+    background-color: #0f0f13;
+    color: #fff;
+    height: 100vh;
+    overflow: hidden;
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+}
+
+.host-grid-container {
+    display: grid;
+    grid-template-columns: 1fr 350px; /* Vídeo na esquerda, Painel na direita */
+    height: 100vh;
+}
+
+/* ÁREA DE VÍDEO */
+.host-video-area {
+    background-color: #000;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.video-wrapper.remote {
+    width: 100%;
+    height: 100%;
+    max-height: 90vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.video-wrapper.remote video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain; /* Garante que o vídeo apareça inteiro */
+    background: #1a1a1a;
+    border-radius: 8px;
+}
+
+.video-wrapper.local {
+    position: absolute;
+    bottom: 30px;
+    right: 30px;
+    width: 180px;
+    height: 120px;
+    background: #222;
+    border: 2px solid #333;
+    border-radius: 8px;
+    overflow: hidden;
+    z-index: 10;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+}
+
+.video-wrapper.local video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* BARRA DE CONTROLES (Mute, Camera, Sair) */
+.host-controls-bar {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 15px;
+    background: rgba(0,0,0,0.6);
+    padding: 10px 20px;
+    border-radius: 30px;
+    backdrop-filter: blur(5px);
+    z-index: 20;
+}
+
+.control-btn {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    border: none;
+    background: #333;
+    color: #fff;
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.2s;
+}
+
+.control-btn:hover { background: #555; }
+.control-btn.active { background: #ff4444; border: 1px solid #ff0000; } /* Estado Mute/Off */
+.control-btn.danger { background: #ff4444; }
+.control-btn.danger:hover { background: #cc0000; }
+
+/* BARRA LATERAL (ASSETS) */
+.host-sidebar {
+    background-color: #1a1a2e;
+    border-left: 1px solid #333;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-header {
+    padding: 15px;
+    border-bottom: 1px solid #333;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #16213e;
+}
+
+.sidebar-tabs {
+    display: flex;
+    background: #111;
+}
+
+.tab-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    padding: 12px;
+    color: #888;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+}
+
+.tab-btn.active {
+    color: var(--secondary-color);
+    border-bottom-color: var(--secondary-color);
+    background: rgba(233, 69, 96, 0.05);
+}
+
+.sidebar-content {
+    flex: 1;
+    padding: 15px;
+    overflow-y: auto;
+    display: none; /* Esconde abas inativas */
+}
+
+.sidebar-content.active {
+    display: block; /* Mostra aba ativa */
+}
+
+/* LOADING OVERLAY */
+.loading-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: #0f0f13;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.5s ease;
+}
+
+/* =========================================
+   CONFIGURAÇÃO DE TIMER (ADMIN)
+   ========================================= */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+
+.timer-config-section {
+    background: rgba(255, 255, 255, 0.03);
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 20px;
+}
+
+.timer-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+/* Preview do Timer */
+.timer-preview-box {
+    background: #000;
+    padding: 15px;
+    border-radius: 6px;
+    text-align: center;
+    border: 1px solid #333;
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 80px;
+}
+
+.timer-preview-text {
+    font-size: 2.5rem;
+    font-weight: bold;
+    line-height: 1;
+}
+
+@media (max-width: 768px) {
+    .timer-grid { grid-template-columns: 1fr; }
+}
+
+
+/* =========================================
+   ESTILO DAS DECISÕES (ADMIN E HOST)
+   ========================================= */
+.decision-creation-box {
+    background: rgba(255, 255, 255, 0.03);
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 20px;
+}
+
+.decision-options-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin: 10px 0;
+}
+
+.decision-card {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 10px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    border-left: 3px solid var(--secondary-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.decision-card-content {
+    flex: 1;
+}
+
+.decision-question {
+    font-weight: bold;
+    color: #fff;
+    margin-bottom: 4px;
+}
+
+.decision-preview-opts {
+    font-size: 0.8rem;
+    color: #aaa;
+    display: flex;
+    gap: 10px;
+}
+
+.decision-preview-opts span {
+    background: rgba(255,255,255,0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+@media (max-width: 768px) {
+    .decision-options-grid { grid-template-columns: 1fr; }
+}
+
+/* =========================================
+   LINK DE CONVITE FLUTUANTE (MODAL)
+   ========================================= */
+.invite-floating-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(15, 15, 20, 0.95);
+    border: 1px solid var(--secondary-color);
+    box-shadow: 0 0 30px rgba(233, 69, 96, 0.3);
+    padding: 25px;
+    border-radius: 12px;
+    z-index: 2000; /* Acima de tudo */
+    width: 90%;
+    max-width: 450px;
+    text-align: center;
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+
+.invite-floating-modal.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.invite-floating-modal h3 {
+    color: #fff;
+    margin-bottom: 10px;
+    font-family: 'Orbitron', sans-serif;
+}
+
+.invite-floating-modal p {
+    color: #ccc;
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+}
+
+/* Botão Discreto na Sidebar */
+.sidebar-icon-btn {
+    background: transparent;
+    border: 1px solid #444;
+    color: #888;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.2s;
+}
+
+.sidebar-icon-btn:hover {
+    color: #fff;
+    border-color: #fff;
+    background: rgba(255,255,255,0.1);
+}
+
+/* =========================================
+   ESTILO DA SALA DO JOGADOR (SALA.HTML)
+   ========================================= */
+.player-room-body {
+    background-color: #000;
+    color: #fff;
+    height: 100vh;
+    overflow: hidden;
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+}
+
+.player-video-container {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Vídeo do Host (Ocupa tudo) */
+#player-remote-video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain; /* Garante que veja tudo que o host mostra */
+    background: #000;
+}
+
+#player-local-video {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 160px;
+    height: 100px;
+    background: #222;
+    border: 2px solid #444;
+    border-radius: 8px;
+    object-fit: cover;
+    z-index: 9999;
+}
+
+#player-remote-video-host{
+    width: 100%;
+    height: 100%;
+    background: #000;
+    z-index: 1;
+
+}
+
+/* OVERLAY: TIMER */
+.player-timer-overlay {
+    position: absolute;
+    top: 30px; /* Distância do topo */
+    left: 50%; /* Posiciona o início no meio */
+    transform: translateX(-50%); /* Puxa de volta 50% do próprio tamanho para centralizar exato */
+    
+    background: rgba(0, 0, 0, 0.4); /* Fundo mais sutil */
+    padding: 10px 40px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    
+    z-index: 20;
+    
+    /* Tipografia Grande e Legível */
+    font-family: 'Orbitron', sans-serif; /* Fonte Digital */
+    font-size: 4rem; /* Aumentado consideravelmente */
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 0 15px rgba(0, 255, 136, 0.6); /* Brilho neon sutil */
+    letter-spacing: 3px;
+    pointer-events: none; /* Permite clicar através dele */
+}
+
+/* OVERLAY: MÍDIA (Imagens/Vídeos enviados pelo Host) */
+.player-media-overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 30;
+    opacity: 0;
+    visibility: hidden;
+    transition: 0.3s;
+    pointer-events: none; /* Deixa clicar através se transparente */
+}
+
+.player-media-overlay.active {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+.media-content {
+    max-width: 90%;
+    max-height: 90%;
+    border-radius: 8px;
+    box-shadow: 0 0 50px rgba(0,0,0,0.8);
+}
+
+.close-media-btn {
+    position: absolute;
+    top: 20px; right: 20px;
+    background: rgba(0,0,0,0.5);
+    border: none; color: #fff;
+    font-size: 2rem; cursor: pointer;
+    z-index: 31;
+}
+
+/* =========================================
+   CARDS DE AGENDAMENTO (DASHBOARD)
+   ========================================= */
+.bookings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.booking-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: transform 0.2s;
+    display: flex;
+    flex-direction: column;
+}
+
+.booking-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--secondary-color);
+}
+
+.booking-card-header {
+    height: 120px;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+}
+
+.booking-status-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #000;
+    color: #fff;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: bold;
+}
+
+.booking-card-body {
+    padding: 15px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.booking-title {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #fff;
+    margin-bottom: 5px;
+}
+
+.booking-info {
+    color: #aaa;
+    font-size: 0.9rem;
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.booking-timer-countdown {
+    margin-top: 10px;
+    font-size: 0.85rem;
+    color: var(--secondary-color);
+    font-weight: bold;
+}
+
+/* Botão Entrar na Sala */
+.enter-room-btn {
+    margin-top: auto; /* Empurra para o fundo */
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+/* Estado: Bloqueado (Falta muito tempo) */
+.enter-room-btn:disabled {
+    background: #333;
+    color: #666;
+    cursor: not-allowed;
+    border: 1px solid #444;
+}
+
+/* Estado: Liberado (Faltam 10 min ou menos) */
+.enter-room-btn.active {
+    background: #00ff88; /* Verde Neon */
+    color: #000;
+    box-shadow: 0 0 10px rgba(0, 255, 136, 0.4);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(0, 255, 136, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0); }
+}
+
+/* --- EFEITO BACKGROUND GIF --- */
+.video-wrapper {
+    position: relative; /* Garante que os absolutes fiquem aqui dentro */
+    background: #000;   /* Fundo preto padrão */
+    overflow: hidden;
+}
+
+/* O GIF fica sempre rodando no fundo */
+.video-bg-gif {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Cobre toda a área */
+    z-index: 0;        /* Fica atrás */
+    opacity: 0.5;      /* Um pouco escuro para não ofuscar */
+}
+
+/* O Vídeo fica na frente */
+.video-wrapper video {
+width: 100%;
+    height: 100%;
+    
+    /* A MÁGICA: 'cover' estica o vídeo para cobrir tudo, cortando o excesso */
+    object-fit: cover !important; 
+    
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+}
+
+/* Classe que será adicionada via JS quando desligar a câmera */
+.video-wrapper video.camera-off {
+    opacity: 0; /* Torna o vídeo invisível, revelando o GIF atrás */
+}
+
+/* --- CAMADAS (LAYERS) --- */
+
+/* 1. Container Principal dos Controles do Jogador */
+.player-controls-bar, .host-controls-bar {
+    position: relative; /* Ou fixed/absolute dependendo do seu layout */
+    z-index: 2000 !important; /* MÁXIMA PRIORIDADE: Fica acima de tudo */
+}
+
+/* 2. Overlay de Mídia (Vídeo/Áudio que o Host manda) */
+#media-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #000; /* Fundo preto imersivo */
+    z-index: 1000; /* Fica acima do jogo, mas ABAIXO dos controles */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+}
+
+/* Garante que o vídeo do overlay ocupe o espaço mas não cubra os botões se eles forem fixos */
+#media-overlay video, 
+#media-overlay img {
+    max-width: 100%;
+    max-height: 100%;
+    pointer-events: none; /* O jogador não clica no vídeo */
+}
+
+/* 3. GIF e Vídeo da Câmera (Ficam no fundo) */
+.video-wrapper {
+    z-index: 10;
+}
+
+/* --- OVERLAY DE MÍDIA FULLSCREEN --- */
+#media-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;  /* Largura total da viewport */
+    height: 100vh; /* Altura total da viewport */
+    background: #000;
+    z-index: 1000; /* Fica atrás dos controles (que são 2000) */
+    overflow: hidden;
+    padding: 0 !important; /* Garante que não haja espaçamento */
+    margin: 0 !important;
+}
+
+/* O vídeo/imagem se comporta como um background */
+#media-overlay video, 
+#media-overlay img {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 100%;
+    
+    /* MÁGICA DO FULLSCREEN: */
+    object-fit: cover; /* Cobre tudo (pode cortar bordas para preencher) */
+    /* Se preferir ver o video todo com faixas pretas, mude para: object-fit: contain; */
+    
+    object-position: center; /* Centraliza o conteúdo */
+    transform: translate(-50%, -50%); /* Garante centralização exata */
+    pointer-events: none; /* Jogador não clica */
+}
+
+/* =========================================
+   AJUSTE DE CÂMERA RESPONSIVA (SALA HOST)
+   ========================================= */
+
+/* Garante que o container principal ocupe a altura total sem scroll */
+.host-grid-container {
+    display: grid;
+    grid-template-columns: 1fr 350px; /* Vídeo | Sidebar */
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: #111;
+}
+
+/* Área que contém os vídeos */
+.host-video-area {
+    display: flex;
+    flex-direction: row; /* Padrão Desktop: Lado a Lado */
+    width: 100%;
+    height: 100%;
+    position: relative;
+    background: #000;
+}
+
+/* Wrapper individual de cada vídeo (Host e Jogador) */
+.video-wrapper {
+    flex: 1; /* Divide o espaço igualmente (50% cada) */
+    position: relative;
+    overflow: hidden;
+    min-width: 0;
+    min-height: 0;
+    border-right: 1px solid #333; /* Separação visual */
+}
+
+/* O VÍDEO EM SI - O SEGREDO DA ADAPTAÇÃO */
+.video-wrapper video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Estica o vídeo para preencher todo o quadrado (zoom/crop) */
+    /* object-fit: contain; <--- Use 'contain' se preferir ver o vídeo inteiro com bordas pretas */
+    z-index: 1;
+}
+
+/* GIF de Fundo (ajuste para cobrir também) */
+.video-bg-gif {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 0;
+    opacity: 0.5;
+}
+
+/* Etiqueta (Nome) */
+.video-label {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    z-index: 2;
+    pointer-events: none;
+}
+
+/* --- RESPONSIVIDADE (CELULARES E TABLETS) --- */
+@media (max-width: 900px) {
+    /* Muda o layout geral para empilhado */
+    .host-grid-container {
+        grid-template-columns: 1fr; /* Apenas 1 coluna */
+        grid-template-rows: 1fr auto; /* Vídeo em cima (grande), Sidebar em baixo (auto) */
+    }
+
+    /* Muda a direção dos vídeos para empilhado */
+    .host-video-area {
+        flex-direction: column; 
+    }
+
+    /* Sidebar vira um painel inferior ou overlay */
+    .host-sidebar {
+        height: auto;
+        max-height: 40vh; /* Ocupa no máximo 40% da tela em baixo */
+        overflow-y: auto;
+        border-left: none;
+        border-top: 2px solid var(--primary-color);
+    }
+    
+    .video-wrapper {
+        border-right: none;
+        border-bottom: 1px solid #333;
+    }
+}
+
+/* --- BARRA DE CONTROLES CENTRALIZADA --- */
+.host-controls-bar {
+    position: absolute;
+    bottom: 30px; /* Distância do fundo */
+    left: 50%;
+    transform: translateX(-50%); /* Centraliza exato horizontalmente */
+    
+    display: flex;
+    gap: 20px; /* Espaço entre botões */
+    
+    background: rgba(0, 0, 0, 0.6); /* Fundo semi-transparente */
+    backdrop-filter: blur(10px);    /* Efeito de vidro */
+    padding: 15px 30px;
+    border-radius: 50px;            /* Borda arredondada (Cápsula) */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    
+    z-index: 2000 !important; /* Garante que fique acima de tudo */
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+}
+
+/* Ajuste para mobile */
+@media (max-width: 768px) {
+    .host-controls-bar {
+        bottom: 20px;
+        padding: 10px 20px;
+        gap: 15px;
+        width: 90%; /* Ocupa quase toda largura no celular */
+        justify-content: center;
+    }
+}
+
+/* Estilo do botão de troca (opcional, para dar destaque se quiser) */
+#switch-cam-btn ion-icon {
+    font-size: 1.4rem;
+}
+
+/* --- EFEITO BACKGROUND GIF --- */
+.video-wrapper {
+    position: relative;
+    background: #000;
+    overflow: hidden;
+}
+
+/* O GIF fica no fundo (z-index 0) */
+.video-bg-gif {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 0;
+    opacity: 0.5; /* Levemente escurecido */
+}
+
+/* O vídeo fica na frente (z-index 1) */
+.video-wrapper video {
+    position: absolute; /* Ajustado para cobrir o gif perfeitamente */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 1;
+    transition: opacity 0.3s ease;
+}
+
+/* Quando esta classe é adicionada via JS, o vídeo some e o GIF aparece */
+.video-wrapper video.camera-off {
+    opacity: 0;
+}
+
+/* --- FEEDBACK DE DECISÃO (HOST) --- */
+#host-decision-feedback {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1500; /* Acima do vídeo */
+    background: rgba(0, 0, 0, 0.85);
+    border: 2px solid var(--secondary-color);
+    border-radius: 10px;
+    padding: 15px 25px;
+    text-align: center;
+    min-width: 300px;
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+    animation: slideDown 0.3s ease-out;
+}
+
+#host-decision-feedback.hidden {
+    display: none;
+}
+
+.feedback-label {
+    font-size: 0.75rem;
+    color: #aaa;
+    letter-spacing: 1px;
+    font-weight: bold;
+    display: block;
+    margin-bottom: 5px;
+}
+
+#feedback-question {
+    color: #fff;
+    margin: 5px 0 10px 0;
+    font-size: 1.1rem;
+}
+
+#feedback-timer {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.5rem;
+    color: var(--secondary-color);
+    margin-bottom: 10px;
+}
+
+.cancel-decision-btn {
+    background: transparent;
+    border: 1px solid #ff4444;
+    color: #ff4444;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+
+.cancel-decision-btn:hover {
+    background: #ff4444;
+    color: white;
+}
+
+@keyframes slideDown {
+    from { top: -50px; opacity: 0; }
+    to { top: 20px; opacity: 1; }
+}
+
+.player-decision-overlay {
+    position: absolute;
+    bottom: 140px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px); /* Começa um pouco mais baixo */
+    width: 90%;
+    max-width: 600px;
+    z-index: 40;
+    
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    
+    /* ESTADO INICIAL: ESCONDIDO */
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Animação "Pop" */
+}
+
+/* ESTADO ATIVO: VISÍVEL (Adicionado via JS) */
+.player-decision-overlay.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0); /* Sobe para posição final */
+}
+
+.decision-box {
+    background: rgba(15, 15, 25, 0.95);
+    border: 1px solid var(--secondary-color);
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 0 30px rgba(233, 69, 96, 0.4);
+    text-align: center;
+}
+
+.decision-title {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 15px;
+    color: #fff;
+}
+
+.decision-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.decision-btn {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
+    padding: 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: 0.2s;
+}
+
+.decision-btn:hover {
+    background: var(--secondary-color);
+    border-color: var(--secondary-color);
+    transform: scale(1.02);
+}
+
+/* CONTROLES DO JOGADOR */
+.player-controls {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 15px;
+    z-index: 50;
+    background: rgba(0,0,0,0.5);
+    padding: 10px 20px;
+    border-radius: 30px;
+}
+
+.back-to-top {
+    position: fixed; right: 1.5rem; bottom: -30%;
+    background-color: var(--secondary-color);
+    padding: 0.5rem; border-radius: 50%;
+    display: inline-flex; justify-content: center; align-items: center;
+    font-size: 1.5rem; color: white;
+    transition: bottom 0.4s, transform 0.3s; z-index: 500;
+}
+.back-to-top:hover { transform: translateY(-4px); }
+.back-to-top.visible { bottom: 2rem; }
+
+.theme-switcher ion-icon {
+    font-size: 1.5rem; cursor: pointer;
+    transition: transform 0.3s ease;
+}
+.theme-switcher ion-icon:hover {
+    transform: rotate(15deg) scale(1.1);
+    color: var(--secondary-color);
+}
+
+/* --- Formulários --- */
+.form-group { margin-bottom: 1.5rem; }
+.form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
+.form-group input, .form-group textarea, .form-group select {
+    width: 100%; padding: 0.8rem 1rem;
+    border-radius: 5px; border: 1px solid var(--border-color);
+    background-color: var(--bg-color); color: var(--text-color);
+    font-family: var(--body-font);
+}
+.form-group small { display: block; margin-top: 0.25rem; font-size: 0.8rem; color: var(--text-color-light); }
+
+.form-row { display: flex; gap: 1rem; flex-wrap: wrap; }
+.form-row .form-group { flex: 1; min-width: 200px; }
+
+.search-box { position: relative; width: 100%; max-width: 300px; }
+.search-box input {
+    width: 100%; padding: 10px 10px 10px 40px;
+    border-radius: 20px; border: 1px solid var(--border-color);
+    background-color: var(--primary-color-dark); color: var(--text-color);
+    outline: none; transition: border-color 0.3s, box-shadow 0.3s;
+}
+.search-box input:focus { border-color: var(--secondary-color); box-shadow: 0 0 5px rgba(255, 187, 0, 0.3); }
+.search-box ion-icon {
+    position: absolute; left: 12px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-color-light); font-size: 1.2rem;
+    pointer-events: none;
+}
+
+/* --- Tags (Cápsulas) --- */
+.tags-input-container {
+    display: flex; flex-wrap: wrap; gap: 0.5rem;
+    padding: 0.5rem; border: 1px solid var(--border-color);
+    border-radius: 5px; background-color: var(--bg-color);
+    cursor: text; position: relative;
+}
+.tags-input-container:focus-within { border-color: var(--secondary-color); box-shadow: 0 0 5px rgba(233, 69, 96, 0.3); }
+.tag-capsule {
+    background-color: var(--secondary-color); color: white;
+    padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.85rem;
+    display: flex; align-items: center; gap: 0.5rem; animation: fadeIn 0.2s;
+}
+.tag-capsule .close-tag { cursor: pointer; font-weight: bold; font-size: 1rem; line-height: 1; opacity: 0.8; }
+.tag-capsule .close-tag:hover { opacity: 1; }
+.tag-input-field {
+    flex-grow: 1; border: none; background: transparent;
+    color: var(--text-color); outline: none; min-width: 100px;
+    padding: 0.3rem; font-family: var(--body-font);
+}
+.tags-suggestions-list {
+    position: absolute; top: 100%; left: 0; width: 100%;
+    background-color: var(--card-bg-color); border: 1px solid var(--border-color);
+    border-top: none; border-radius: 0 0 5px 5px; max-height: 150px;
+    overflow-y: auto; z-index: 50; list-style: none; display: none;
+}
+.tags-suggestions-list.active { display: block; }
+.tags-suggestions-list li {
+    padding: 0.6rem 1rem; cursor: pointer; color: var(--text-color-light);
+    transition: background 0.2s;
+}
+.tags-suggestions-list li:hover { background-color: rgba(233, 69, 96, 0.1); color: var(--text-color); }
+.tags-suggestions-list li strong { color: var(--secondary-color); }
+
+/* Toggle Switch */
+.switch { position: relative; display: inline-block; width: 60px; height: 34px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider {
+    position: absolute; cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #555; transition: .4s;
+}
+.slider:before {
+    position: absolute; content: "";
+    height: 26px; width: 26px; left: 4px; bottom: 4px;
+    background-color: white; transition: .4s;
+}
+input:checked + .slider { background-color: var(--secondary-color); }
+input:checked + .slider:before { transform: translateX(26px); }
+.slider.round { border-radius: 34px; }
+.slider.round:before { border-radius: 50%; }
+
+/* =========================================
+   5. MODAL (SCROLL INTELIGENTE E RESPONSIVO)
+   ========================================= */
+
+/* Fundo Escuro */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center; /* Centraliza na tela */
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+    padding: 10px; /* Garante margem em celulares */
+}
+
+/* Caixa do Modal */
+.modal-content {
+    background-color: var(--sidebar-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+    
+    /* DEFINIÇÃO DE TAMANHO MÁXIMO E LAYOUT FLEXÍVEL */
+    width: 500px;
+    max-width: 100%;
+    max-height: 90vh; /* O modal nunca será maior que 90% da altura da tela */
+    
+    display: flex;
+    flex-direction: column; /* Organiza: Topo -> Meio -> Rodapé */
+    position: relative;
+}
+
+/* Tamanhos Específicos */
+.modal-large { width: 800px; max-width: 95vw; }
+.xl-modal { width: 1100px; max-width: 98vw; }
+
+/* 1. Cabeçalho (Fixo) */
+.modal-header {
+    padding: 1.5rem 1.5rem 1rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0; /* Não deixa o cabeçalho encolher/sumir */
+}
+
+.modal-header h2 { margin: 0; font-size: 1.4rem; }
+
+/* 2. CORPO COM SCROLL (A Mágica acontece aqui) */
+.modal-body-scroll {
+    padding: 1.5rem;
+    overflow-y: auto;       /* Cria barra de rolagem se o conteúdo for grande */
+    overflow-x: hidden;
+    flex-grow: 1;           /* Ocupa todo o espaço disponível entre header e footer */
+    min-height: 0;          /* Correção para Firefox respeitar o scroll flex */
+}
+
+/* Custom Scrollbar (Estilo da barra de rolagem) */
+.modal-body-scroll::-webkit-scrollbar { width: 8px; }
+.modal-body-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
+.modal-body-scroll::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+.modal-body-scroll::-webkit-scrollbar-thumb:hover { background: var(--secondary-color); }
+
+/* 3. Rodapé (Fixo) */
+.modal-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--border-color);
+    background-color: var(--sidebar-bg); /* Garante que o texto rolando não apareça por trás */
+    border-radius: 0 0 12px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0; /* Não deixa o rodapé encolher/sumir */
+}
+
+.modal-footer .right-buttons {
+    display: flex;
+    gap: 10px;
+    margin-left: auto;
+}
+
+/* Botão Fechar (X) */
+.close-overlay-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 2rem;
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.2s;
+}
+.close-overlay-btn:hover { color: #fff; }
+
+/* Classes Utilitárias */
+.hidden { display: none !important; }
+
+/* Responsividade para Celulares */
+@media (max-width: 600px) {
+    .modal-content {
+        max-height: 95vh; /* Aproveita mais a tela no celular */
+        height: auto;
+    }
+    
+    .modal-body-scroll {
+        padding: 1rem;
+    }
+
+    .modal-footer {
+        flex-direction: column-reverse;
+        gap: 10px;
+    }
+    
+    .modal-footer button, 
+    .modal-footer .right-buttons {
+        width: 100%;
+    }
+    
+    .modal-footer .right-buttons {
+        justify-content: space-between;
+    }
+}
+
+.scrollable-form {
+    overflow-y: auto; padding-right: 10px; margin-top: 1rem;
+    scrollbar-width: thin; scrollbar-color: var(--secondary-color) var(--bg-color);
+}
+.scrollable-form::-webkit-scrollbar { width: 8px; }
+.scrollable-form::-webkit-scrollbar-track { background: var(--bg-color); }
+.scrollable-form::-webkit-scrollbar-thumb { background-color: var(--secondary-color); border-radius: 4px; }
+
+.close-overlay-btn {
+    position: absolute; top: 15px; right: 15px;
+    width: 36px; height: 36px;
+    background: transparent; border: none; border-radius: 50%;
+    color: var(--text-color-light); font-size: 1.8rem;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.2s ease; z-index: 10;
+}
+.close-overlay-btn:hover { background-color: rgba(255, 59, 59, 0.15); color: #ff3b3b; transform: rotate(90deg); }
+
+
+.right-buttons { display: flex; gap: 10px; }
+
+/* Estilo da Galeria no Admin */
+.gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+    margin-bottom: 1rem;
+}
+
+.gallery-item {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16/9;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+.gallery-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.gallery-remove-btn {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background: rgba(255, 0, 0, 0.8);
+    color: white;
+    border: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.gallery-remove-btn:hover {
+    background: red;
+}
+
+/* --- Tabelas --- */
+.table-container {
+    width: 100%; overflow-x: auto;
+    background-color: var(--primary-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+}
+.admin-table { width: 100%; border-collapse: collapse; }
+.admin-table th, .admin-table td { padding: 1rem; text-align: left; border-bottom: 1px solid var(--border-color); }
+.admin-table th { background-color: var(--primary-color-dark); text-transform: uppercase; font-size: 0.9rem; color: var(--text-color-light); }
+
+/* --- Cards de Jogo --- */
+.games-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem; 
+    padding: 1rem 0;
+    width: 100%;
+}
+
+@media (max-width: 1024px) {
+    .games-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 600px) {
+    .games-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.game-card {
+    background-color: var(--card-bg-color);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.game-card-img {
+    width: 100%;
+    height: 140px; 
+    object-fit: cover;
+    display: block;
+}
+
+.game-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+    border-color: var(--secondary-color);
+}
+
+
+.game-card-content {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.game-card-content h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1rem; /* Fonte levemente menor */
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.delete-corner-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 32px;
+    height: 32px;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: #ff4f4f;
+    border: 1px solid #ff4f4f;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(2px);
+}
+
+.delete-corner-btn:hover {
+    background-color: #ff4f4f;
+    color: white;
+    transform: scale(1.1);
+}
+
+/* Estilo para o Texto de Confirmação no Modal */
+.delete-confirmation-highlight {
+    background-color: rgba(255, 79, 79, 0.1);
+    color: #ff4f4f;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: bold;
+    user-select: text; /* Permite selecionar o texto para copiar */
+}
+
+/* =========================================
+   5. ESTILOS DE PÁGINAS
+   ========================================= */
+
+/* --- Home (Index) --- */
+.homepage .main-header {
+    background-color: transparent;
+    position: absolute; width: 100%; border-bottom: none;
+}
+
+.hero-section {
+    background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('https://images.unsplash.com/photo-1542779283-429940ce8336?auto=format&fit=crop&w=1500&q=80');
+    background-size: cover; background-position: center;
+    height: 70vh; min-height: 450px;
+    display: flex; justify-content: center; align-items: center;
+    text-align: center; padding: 2rem; color: #fff;
+}
+
+.home-carousel { padding-top: 8rem; padding-bottom: 4rem; position: relative; }
+.carousel-viewport {
+    width: 100%; overflow-x: auto; overflow-y: hidden;
+    scroll-snap-type: x mandatory; scrollbar-width: none;
+}
+.carousel-viewport::-webkit-scrollbar { display: none; }
+.carousel-container { display: flex; align-items: center; }
+
+.carousel-slide {
+    position: relative; flex: 0 0 65%; margin: 0 1rem; height: 450px;
+    border-radius: 10px; overflow: hidden; background-color: #000;
+    transition: transform 0.4s ease-in-out; scroll-snap-align: center;
+    display: flex; justify-content: center; align-items: center;
+}
+.carousel-slide img {
+    width: 100%; height: 100%; display: block; object-fit: cover;
+}
+
+.carousel-img-link {
+    display: flex; justify-content: center; align-items: center;
+    width: 100%; height: 100%; cursor: pointer;
+}
+.carousel-slide .carousel-img-link img { pointer-events: auto !important; }
+
+.carousel-caption, .slide-info {
+    position: absolute; bottom: 0; left: 0; width: 100%;
+    background: linear-gradient(to top, rgba(0,0,0,0.95), transparent);
+    padding: 3rem 1.5rem 1.5rem; color: white; pointer-events: none;
+    text-align: center;
+}
+
+.carousel-nav {
+    position: absolute; top: 50%; left: 50%; width: 80%;
+    display: flex; justify-content: space-between;
+    transform: translate(-50%, -50%); pointer-events: none;
+}
+.nav-btn {
+    background-color: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(0, 0, 0, 0.3);
+    color: var(--text-color); width: 45px; height: 45px;
+    border-radius: 50%; cursor: pointer;
+    display: flex; justify-content: center; align-items: center;
+    font-size: 1.5rem; pointer-events: all;
+    backdrop-filter: blur(5px); transition: all 0.3s;
+}
+.nav-btn:hover { background-color: var(--secondary-color); border-color: var(--secondary-color); }
+
+.about-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 3rem; align-items: center; margin-top: 3rem; }
+.about-image img { width: 100%; border-radius: 10px; }
+
+.faq-container {
+    max-width: 1100px; margin: 3rem auto;
+    display: grid; grid-template-columns: repeat(2, 1fr);
+    align-items: start; gap: 1.5rem;
+}
+.faq-item {
+    background-color: var(--card-bg-color);
+    border-radius: 8px; border: 1px solid var(--border-color);
+}
+.faq-question {
+    padding: 1.5rem; font-weight: 600; cursor: pointer;
+    list-style: none; display: flex; justify-content: space-between;
+}
+.faq-question::-webkit-details-marker { display: none; }
+.faq-question::after { content: '+'; font-size: 1.5rem; transition: transform 0.3s; }
+.faq-item[open] > .faq-question::after { transform: rotate(45deg); }
+.faq-answer { padding: 0 1.5rem 1.5rem; opacity: 0.8; line-height: 1.6; }
+
+.contact-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 3rem; margin-top: 3rem; }
+.social-links { margin-top: 2rem; display: flex; gap: 1.5rem; }
+.social-links a ion-icon { font-size: 2rem; transition: color 0.3s; }
+.social-links a:hover ion-icon { color: var(--secondary-color); }
+
+/* --- Login Page --- */
+.login-page {
+    display: flex; justify-content: center; align-items: center;
+    min-height: 100vh; background-color: var(--bg-color);
+}
+.login-container {
+    width: 100%; max-width: 420px; padding: 2rem;
+    background-color: var(--primary-color);
+    border-radius: 12px; border: 1px solid var(--border-color);
+}
+.form-separator { display: flex; align-items: center; margin: 1.5rem 0; color: var(--text-color-light); }
+.form-separator::before, .form-separator::after { content: ''; flex: 1; border-bottom: 1px solid var(--border-color); }
+.social-login { display: flex; flex-direction: column; gap: 0.75rem; }
+.social-btn {
+    display: flex; justify-content: center; align-items: center;
+    gap: 0.75rem; padding: 0.75rem; border: none;
+    border-radius: 8px; font-weight: 600; cursor: pointer;
+}
+.social-btn.google { background-color: #fff; color: #333; border: 1px solid #ddd; }
+.social-btn.apple { background-color: #000; color: #fff; }
+.toggle-form { text-align: center; margin-top: 1.5rem; font-size: 0.9rem; }
+.toggle-form a { color: var(--secondary-color); font-weight: 600; }
+
+/* --- Dashboard & Admin --- */
+.dashboard-main {
+    max-width: 1200px; margin: 2rem auto; padding: 0 2rem;
+    display: flex; flex-direction: column; gap: 3rem;
+}
+.main-header {
+    background-color: var(--primary-color);
+    border-bottom: 1px solid var(--border-color);
+    padding: 1rem 2rem; position: sticky; top: 0; z-index: 100;
+}
+.header-container {
+    display: flex; justify-content: space-between; align-items: center;
+    max-width: 1200px; margin: 0 auto;
+}
+.user-menu { display: flex; align-items: center; gap: 1rem; }
+.user-profile-trigger {
+    display: flex; align-items: center; gap: 0.5rem; cursor: pointer;
+    padding: 0.5rem; border-radius: 8px; transition: background 0.3s;
+}
+.user-profile-trigger:hover { background-color: rgba(255, 255, 255, 0.1); }
+
+.dashboard-tabs {
+    display: flex; gap: 10px; margin-bottom: 3rem; /* Espaçamento Aumentado */
+    border-bottom: 1px solid var(--border-color); padding-bottom: 10px;
+}
+.tab-btn {
+    background: transparent; border: none; color: var(--text-color-light);
+    padding: 10px 20px; cursor: pointer; font-weight: 600;
+    border-bottom: 2px solid transparent; transition: all 0.3s;
+}
+.tab-btn.active { color: var(--secondary-color); border-bottom: 2px solid var(--secondary-color); }
+
+.bookings-list { display: flex; flex-direction: column; gap: 1rem; }
+.booking-item {
+    background-color: var(--primary-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px; padding: 1rem 1.5rem;
+    display: flex; justify-content: space-between; align-items: center;
+}
+
+.admin-page-body { padding-top: 80px; }
+.admin-header {
+    position: fixed; top: 0; left: 0; width: 100%; height: 80px;
+    background-color: var(--header-bg-color);
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0 2rem; box-shadow: 0 2px 10px rgba(0,0,0,0.3); z-index: 100;
+}
+.admin-view-site-btn {
+    background-color: var(--secondary-color);
+    padding: 0.6rem 1.2rem; border-radius: 5px; color: white;
+    font-weight: 500; border: none; cursor: pointer;
+}
+.admin-panel { background-color: var(--card-bg-color); padding: 2rem; border-radius: 8px; margin-top: 2rem; }
+.game-list-item { padding: 1rem; border-radius: 5px; background-color: rgba(0,0,0,0.2); margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; }
+.status-badge { padding: 0.2rem 0.6rem; border-radius: 12px; font-weight: 600; color: white; font-size: 0.8rem; margin-left: 1rem;}
+.status-pending { background-color: #f59e0b; }
+.status-approved { background-color: #10b981; }
+
+.item-actions button {
+    margin-left: 0.5rem; padding: 0.4rem 0.8rem;
+    border-radius: 5px; cursor: pointer;
+    border: 1px solid var(--border-color); background: none; color: var(--text-color);
+}
+.item-actions .edit-btn:hover { background-color: #3b82f6; border-color: #3b82f6; }
+.item-actions .remove-btn:hover { background-color: var(--secondary-color); border-color: var(--secondary-color); }
+
+/* ESPAÇAMENTO DO HEADER DA SEÇÃO */
+.section-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 3rem; /* Espaçamento Aumentado */
+}
+
+/* --- Game Details (Template) --- */
+.game-carousel-wrapper {
+    position: relative; max-width: 800px; margin: 2rem auto;
+    overflow: hidden; border-radius: 10px;
+}
+.game-carousel-track { display: flex; transition: transform 0.5s ease-in-out; }
+.game-carousel-slide { min-width: 100%; box-sizing: border-box; }
+.game-carousel-slide img { width: 100%; height: 400px; object-fit: cover; display: block; }
+
+.carousel-btn {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    background: rgba(0,0,0,0.5); color: white;
+    border: none; padding: 1rem; cursor: pointer;
+    z-index: 10; transition: background-color 0.3s;
+}
+.carousel-btn:hover { background: rgba(233, 69, 96, 0.8); }
+.prev-slide { left: 10px; }
+.next-slide { right: 10px; }
+
+.trailer-container { max-width: 800px; margin: 3rem auto; text-align: center; }
+.trailer-wrapper iframe { width: 100%; aspect-ratio: 16/9; border: none; border-radius: 10px; }
+
+.booking-section { margin-top: 4rem; display: grid; grid-template-columns: 1.5fr 1fr; gap: 3rem; }
+.calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+.month-nav-btn {
+    background: none; border: 1px solid var(--border-color); color: var(--text-color);
+    width: 40px; height: 40px; border-radius: 50%; cursor: pointer;
+}
+.calendar-weekdays, .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.5rem; text-align: center; }
+
+/* =========================================
+   ESTILOS DO CALENDÁRIO (ADMIN)
+   ========================================= */
+.calendar-container {background-color: rgba(0, 0, 0, 0.2);padding: 1.5rem;border-radius: 8px;border: 1px solid var(--border-color);}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.calendar-header h4 {
+    margin: 0;
+    font-size: 1.3rem;
+    color: var(--secondary-color);
+    text-transform: capitalize;
+    font-weight: 600;
+}
+
+.month-nav-btn {
+    background: transparent;
+    border: 1px solid var(--text-color-light);
+    color: var(--text-color);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    font-size: 1.2rem;
+}
+
+.month-nav-btn:hover {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+    color: white;
+}
+
+.calendar-weekdays {display: grid;grid-template-columns: repeat(7, 1fr);text-align: center;font-weight: bold;color: var(--text-color-light);margin-bottom: 0.8rem;font-size: 0.9rem;text-transform: uppercase;}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+}
+
+.calendar-day {
+aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    background-color: #252525; /* Cinza muito escuro */
+    color: #555;               /* Texto apagado */
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: not-allowed;       /* Cursor de bloqueio */
+    border: 2px solid transparent;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+/* Dias Disponíveis (Futuros) */
+.calendar-day.available {
+    background-color:#aaaaaa;
+    color: #FFFFFF;
+    cursor: pointer;
+}
+
+.calendar-day.available:hover {
+    background-color: #4a4a4a;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+.calendar-day.has-schedule::after {
+    content: '';
+    display: block;
+    width: 6px;
+    height: 6px;
+    background-color: var(--secondary-color);
+    border-radius: 50%;
+    position: absolute;
+    bottom: 5px;
+}
+
+.calendar-day.selected {
+    background-color: var(--secondary-color) !important; /* Vermelho Sólido */
+    color: white !important;
+    border-color: white !important;
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(233, 69, 96, 0.6);
+    z-index: 2;
+}
+
+/* TEM HORÁRIO MARCADO (DESTAQUE SUTIL) */
+.calendar-day.has-schedule {
+    border-color: var(--secondary-color); /* Borda vermelha */
+    background-color: rgba(233, 69, 96, 0.1); /* Fundo avermelhado bem leve */
+    color: var(--secondary-color);
+    font-weight: bold;
+}
+
+.calendar-day.selected.has-schedule::after {
+    background-color: white;
+}
+
+/* =========================================
+   OVERLAY DE CALENDÁRIO (JOGADOR)
+   ========================================= */
+.calendar-wrapper {
+    position: relative; /* Necessário para o overlay absoluto */
+    min-height: 300px;
+}
+
+.calendar-paused-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(26, 26, 46, 0.85); /* Fundo escuro semi-transparente */
+    backdrop-filter: blur(4px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    text-align: center;
+    padding: 20px;
+}
+
+.calendar-paused-overlay h3 {
+    color: var(--secondary-color);
+    margin-bottom: 10px;
+    font-size: 1.5rem;
+}
+
+.calendar-paused-overlay p {
+    color: #ccc;
+    font-size: 0.95rem;
+    max-width: 80%;
+}
+
+/* Ajuste visual dos dias no calendário do jogador */
+.player-calendar-day {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    background-color: rgba(255,255,255,0.02);
+    color: #555;
+    cursor: default;
+    font-size: 0.9rem;
+    position: relative;
+}
+
+.player-calendar-day.has-slots {
+    background-color: rgba(0, 255, 136, 0.1);
+    color: #fff;
+    cursor: pointer;
+    border: 1px solid rgba(0, 255, 136, 0.3);
+    font-weight: bold;
+    transition: all 0.2s;
+}
+
+.player-calendar-day.has-slots:hover {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(233, 69, 96, 0.4);
+}
+
+.player-calendar-day.selected {
+    background-color: var(--secondary-color);
+    color: #fff;
+    box-shadow: 0 0 10px var(--secondary-color);
+}
+
+/* Se tiver horário e passar o mouse, fica sólido */
+.calendar-day.has-schedule:hover {
+    background-color: var(--secondary-color);
+    color: white;
+}
+
+/* Ajuste no Modal de Agenda */
+#agenda-modal .modal-content {
+    max-height: 95vh;
+}
+
+#single-day-editor {
+    background-color: var(--card-bg-color);
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-top: 1.5rem;
+    border: 1px solid var(--border-color);
+    animation: fadeIn 0.3s ease;
+}
+
+.time-slots-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 1rem; }
+.time-slot-btn {
+    padding: 0.8rem; border: 1px solid var(--border-color);
+    background-color: var(--card-bg-color); color: var(--text-color);
+    border-radius: 5px; cursor: pointer;
+}
+.time-slot-btn:hover { border-color: var(--secondary-color); }
+.time-slot-btn.selected { background-color: var(--secondary-color); color: white; }
+
+.paused-notice {
+    text-align: center; padding: 3rem 1rem;
+    background-color: var(--card-bg-color);
+    border: 2px dashed var(--secondary-color);
+    border-radius: 10px; margin-top: 8rem;
+}
+.paused-notice h3 { color: var(--secondary-color); display: flex; justify-content: center; gap: 0.5rem; }
+
+/* --- Game Room (Video) --- */
+.game-room-body { overflow: hidden; background-color: #000; }
+.game-room-container { display: grid; grid-template-columns: 1fr auto; height: 100vh; }
+.video-grid-container {
+    flex-grow: 1; position: relative;
+    display: flex; justify-content: center; align-items: center;
+    background-color: #000;
+}
+.video-grid { display: flex; width: 100%; height: 100%; }
+.video-container { flex: 1; position: relative; border-right: 1px solid #333; }
+.video-container:last-child { border-right: none; }
+.video-container video { width: 100%; height: 100%; object-fit: cover; }
+.video-container h3 { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.5); padding: 5px 10px; border-radius: 5px; z-index: 10; }
+
+.media-controls {
+    position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 1rem; background: rgba(0,0,0,0.7);
+    padding: 10px 20px; border-radius: 30px; z-index: 20;
+}
+.control-btn.active { background-color: var(--secondary-color); color: white; }
+
+.host-tools-wrapper { width: 350px; background-color: #1a1a1a; position: relative; transition: width 0.3s; }
+.host-tools-wrapper.collapsed { width: 60px; }
+.host-tools-content { padding: 1rem; height: 100%; overflow-y: auto; }
+.host-tools-wrapper.collapsed .host-tools-content { display: none; }
+.tool-section { margin-bottom: 1.5rem; border-bottom: 1px solid #333; padding-bottom: 1rem; }
+
+/* Overlays */
+.overlay-container {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.8); z-index: 2000;
+    display: flex; justify-content: center; align-items: center;
+}
+.overlay-content { background: var(--card-bg-color); padding: 2rem; border-radius: 10px; max-width: 500px; text-align: center; }
+
+/* Correção visual para o input de confirmação de exclusão */
+#delete-verification-input {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    border-radius: 5px;
+    border: 1px solid var(--border-color); /* Borda padrão (cinza/tema) */
+    background-color: var(--bg-color);     /* Fundo padrão */
+    color: var(--text-color);
+    font-family: var(--body-font);
+    font-size: 1rem;
+    text-align: left; /* Alinha à esquerda como os outros campos */
+    margin-top: 1rem;
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+#delete-verification-input:focus {
+    border-color: var(--secondary-color); /* Fica rosa/verde no foco */
+    box-shadow: 0 0 5px rgba(233, 69, 96, 0.3);
+}
+
+/* Removemos a borda vermelha fixa anterior, se houver */
+#delete-confirm-modal .form-group {
+    border-color: var(--border-color);
+}
+
+/* --- Profile & Availability Editor --- */
+.profile-panel { margin-top: 2rem; }
+.availability-editor { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+#time-slots-list { min-height: 200px; background: rgba(0,0,0,0.2); padding: 0.5rem; margin-bottom: 1rem; }
+.time-slot-item {
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--card-bg-color); padding: 0.5rem 0.8rem;
+    margin-bottom: 0.5rem; border-radius: 4px;
+}
+.remove-time-btn { background: none; border: none; color: var(--secondary-color); cursor: pointer; }
+
+/* =========================================
+   ESTILOS DA PÁGINA DO JOGO (ATUALIZADO)
+   ========================================= */
+
+/* Imagem de Capa (Hero) */
+.game-hero-container {
+    width: 100%;
+    height: 400px;
+    position: relative;
+    margin-bottom: 2rem;
+    border-radius: 0 0 12px 12px;
+    overflow: hidden;
+}
+
+.game-hero-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* Adiciona um gradiente escuro na parte inferior para o título */
+    mask-image: linear-gradient(to bottom, black 70%, transparent 100%); 
+}
+
+/* Ajuste no layout de Agendamento para suportar o Overlay */
+.booking-section {
+    position: relative; /* Necessário para o overlay absoluto */
+    margin-top: 4rem;
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 3rem;
+    transition: filter 0.3s;
+}
+
+/* Camada de Bloqueio (Pausado) */
+.booking-blocked-overlay {
+    position: absolute;
+    top: -10px; left: -10px; 
+    width: calc(100% + 20px); 
+    height: calc(100% + 20px);
+    background-color: rgba(22, 22, 37, 0.85); /* Fundo escuro semi-transparente */
+    backdrop-filter: blur(4px); /* Desfoque no fundo */
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    text-align: center;
+    padding: 2rem;
+}
+
+.booking-blocked-overlay h2 {
+    font-size: 3rem;
+    color: var(--secondary-color);
+    margin-bottom: 1rem;
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+.booking-blocked-overlay p {
+    font-size: 1.2rem;
+    color: var(--text-color);
+    max-width: 600px;
+}
+
+/* Aviso de Arquivo Muito Grande */
+.compression-alert {
+    background-color: rgba(255, 187, 0, 0.15);
+    border: 1px solid #ffbb00;
+    color: #ffbb00;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    animation: fadeIn 0.3s;
+}
+
+.compression-alert strong {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.compression-link {
+    color: white;
+    text-decoration: underline;
+    font-weight: bold;
+    cursor: pointer;
+}
+.compression-link:hover {
+    color: var(--secondary-color);
+}
+
+/* Ajuste para botões com texto no card */
+.game-card-content .submit-btn {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0.6rem 1rem;
+}
+
+/* Lista de Assets de Sessão no Admin */
+.assets-list-container {
+    max-height: 200px;
+    overflow-y: auto;
+    background: rgba(0,0,0,0.2);
+    padding: 10px;
+    border-radius: 6px;
+}
+
+.asset-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--input-bg);
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+}
+
+.asset-thumb {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 4px;
+    background: #000;
+}
+
+.asset-info {
+    flex: 1;
+    overflow: hidden;
+}
+
+.asset-name {
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.asset-type {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+/* Grid de Botões de Tipo de Upload */
+.upload-type-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.type-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 10px;
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    font-size: 0.85rem;
+}
+
+.type-btn ion-icon {
+    font-size: 1.4rem;
+    color: var(--text-color-light);
+}
+
+.type-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: var(--secondary-color);
+}
+
+.type-btn:hover ion-icon {
+    color: var(--secondary-color);
+}
+
+/* Estado Ativo (opcional, via JS se quiser destacar qual foi clicado) */
+.type-btn.active {
+    background-color: rgba(0, 255, 136, 0.1);
+    border-color: var(--secondary-color);
+    color: var(--secondary-color);
+}
+
+/* Estilo da Lista CRUD de Assets */
+.crud-list .crud-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid var(--border-color);
+    background: rgba(255,255,255,0.02);
+    transition: background 0.2s;
+}
+
+.crud-list .crud-item:hover {
+    background: rgba(255,255,255,0.05);
+}
+
+.crud-item-thumb {
+    width: 40px;
+    height: 40px;
+    border-radius: 4px;
+    object-fit: cover;
+    background: #000;
+    margin-right: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+}
+
+/* --- TIMER DO JOGADOR (FIXO E VISÍVEL) --- */
+#player-timer-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.85); /* Fundo escuro forte */
+    padding: 15px 25px;
+    border-radius: 12px;
+    border: 2px solid #00ff88; /* Borda verde neon */
+    z-index: 9999 !important; /* MÁXIMA PRIORIDADE VISUAL */
+    text-align: center;
+    box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+}
+
+/* --- SEÇÕES DE ASSETS COM VOLUME --- */
+.assets-section {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 15px;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.section-title {
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.volume-control-area {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.volume-slider {
+    width: 80px;
+    height: 4px;
+    background: #444;
+    border-radius: 2px;
+    outline: none;
+}
+
+.volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--secondary-color); /* #00ff88 */
+    cursor: pointer;
+}
+
+#timer-label {
+    font-size: 0.7rem;
+    color: #aaa;
+    letter-spacing: 1px;
+    margin-bottom: 5px;
+    font-family: sans-serif;
+}
+
+#player-timer-display {
+    font-family: 'Orbitron', sans-serif, monospace; /* Fonte digital */
+    font-size: 2rem;
+    color: #fff;
+    line-height: 1;
+    font-weight: bold;
+}
+
+/* Responsividade para Celular */
+@media (max-width: 600px) {
+    #player-timer-container {
+        top: 10px;
+        right: 50%;
+        transform: translateX(50%); /* Centraliza no topo */
+        padding: 10px 20px;
+        width: auto;
+    }
+    #player-timer-display {
+        font-size: 1.5rem;
+    }
+}
+
+.crud-item-info {
+    flex: 1;
+    overflow: hidden;
+}
+
+.crud-item-name {
+    font-weight: bold;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.crud-item-type {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+.crud-actions {
+    display: flex;
+    gap: 5px;
+}
+
+/* Responsividade do Modal Grid */
+@media (max-width: 850px) {
+    .modal-body-scroll {
+        grid-template-columns: 1fr !important; /* Vira 1 coluna no mobile */
+    }
+}
+
+/* =========================================
+   6. MEDIA QUERIES
+   ========================================= */
+@media screen and (max-width: 992px) {
+    .nav__links, .nav__controls { display: none; }
+    .mobile-menu-dropdown { display: block; }
+    .nav { height: 5rem; }
+    .nav__logo img { width: 150px; }
+    .about-grid, .contact-grid, .booking-section, .availability-editor { grid-template-columns: 1fr; }
+    .about-image { order: -1; }
+}
+
+@media screen and (max-width: 768px) {
+    .nav__logo img { width: 120px; }
+    .carousel-slide { flex-basis: 90%; }
+    .faq-container { grid-template-columns: 1fr; }
+    .game-room-container { display: block; }
+    .host-tools-wrapper { position: fixed; right: 0; top: 0; height: 100%; z-index: 30; transform: translateX(100%); }
+    .host-tools-wrapper.active { transform: translateX(0); }
+    
+    .form-row { flex-direction: column; gap: 0.5rem; }
+    .right-buttons { width: 100%; flex-direction: column; }
+    .submit-btn { width: 100%; }
+}
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes rotate-phone { 0% { transform: rotate(0deg); } 50% { transform: rotate(90deg); } 100% { transform: rotate(90deg); } }
+
+
+/* ========================================= */
+/* MODO MOBILE: SALA DO HOST */
+/* ========================================= */
+@media screen and (max-width: 768px) {
+
+    /* 1. Trava a rolagem da página inteira */
+    body {
+        overflow: hidden;
+        height: 100dvh; /* Usa altura dinâmica para evitar problemas com barra de URL */
+    }
+
+    /* 2. Muda o layout principal para Coluna (Vertical) */
+    /* Substitua '.main-container' pela classe que envolve o vídeo e a sidebar na sua HTML */
+    .host-container, .main-content-wrapper { 
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        height: 100%;
+    }
+
+    /* 3. Área de Vídeo (Topo - 40% da tela) */
+    .video-section, #video-container-host {
+        width: 100%;
+        height: 40%; /* Ajuste a porcentagem conforme necessário */
+        min-height: 250px;
+        position: relative;
+        background: #000;
+        order: 1; /* Garante que fique no topo */
+    }
+
+    /* Garante que o vídeo preencha a área */
+    #host-local-video, #host-remote-video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    /* 4. Área de Painéis/Assets (Baixo - 60% da tela) */
+    .sidebar-section, #host-sidebar {
+        width: 100%;
+        height: 60%; /* O resto da tela */
+        order: 2;
+        overflow-y: auto; /* Permite rolar a lista de assets */
+        background: #121212;
+        padding: 15px;
+        box-sizing: border-box;
+        border-top: 2px solid #333;
+    }
+
+    /* 5. Ajuste dos Botões de Controle (Mic, Cam, etc) */
+    /* Faz eles flutuarem sobre o vídeo ou ficarem fixos */
+    .controls-bar {
+        position: absolute;
+        bottom: 10px;
+        left: 0;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        z-index: 100;
+        padding: 0 10px;
+        box-sizing: border-box;
+    }
+
+    .control-btn {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        font-size: 1.5rem; /* Ícones maiores para o dedo */
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(5px);
+    }
+
+    /* 6. Botões de Assets (Lista) */
+    .asset-btn {
+        padding: 15px; /* Mais fácil de clicar */
+        margin-bottom: 10px;
+        font-size: 1rem;
+    }
+
+    /* 7. Timer */
+    #session-timer {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        font-size: 1.2rem;
+        background: rgba(0,0,0,0.5);
+        padding: 5px 10px;
+        border-radius: 5px;
+        z-index: 100;
+    }
+}
+
+/* ========================================= */
+/* MODO MOBILE: FORÇAR HORIZONTAL & LAYOUT */
+/* ========================================= */
+
+/* 1. Estilo do Overlay de Rotação (Escondido por padrão) */
+#rotate-device-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: #000;
+    z-index: 9999;
+    color: #fff;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+#rotate-device-overlay ion-icon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    color: var(--primary-color, #00ff88);
+    animation: rotate-icon 2s infinite ease-in-out;
+}
+
+@keyframes rotate-icon {
+    0% { transform: rotate(0deg); }
+    50% { transform: rotate(-90deg); }
+    100% { transform: rotate(0deg); }
+}
+
+/* ========================================= */
+/* MEDIA QUERY: CELULAR EM PÉ (PORTRAIT) -> BLOQUEAR */
+/* ========================================= */
+@media screen and (max-width: 768px) and (orientation: portrait) {
+    /* Mostra o aviso */
+    #rotate-device-overlay {
+        display: flex;
+    }
+
+    /* Esconde todo o resto da aplicação para não processar/renderizar errado */
+    .host-container, .main-content-wrapper, #loading-overlay {
+        display: none !important;
+    }
+}
+
+/* ========================================= */
+/* MEDIA QUERY: CELULAR DEITADO (LANDSCAPE) -> LAYOUT OTIMIZADO */
+/* ========================================= */
+@media screen and (max-height: 500px) and (orientation: landscape) {
+    
+    body {
+        overflow: hidden; /* Evita rolagem da página inteira */
+    }
+
+    /* Layout Flex Row: Vídeo na Esquerda | Sidebar na Direita */
+    .host-container {
+        display: flex;
+        flex-direction: row;
+        width: 100vw;
+        height: 100vh;
+    }
+
+    /* --- COLUNA DA ESQUERDA: VÍDEO (70% da largura) --- */
+    .video-section, #video-container-host {
+        width: 70%;
+        height: 100%;
+        position: relative;
+        background: #000;
+    }
+
+    #host-local-video, #host-remote-video {
+        width: 100%;
+        height: 100%;
+        object-fit: contain; /* Garante que veja o vídeo todo */
+    }
+
+    /* Botões de Controle flutuando sobre o vídeo na parte inferior */
+    .controls-bar {
+        position: absolute;
+        bottom: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 15px;
+        background: rgba(0,0,0,0.5);
+        padding: 5px 15px;
+        border-radius: 20px;
+    }
+
+    .control-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 1.2rem;
+    }
+
+    /* --- COLUNA DA DIREITA: SIDEBAR/MENU (30% da largura) --- */
+    .sidebar-section, #host-sidebar {
+        width: 30%;
+        height: 100%;
+        overflow-y: auto; /* Rolagem interna */
+        background: #111;
+        border-left: 1px solid #333;
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Ajustes nos itens da sidebar para caberem melhor */
+    .assets-section {
+        margin-bottom: 15px;
+    }
+
+    .section-header {
+        font-size: 0.9rem;
+        padding: 5px;
+    }
+
+    .asset-btn {
+        padding: 8px;
+        font-size: 0.85rem;
+        min-height: 40px; /* Tamanho mínimo para toque */
+    }
+
+    /* Timer no canto do vídeo */
+    #session-timer {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        font-size: 1rem;
+        background: rgba(0,0,0,0.6);
+        padding: 4px 8px;
+        border-radius: 4px;
+        z-index: 10;
+    }
+    
+    /* Decisões e outros elementos */
+    .decision-card {
+        padding: 8px;
+        font-size: 0.8rem;
+    }
+}
+
+/* ========================================= */
+/* GRID DE VÍDEOS (MULTI-JOGADOR) */
+/* ========================================= */
+.video-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-content: center;
+    gap: 10px;
+    width: 100%;
+    height: 100%;
+    padding: 10px;
+    box-sizing: border-box;
+    overflow-y: auto;
+}
+
+/* Container de cada vídeo individual */
+.video-wrapper {
+    position: relative;
+    width: 300px; /* Tamanho base */
+    flex-grow: 1;
+    max-width: 48%; /* Tenta colocar 2 por linha */
+    aspect-ratio: 16/9;
+    background: #000;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    transition: all 0.3s ease;
+}
+
+.video-wrapper video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Etiqueta com nome (ex: "Jogador 1") */
+.user-label {
+    position: absolute;
+    bottom: 5px;
+    left: 10px;
+    background: rgba(0,0,0,0.6);
+    color: white;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    pointer-events: none;
+    z-index: 2;
+}
+
+/* Ajuste para Mobile: 1 por linha */
+@media (max-width: 768px) {
+    .video-wrapper {
+        max-width: 100%;
+        min-height: 200px;
+    }
+}

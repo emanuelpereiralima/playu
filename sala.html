@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sala de Jogo - PlayU</title>
     
-    <link rel="stylesheet" href="assets/css/style.ca9fe59a.css">
+    <link rel="stylesheet" href="assets/css/style.0878346b.css">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
     
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
@@ -16,7 +16,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     
     <script src="assets/js/firebase-config.js"></script>
-    <script src="assets/js/main.ca9fe59a.js"></script>
+    <script src="assets/js/main.0878346b.js"></script>
 </head>
 <body class="player-room-body">
 
@@ -26,10 +26,13 @@
     </div>
 
     <div class="player-video-container">
-        <video id="player-remote-video" autoplay playsinline></video>
+        <div id="video-grid" class="video-grid">
+            <video id="local-video" autoplay muted></video>
+        </div>
         
-        <video id="player-local-video" autoplay playsinline muted></video>
-                <img src="assets/images/GIF Play.U.gif" class="video-bg-gif" alt="Aguardando...">
+        <video id="player-local-video" autoplay playsinline></video>
+        <img src="assets/images/GIF Play.U.gif" class="video-bg-gif" alt="Aguardando...">
+
 
 
         <div id="player-timer-container">
@@ -56,7 +59,6 @@
         </div>
     </div>
 
-    <script src="assets/js/sala.ca9fe59a.js"></script>
-
+    <script src="assets/js/sala.0878346b.js"></script>
 </body>
 </html>

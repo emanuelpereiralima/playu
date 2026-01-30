@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel Admin - PlayU</title>
-    <script src="assets/js/version.ca9fe59a.js"></script>
+    <script src="assets/js/version.0878346b.js"></script>
     <script>
         function loadAsset(path) {
             const version = typeof SITE_VERSION !== 'undefined' ? SITE_VERSION : new Date().getTime();
@@ -107,7 +107,8 @@
                     
                     <div class="modal-col-left">
                         <h4 style="color: var(--secondary-color); border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 15px;">Informações</h4>
-                        <div class="form-row"><div class="form-group"><label>Nome *</label><input type="text" id="new-game-name" required></div><div class="form-group"><label>Status</label><select id="new-game-status"><option value="available">Disponível</option><option value="paused">Pausado</option></select></div></div>
+                        <div class="form-row"><div class="form-group"><label>Nome *</label><input type="text" id="new-game-name" required></div>
+                        <div class="form-group"><label>Status</label><select id="new-game-status"><option value="available">Disponível</option><option value="draft">Rascunho</option><option value="paused">Pausado</option></select></div></div>
                         <div class="form-row"><div class="form-group"><label>Duração (Min)</label><input type="number" id="new-game-duration" required></div><div class="form-group"><label>Valor (R$)</label><input type="number" id="new-game-price" step="0.01" required></div></div>
                         <div class="form-group">
                             <label>Máx. Jogadores *</label>
@@ -330,10 +331,10 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
     <script src="assets/js/firebase-config.js"></script>
     <script>
-        loadAsset('assets/css/style.ca9fe59a.css');
+        loadAsset('assets/css/style.0878346b.css');
         loadAsset('https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js');
         loadAsset('https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js');
-        loadAsset('assets/js/admin.ca9fe59a.js');
+        loadAsset('assets/js/admin.0878346b.js');
     </script>
 </body>
 </html>

@@ -636,8 +636,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="game-card-content">
                         <div style="margin-bottom:1rem;">
                             <h3 style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${g.name}</h3>
-                            <small>${g.status==='available'?'<span style="color:#00ff88">● On</span>':'<span style="color:#ffbb00">● Off</span>'}</small>
-                        </div>
+                            <small>
+                                ${g.status === 'available' 
+                                    ? '<span style="color:#00ff88">● Disponível</span>' 
+                                    : g.status === 'paused' 
+                                        ? '<span style="color:#ffbb00">● Pausado</span>' 
+                                        : '<span style="color:white">● Rascunho</span>'
+                                }
+                            </small>                        </div>
                         <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
                             <button class="submit-btn small-btn edit-game-trigger" data-id="${doc.id}">Editar</button>
                             <button class="submit-btn small-btn schedule-game-trigger" data-id="${doc.id}" style="background:var(--primary-color-dark); border:1px solid #444;">Agenda</button>
@@ -805,8 +811,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if(!files.length) return;
 
             // --- VALIDAÇÃO DE TAMANHO (100MB) ---
-            const MAX_SIZE = 100 * 1024 * 1024; // 100MB em bytes
-            const oversizedFile = files.find(f => f.size > MAX_SIZE);
+            //const MAX_SIZE = 100 * 1024 * 1024; // 100MB em bytes
+            //const oversizedFile = files.find(f => f.size > MAX_SIZE);
 
             if (oversizedFile) {
                 alert(`O arquivo "${oversizedFile.name}" é muito grande (acima de 100MB).\n\nO envio foi cancelado.`);
@@ -858,7 +864,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const file = e.target.files[0];
         if (file) {
             // --- VALIDAÇÃO DE TAMANHO (100MB) ---
-            const MAX_SIZE = 100 * 1024 * 1024; // 100MB
+            /*const MAX_SIZE = 100 * 1024 * 1024; // 100MB
             if (file.size > MAX_SIZE) {
                 alert(`O arquivo "${file.name}" excede o limite de 100MB.\n\nPor favor, escolha um arquivo menor.`);
                 e.target.value = ''; // Limpa o input
@@ -874,6 +880,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 return;
             }
+                */
             // -------------------------------------
 
             tempAssetFile = file; 

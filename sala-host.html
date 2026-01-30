@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sala do Host - PlayU</title>
     
-    <link rel="stylesheet" href="assets/css/style.ca9fe59a.css">
+    <link rel="stylesheet" href="assets/css/style.0878346b.css">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
     
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
@@ -17,7 +17,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
 
     <script src="assets/js/firebase-config.js"></script>
-    <script src="assets/js/main.ca9fe59a.js"></script>
+    <script src="assets/js/main.0878346b.js"></script>
 </head>
 <body class="host-room-body">
 
@@ -31,13 +31,14 @@
             <div class="video-wrapper remote">
                 <img src="assets/images/GIF Play.U.gif" class="video-bg-gif" alt="Aguardando...">
                 
-                <video id="host-local-video" autoplay playsinline muted></video>
+                <video id="host-local-video" autoplay playsinline></video>
                 <div class="video-label">Você (Host)</div>
             </div>
 
             <div class="video-wrapper local">
-                <video id="host-remote-video" autoplay playsinline></video>
-                <div class="video-label">Jogador</div>
+                <div id="video-grid" class="video-grid">
+                <video id="local-video" autoplay muted></video>
+                </div>
             </div>
             
             <div id="host-decision-feedback" class="hidden">
@@ -166,6 +167,16 @@
         }
     </script>
 
-    <script src="assets/js/sala-host.ca9fe59a.js"></script>
+    <script src="assets/js/sala-host.0878346b.js"></script>
 </body>
+<div id="rotate-device-overlay">
+    <div class="rotate-content">
+        <ion-icon name="phone-landscape-outline"></ion-icon>
+        <h3>Gire seu dispositivo</h3>
+        <p>Para uma melhor experiência de controle, utilize a tela na horizontal.</p>
+    </div>
+</div>
+
+<div class="host-container">
+    </div>
 </html>
