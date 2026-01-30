@@ -24,11 +24,11 @@
             <h1 class="logo">PlayU Dashboard</h1>
             <div class="user-menu">
                 <div class="user-profile-trigger" id="edit-profile-btn" title="Alterar nome">
-                    <span id="user-greeting">Carregando...</span>
-                    <ion-icon name="pencil-outline"></ion-icon>
+                    <h2 id="user-greeting" title="Clique para editar perfil">
+                    Olá, Jogador <ion-icon name="create-outline" style="font-size: 0.8em; opacity: 0.7;"></ion-icon>
+                </h2>
                 </div>
                 <a href="index.html" class="submit-btn small-btn">Voltar ao Site</a>
-                <button id="logout-btn" class="submit-btn small-btn danger">Sair</button>
             </div>
         </div>
     </header>
@@ -184,6 +184,56 @@
                     </div>
                 </div>
             </form>
+        </div>
+    </div>
+    <div id="modal-cancel-booking" class="modal-overlay hidden">
+        <div class="modal-content" style="width: 400px; text-align: center;">
+            <div class="modal-header" style="justify-content: center; border: none; padding-bottom: 0;">
+                <h3 style="color: #ff4444; font-size: 1.5rem;">
+                    <ion-icon name="warning-outline"></ion-icon> Cancelar Agendamento?
+                </h3>
+            </div>
+            
+            <div class="modal-body-scroll" style="padding: 10px 20px;">
+                <p style="color: #ccc; margin-bottom: 20px;">
+                    Tem certeza que deseja cancelar esta sessão?<br>
+                    Essa ação <strong>não pode ser desfeita</strong>.
+                </p>
+            </div>
+
+            <div class="modal-footer" style="justify-content: center; gap: 15px; background: transparent; border: none;">
+                <button id="btn-abort-cancel" class="submit-btn secondary-btn">Não, Voltar</button>
+                <button id="btn-confirm-cancel" class="submit-btn danger-btn">Sim, Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-edit-profile" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><ion-icon name="person-circle-outline"></ion-icon> Editar Perfil</h3>
+                <button class="close-modal-btn" id="close-profile-modal">&times;</button>
+            </div>
+            
+            <div class="modal-body">
+                <form id="edit-profile-form">
+                    <div class="form-group">
+                        <label for="edit-name">Nome de Exibição</label>
+                        <input type="text" id="edit-name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-email">Email</label>
+                        <input type="email" id="edit-email" required>
+                        <small style="color: #aaa;">Nota: Mudar o email pode exigir novo login.</small>
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="submit-btn secondary-btn" id="cancel-profile-btn">Cancelar</button>
+                <button type="submit" form="edit-profile-form" class="submit-btn" id="save-profile-btn">Salvar Alterações</button>
+            </div>
         </div>
     </div>
 

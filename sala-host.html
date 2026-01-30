@@ -31,13 +31,14 @@
             <div class="video-wrapper remote">
                 <img src="assets/images/GIF Play.U.gif" class="video-bg-gif" alt="Aguardando...">
                 
-                <video id="host-local-video" autoplay playsinline muted></video>
+                <video id="host-local-video" autoplay playsinline></video>
                 <div class="video-label">Você (Host)</div>
             </div>
 
             <div class="video-wrapper local">
-                <video id="host-remote-video" autoplay playsinline></video>
-                <div class="video-label">Jogador</div>
+                <div id="video-grid" class="video-grid">
+                <video id="local-video" autoplay muted></video>
+                </div>
             </div>
             
             <div id="host-decision-feedback" class="hidden">
@@ -168,4 +169,14 @@
 
     <script src="assets/js/sala-host.js"></script>
 </body>
+<div id="rotate-device-overlay">
+    <div class="rotate-content">
+        <ion-icon name="phone-landscape-outline"></ion-icon>
+        <h3>Gire seu dispositivo</h3>
+        <p>Para uma melhor experiência de controle, utilize a tela na horizontal.</p>
+    </div>
+</div>
+
+<div class="host-container">
+    </div>
 </html>

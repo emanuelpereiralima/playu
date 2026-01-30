@@ -26,10 +26,13 @@
     </div>
 
     <div class="player-video-container">
-        <video id="player-remote-video" autoplay playsinline></video>
+        <div id="video-grid" class="video-grid">
+            <video id="local-video" autoplay muted></video>
+        </div>
         
-        <video id="player-local-video" autoplay playsinline muted></video>
-                <img src="assets/images/GIF Play.U.gif" class="video-bg-gif" alt="Aguardando...">
+        <video id="player-local-video" autoplay playsinline></video>
+        <img src="assets/images/GIF Play.U.gif" class="video-bg-gif" alt="Aguardando...">
+
 
 
         <div id="player-timer-container">
@@ -57,6 +60,5 @@
     </div>
 
     <script src="assets/js/sala.js"></script>
-
 </body>
 </html>

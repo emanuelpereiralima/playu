@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- ELEMENTOS DOM ---
     const localVideo = document.getElementById('player-local-video'); 
-    const remoteVideo = document.getElementById('player-remote-video'); // O vídeo do HOST aparece aqui
+    const remoteVideo = document.getElementById('player-remote-video-host'); 
     const loadingOverlay = document.getElementById('loading-overlay');
     const timerDisplay = document.getElementById('player-timer-display');
     
