@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel Admin - PlayU</title>
-    <script src="assets/js/version.839b5fe8.js"></script>
+    <script src="assets/js/version.3a106c79.js"></script>
     <script>
         function loadAsset(path) {
             const version = typeof SITE_VERSION !== 'undefined' ? SITE_VERSION : new Date().getTime();
@@ -115,14 +115,14 @@
                             <input type="number" id="new-game-max-players" required min="1" value="1" placeholder="Ex: 1 para exclusivo">
                             <small style="color:#aaa; font-size:0.8rem;">1 = Sessão Exclusiva</small>
                         </div>
-                        <div class="form-group"><label class="upload-label" style="justify-content:flex-start; padding:10px;"><input type="checkbox" id="check-extra-life" style="width:auto;margin-right:10px;"> Possui Vida Extra?</label><div id="extra-life-config-container" class="hidden" style="margin-top:10px;"><label style="font-size:0.8rem;color:#aaa">Tempo Extra (Min)</label><input type="number" id="new-game-extra-life-time" placeholder="15"></div></div>
+                        <div class="form-group"><label class="upload-btn" style="justify-content:flex-start; padding:10px;"><input type="checkbox" id="check-extra-life" style="width:auto;margin-right:10px;"> Possui Vida Extra?</label><div id="extra-life-config-container" class="hidden" style="margin-top:10px;"><label style="font-size:0.8rem;color:#aaa">Tempo Extra (Min)</label><input type="number" id="new-game-extra-life-time" placeholder="15"></div></div>
                         <div class="form-group" style="position:relative;"><label>Tags</label><div class="tags-input-container" id="tags-wrapper" onclick="document.getElementById('tag-input-field').focus()"><input type="text" id="tag-input-field" class="tag-input-field" placeholder="Digite..." autocomplete="off"></div><ul id="tags-suggestions" class="tags-suggestions-list"></ul></div>
                         <div class="form-group"><label>Descrição Curta</label><input type="text" id="new-game-short-desc"></div>
                         <div class="form-group"><label>Descrição Completa</label><textarea id="new-game-full-desc" rows="3"></textarea></div>
                         <h4 style="color: var(--secondary-color); border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 15px; margin-top:20px;">Marketing</h4>
-                        <div class="form-group"><label>Capa</label><div style="display:flex;gap:10px;"><div style="flex:1;"><input type="file" id="admin-cover-upload" accept="image/*" style="display:none;"><label for="admin-cover-upload" class="upload-label small-btn">Upload Capa</label><input type="text" id="new-game-cover" placeholder="URL" style="margin-top:5px;font-size:0.8rem;"></div><img id="admin-cover-preview" src="" style="width:60px;height:60px;object-fit:cover;border-radius:4px;display:none;background:#000;"></div></div>
-                        <div class="form-group"><label>Galeria</label><input type="file" id="gallery-upload-input" multiple accept="image/*" style="display:none;"><label for="gallery-upload-input" class="upload-label small-btn">Adicionar Fotos</label><div id="gallery-preview-grid" class="gallery-grid" style="margin-top:5px;"></div></div>
-                        <div class="form-group"><label>Teaser</label><label for="admin-trailer-upload" class="upload-label small-btn">Enviar Vídeo</label><input type="file" id="admin-trailer-upload" accept="video/*" style="display:none;"><input type="text" id="new-game-trailer" style="display:none;"></div>
+                        <div class="form-group"><label>Capa</label><div style="display:flex;gap:10px;"><div style="flex:1;"><input type="file" id="admin-cover-upload" accept="image/*"><label for="admin-cover-upload" class="upload-btn">Upload Capa</label></div><img id="admin-cover-preview" src="" style="width:200px;height:200px;object-fit:cover;border-radius:4px;display:none;"></div></div>
+                        <div class="form-group"><label>Galeria</label><input type="file" id="gallery-upload-input" multiple accept="image/*"><label for="gallery-upload-input" class="upload-btn small-btn">Adicionar Fotos</label><div id="gallery-preview-grid" class="gallery-grid" style="margin-top:5px;"></div></div>
+                        <div class="form-group"><label>Teaser</label><input type="file" id="admin-trailer-upload" accept="video/*"><input type="text" id="new-game-trailer" style="display:none;"><label for="admin-trailer-upload" class="upload-btn small-btn">Enviar Vídeo</label></div>
                     </div>
                     
                     <div class="form-group">
@@ -185,7 +185,7 @@
         <div style="margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
             <label style="font-size:0.85rem; color:#aaa; margin-bottom:10px; display:block;">Decisões Salvas:</label>
             <div id="decisions-list-container">
-                </div>
+        </div>
         </div>
     </div>
 
@@ -238,7 +238,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer"><button type="button" id="delete-game-btn" class="submit-btn danger-btn hidden">Excluir Jogo</button><div class="right-buttons"><button type="button" id="cancel-create-game-btn" class="submit-btn secondary-btn">Cancelar</button><button type="submit" id="save-game-submit-btn" class="submit-btn">Salvar</button></div></div>
+                <div class="modal-footer"><button type="button" id="cancel-create-game-btn" class="submit-btn secondary-btn">Cancelar</button><div class="right-buttons"><button type="submit" id="save-game-submit-btn" class="submit-btn">Salvar Alterações</button></div></div>
             </form>
         </div>
     </div></div></div>
@@ -331,10 +331,10 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
     <script src="assets/js/firebase-config.js"></script>
     <script>
-        loadAsset('assets/css/style.839b5fe8.css');
+        loadAsset('assets/css/style.3a106c79.css');
         loadAsset('https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js');
         loadAsset('https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js');
-        loadAsset('assets/js/admin.839b5fe8.js');
+        loadAsset('assets/js/admin.3a106c79.js');
     </script>
 </body>
 </html>
