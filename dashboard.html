@@ -1,238 +1,133 @@
 <!DOCTYPE html>
-<html lang="pt-br" data-theme="dark">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - PlayU</title>
+    <title>Dashboard</title>
     
-    <script src="assets/js/version.js"></script>
-    <script>
-        function loadAsset(path) {
-            const version = typeof SITE_VERSION !== 'undefined' ? SITE_VERSION : new Date().getTime();
-            const extension = path.split('.').pop();
-            if (extension === 'css') {
-                document.write(`<link rel="stylesheet" href="${path}?v=${version}">`);
-            } else if (extension === 'js') {
-                document.write(`<script src="${path}?v=${version}" defer><\/script>`);
-            }
+    <link rel="stylesheet" href="assets/css/style.css">
+    
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+
+    <style>
+        .dashboard-container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
         }
-    </script>
+
+        .dashboard-card {
+            background: var(--card-bg, #111);
+            border: 1px solid var(--border-color, #333);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        /* Modal Styles (Embutido para garantir funcionamento) */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 2000;
+            opacity: 0; visibility: hidden; transition: all 0.3s;
+            backdrop-filter: blur(5px);
+        }
+        .modal-overlay.active {
+            opacity: 1; visibility: visible;
+        }
+        .modal-content {
+            background: var(--card-bg, #1a1a1a);
+            border: 1px solid var(--primary-color, #ff0000);
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%; max-width: 400px;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.2);
+            transform: translateY(20px); transition: transform 0.3s;
+        }
+        .modal-overlay.active .modal-content {
+            transform: translateY(0);
+        }
+
+        .edit-btn {
+            background: none; border: none; color: #888;
+            cursor: pointer; margin-left: 10px; transition: color 0.2s;
+            padding: 5px;
+        }
+        .edit-btn:hover { color: var(--primary-color, #ff0000); transform: scale(1.1); }
+    </style>
 </head>
 <body>
-    <header class="main-header">
-        <div class="header-container">
-            <h1 class="logo">PlayU Dashboard</h1>
-            <div class="user-menu">
-                <div class="user-profile-trigger" id="edit-profile-btn" title="Alterar nome">
-                    <h2 id="user-greeting" title="Clique para editar perfil">
-                    Olá, Jogador <ion-icon name="create-outline" style="font-size: 0.8em; opacity: 0.7;"></ion-icon>
-                </h2>
+
+    <nav style="border-bottom: 1px solid var(--border-color); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; background: var(--nav-bg);">
+        <a href="index.html" style="color: #fff; text-decoration: none; font-weight: bold; font-size: 1.5rem; display: flex; align-items: center; gap: 10px;">
+            <ion-icon name="arrow-back-outline"></ion-icon> Voltar ao Site
+        </a>
+        
+        <button id="dash-logout-btn" class="submit-btn small-btn">
+            Sair
+        </button>
+    </nav>
+
+    <main class="dashboard-container">
+
+        <div class="dashboard-card">
+            <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+                
+                <div style="position: relative;">
+                    <img id="user-avatar-display" src="assets/images/logo.png" alt="Avatar" 
+                         style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary-color);">
                 </div>
-                <a href="index.html" class="submit-btn small-btn">Voltar ao Site</a>
+                
+                <div style="flex: 1;">
+                    <div style="display: flex; align-items: center; margin-bottom: 5px;">
+                        <h1 id="user-name-display" style="margin: 0; font-size: 1.8rem; color: #fff;">Carregando...</h1>
+                        <button onclick="openEditModal()" class="edit-btn" title="Editar Nome">
+                            <ion-icon name="pencil-outline" style="font-size: 1.2rem;"></ion-icon>
+                        </button>
+                    </div>
+                    <p id="user-email-display" style="margin: 0; color: #aaa;">...</p>
+                </div>
+
             </div>
         </div>
-    </header>
 
-    <main class="dashboard-main">
-        
-        <div id="quick-actions-panel" class="dashboard-section hidden" style="margin-bottom: 2rem; background: var(--primary-color-dark); padding: 1.5rem; border-radius: 12px; border: 1px dashed var(--secondary-color);">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                    <h3 style="color: var(--secondary-color); margin-bottom: 0.5rem;"><ion-icon name="flask-outline"></ion-icon> Área de Testes</h3>
-                    <p style="opacity: 0.8; font-size: 0.9rem;">Crie uma sala instantânea para testar áudio, vídeo e conexão.</p>
-                </div>
-                <button id="create-test-room-btn" class="submit-btn">
-                    <ion-icon name="add-circle-outline"></ion-icon> Criar Sala de Teste
+        <div class="dashboard-card" style="min-height: 400px;">
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 1px solid #333; padding-bottom: 15px;">
+                <h2 style="margin: 0; font-size: 1.4rem; color: #fff;">Meus Agendamentos</h2>
+                
+                <button id="toggle-history-btn" onclick="toggleBookingView()" 
+                        style="background: transparent; border: 1px solid #555; color: #aaa; padding: 6px 15px; border-radius: 20px; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; gap: 5px; transition: all 0.3s;">
+                    <ion-icon name="time-outline"></ion-icon> Ver Histórico
                 </button>
             </div>
-        </div>
-        
-        <div class="dashboard-tabs">
-            <button class="tab-btn active" data-target="my-bookings">Meus Agendamentos</button>
-            <button class="tab-btn" data-target="courses-area">Cursos</button>
-            <button class="tab-btn hidden" id="admin-tab-btn" data-target="manage-games">Gerenciar Jogos</button>
-        </div>
 
-        <section id="my-bookings" class="dashboard-section active-section">
-            <h2>Meus Agendamentos</h2>
-            <div id="my-bookings-container" class="bookings-list">
-                <div class="loader"></div>
+            <div id="user-bookings-list" class="bookings-grid">
+                <div class="loader-small" style="margin: 50px auto;"></div>
             </div>
-        </section>
 
-        <section id="courses-area" class="dashboard-section hidden-section">
-            <h2>Meus Cursos</h2>
-            <p class="page-subtitle">Acesse conteúdos exclusivos para melhorar sua jogabilidade.</p>
-            <div id="user-course-list" class="game-grid"></div>
-        </section>
-
-        <section id="manage-games" class="dashboard-section hidden-section">
-            <div class="section-header">
-                <h2>Jogos Disponíveis</h2>
-                <div id="admin-actions-container"></div>
-            </div>
-            <div id="game-list-container" class="game-grid"></div>
-        </section>
+        </div>
 
     </main>
 
-    <div id="profile-modal" class="modal-overlay hidden">
+    <div id="edit-modal" class="modal-overlay">
         <div class="modal-content">
-            <button id="close-profile-modal" class="close-overlay-btn">&times;</button>
-            <h3>Editar Perfil</h3>
-            <form id="profile-form">
-                <div class="form-group">
-                    <label>Nome de Exibição</label>
-                    <input type="text" id="profile-name-input" required>
-                </div>
-                <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" id="profile-email-display" disabled style="opacity:0.7">
-                </div>
-                <button type="submit" class="submit-btn">Salvar</button>
-            </form>
-        </div>
-    </div>
-
-    <div id="course-viewer-modal" class="modal-overlay hidden">
-        <div class="modal-content large-modal" style="max-width: 900px;">
-            <button id="close-course-viewer" class="close-overlay-btn">&times;</button>
-            <div id="course-player-container" style="display: grid; grid-template-columns: 250px 1fr; gap: 20px; height: 100%;">
-                <div id="course-modules-list" style="border-right: 1px solid var(--border-color); overflow-y: auto; padding-right: 10px;"></div>
-                <div id="course-video-area" style="display: flex; flex-direction: column;">
-                    <h3 id="current-video-title" style="margin-bottom: 1rem;">Selecione uma aula</h3>
-                    <div id="video-embed-wrapper" class="trailer-wrapper" style="background: #000; border-radius: 10px; flex-grow: 1;"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="create-game-modal" class="modal-overlay hidden">
-        <div class="modal-content large-modal">
-            <button id="close-create-game-modal" class="close-overlay-btn">&times;</button>
-            <h3 id="game-modal-title">Criar Novo Jogo</h3>
+            <h3 style="color: #fff; margin-bottom: 20px;">Como quer ser chamado?</h3>
             
-            <form id="create-game-form" class="scrollable-form">
-                <input type="hidden" id="game-id-hidden">
-
-                <div class="form-section">
-                    <h4>Informações do Jogo</h4>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Nome do Jogo *</label>
-                            <input type="text" id="new-game-name" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Status *</label>
-                            <select id="new-game-status" required>
-                                <option value="available">Disponível</option>
-                                <option value="paused">Pausado</option>
-                                <option value="draft">Rascunho</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Duração *</label>
-                            <input type="text" id="new-game-duration" required placeholder="Ex: 60 minutos">
-                        </div>
-                        <div class="form-group">
-                            <label>Tags *</label>
-                            <input type="text" id="new-game-tags" required placeholder="Ex: Terror, RPG">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Descrição Curta *</label>
-                        <input type="text" id="new-game-short-desc" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Descrição Completa *</label>
-                        <textarea id="new-game-full-desc" rows="4" required></textarea>
-                    </div>
-                    <div class="form-group" style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px; margin-top: 1rem;">
-                        <label>Imagem de Capa *</label>
-                        <label for="admin-cover-upload" class="upload-btn">
-                            <ion-icon name="cloud-upload-outline"></ion-icon> <span>Enviar Imagem</span>
-                        </label>
-                        <input type="file" id="admin-cover-upload" accept="image/*" style="display: none;">
-                        <p id="upload-status" class="form-hint" style="display: none;">Enviando...</p>
-                        <label class="form-label-or" style="margin-top: 0.5rem; font-size: 0.9rem;">Ou cole a URL:</label>
-                        <input type="url" id="new-game-cover" required placeholder="https://..." style="margin-top: 0.2rem;">
-                        <img id="admin-cover-preview" src="" style="max-height: 150px; margin-top: 10px; border-radius: 5px; display: none;">
-                    </div>
-                </div>
-
-                <div id="game-media-section" class="form-section hidden" style="margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
-                    <h4>Mídia Adicional</h4>
-                    <div class="form-group">
-                        <label>Galeria (URLs separadas por vírgula)</label>
-                        <textarea id="new-game-gallery" rows="2"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label>Trailer (URL)</label>
-                        <input type="url" id="new-game-trailer">
-                    </div>
-                </div>
-
-                <div class="modal-footer">
-                    <button type="button" id="delete-game-btn" class="submit-btn danger-btn hidden">
-                        <ion-icon name="trash-outline"></ion-icon> Excluir Jogo
-                    </button>
-                    <div class="right-buttons">
-                        <button type="button" id="cancel-create-game-btn" class="submit-btn secondary-btn">Cancelar</button>
-                        <button type="submit" id="save-game-submit-btn" class="submit-btn primary-btn">Criar Jogo</button>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
-    <div id="modal-cancel-booking" class="modal-overlay hidden">
-        <div class="modal-content" style="width: 400px; text-align: center;">
-            <div class="modal-header" style="justify-content: center; border: none; padding-bottom: 0;">
-                <h3 style="color: #ff4444; font-size: 1.5rem;">
-                    <ion-icon name="warning-outline"></ion-icon> Cancelar Agendamento?
-                </h3>
-            </div>
+            <input type="text" id="new-name-input" placeholder="Digite seu nome de aventureiro" 
+                   style="width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #444; background: #000; color: #fff; margin-bottom: 20px; outline: none;">
             
-            <div class="modal-body-scroll" style="padding: 10px 20px;">
-                <p style="color: #ccc; margin-bottom: 20px;">
-                    Tem certeza que deseja cancelar esta sessão?<br>
-                    Essa ação <strong>não pode ser desfeita</strong>.
-                </p>
-            </div>
-
-            <div class="modal-footer" style="justify-content: center; gap: 15px; background: transparent; border: none;">
-                <button id="btn-abort-cancel" class="submit-btn secondary-btn">Não, Voltar</button>
-                <button id="btn-confirm-cancel" class="submit-btn danger-btn">Sim, Cancelar</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="modal-edit-profile" class="modal-overlay hidden">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3><ion-icon name="person-circle-outline"></ion-icon> Editar Perfil</h3>
-                <button class="close-modal-btn" id="close-profile-modal">&times;</button>
-            </div>
-            
-            <div class="modal-body">
-                <form id="edit-profile-form">
-                    <div class="form-group">
-                        <label for="edit-name">Nome de Exibição</label>
-                        <input type="text" id="edit-name" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="edit-email">Email</label>
-                        <input type="email" id="edit-email" required>
-                        <small style="color: #aaa;">Nota: Mudar o email pode exigir novo login.</small>
-                    </div>
-                </form>
-            </div>
-
-            <div class="modal-footer">
-                <button type="button" class="submit-btn secondary-btn" id="cancel-profile-btn">Cancelar</button>
-                <button type="submit" form="edit-profile-form" class="submit-btn" id="save-profile-btn">Salvar Alterações</button>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button onclick="closeEditModal()" style="padding: 10px 20px; background: #333; color: #fff; border: none; border-radius: 6px; cursor: pointer;">
+                    Cancelar
+                </button>
+                <button onclick="saveProfileName()" style="padding: 10px 20px; background: var(--primary-color, #ff0000); color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">
+                    Salvar
+                </button>
             </div>
         </div>
     </div>
@@ -240,16 +135,9 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
-
+    
     <script src="assets/js/firebase-config.js"></script>
-    <script src="assets/js/main.js"></script> 
+    <script src="assets/js/dashboard.js"></script>
 
-    <script>
-        loadAsset('assets/css/style.css');
-        loadAsset('https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js');
-        loadAsset('https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js');
-        loadAsset('assets/js/dashboard.js');
-    </script>
 </body>
 </html>

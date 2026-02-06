@@ -29,17 +29,6 @@
     --normal-font-size: 1rem;
 }
 
-html[data-theme='light'] {
-    --bg-color: #F0F0F0;
-    --alternate-bg-color: #FFFFFF;
-    --card-bg-color: #FFFFFF;
-    --header-bg-color: #FFFFFF;
-    --primary-color-dark: #e0e0e0;
-    --text-color: #1A1A2E;
-    --text-color-light: #555555;
-    --border-color: #dddddd;
-    --header-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
 
 /* =========================================
    2. RESET E UTILITÁRIOS GLOBAIS
@@ -1021,6 +1010,38 @@ img, video { max-width: 100%; height: auto; }
 .invite-input-group { background: rgba(255,255,255,0.1); padding: 5px; border-radius: 6px; display: flex; align-items: center; }
 .invite-link-input { background: transparent; border: none; color: white; width: 100%; outline: none; }
 .sidebar-icon-btn { background: transparent; border: 1px solid #444; color: #888; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+
+
+/* ========================================= */
+/* MODAL DE EDIÇÃO DE PERFIL                 */
+/* ========================================= */
+.modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 2000;
+    opacity: 0; visibility: hidden; transition: all 0.3s;
+}
+.modal-overlay.active {
+    opacity: 1; visibility: visible;
+}
+.modal-content {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    padding: 30px;
+    border-radius: 12px;
+    width: 90%; max-width: 400px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+.modal-actions {
+    display: flex; gap: 10px; justify-content: center; margin-top: 20px;
+}
+.edit-btn {
+    background: none; border: none; color: var(--text-muted);
+    cursor: pointer; margin-left: 10px; transition: color 0.2s;
+}
+.edit-btn:hover { color: var(--primary-color); }
 
 /* =========================================
    8. RESPONSIVIDADE FINAL
