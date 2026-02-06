@@ -53,10 +53,59 @@ document.addEventListener('DOMContentLoaded', () => {
     if(userGreeting) userGreeting.textContent = `Olá, ${loggedInUser.name.split(' ')[0]}`;
     
     const logoutBtn = document.getElementById('logout-btn');
-    if(logoutBtn) logoutBtn.addEventListener('click', () => {
-        sessionStorage.removeItem('loggedInUser'); 
-        if(auth) auth.signOut(); 
-        window.location.href = 'index.html';
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                await firebase.auth().signOut();
+                window.location.href = 'index.html';
+            } catch (error) {
+                console.error("Erro ao sair:", error);
+            }
+        });
+    }
+
+    // 2. BOTÃO "NOVO JOGO" (Na tela principal do Admin)
+    // Verifique se no seu HTML o botão tem id="create-game-btn"
+    const createGameBtn = document.getElementById('create-game-btn');
+    if (createGameBtn) {
+        createGameBtn.addEventListener('click', () => {
+            // Chama a função global que criamos
+            if (typeof window.openGameModal === 'function') {
+                window.openGameModal(null); // Null = Novo Jogo
+            } else {
+                console.error("Função openGameModal não encontrada!");
+            }
+        });
+    }
+
+    // 3. BOTÃO "NOVO CURSO" (Se houver)
+    const createCourseBtn = document.getElementById('create-course-btn');
+    if (createCourseBtn) {
+        createCourseBtn.addEventListener('click', () => {
+            if (typeof window.openCourseModal === 'function') {
+                window.openCourseModal(null);
+            }
+        });
+    }
+
+    // 4. FECHAR MODAIS (Genérico para botões com classe .close-modal)
+    // Se você tiver botões com id específico para fechar, adicione o check aqui
+    const closeGameBtn = document.getElementById('close-game-modal');
+    if (closeGameBtn) {
+        closeGameBtn.addEventListener('click', () => {
+            document.getElementById('game-modal').classList.add('hidden');
+        });
+    }
+
+    firebase.auth().onAuthStateChanged((user) => {
+        if (!user) {
+            window.location.href = 'index.html';
+        } else {
+            console.log("Admin logado:", user.email);
+            // Carrega as listas iniciais
+            if (typeof loadGames === 'function') loadGames();
+            if (typeof loadCourses === 'function') loadCourses();
+        }
     });
     
     document.body.addEventListener('click', (e) => {
@@ -473,91 +522,254 @@ document.addEventListener('DOMContentLoaded', () => {
         alert("Sobre atualizado!");
     };
 
+// =========================================================================
+    // 7. GERENCIAMENTO DE CURSOS (COMPLETO E ATUALIZADO)
     // =========================================================================
-    // 7. GERENCIAMENTO DE CURSOS
-    // =========================================================================
+    
+    // Variáveis de Referência
     const courseList = document.getElementById('course-list-admin');
     const courseModal = document.getElementById('course-modal');
     const courseForm = document.getElementById('course-form');
     const modulesContainer = document.getElementById('modules-container');
+    
+    // --- A. CONFIGURAÇÃO DO UPLOAD DA CAPA ---
+    setupUpload('course-cover-upload', 'image', (files) => {
+        if (files && files.length > 0) {
+            const fileData = files[0];
+            
+            // 1. Salva a URL no input oculto
+            document.getElementById('course-cover-url').value = fileData.url;
+            
+            // 2. Mostra o Preview
+            const preview = document.getElementById('course-cover-preview');
+            preview.src = fileData.url;
+            preview.style.display = 'block';
+            
+            // 3. Feedback de Sucesso
+            const statusMsg = document.getElementById('course-cover-status');
+            statusMsg.innerText = "Imagem carregada com sucesso!";
+            statusMsg.style.color = "#00ff88";
+        }
+    });
 
+    // --- B. LISTAR CURSOS ---
     async function loadCourses() {
         if(!courseList) return;
         courseList.innerHTML = '<div class="loader"></div>';
+        
         try {
-            const snap = await db.collection('courses').get();
+            const snap = await db.collection('courses').orderBy('updatedAt', 'desc').get();
             courseList.innerHTML = '';
-            if(snap.empty) { courseList.innerHTML = '<p>Nenhum curso.</p>'; return; }
+            
+            if(snap.empty) { 
+                courseList.innerHTML = '<p style="opacity:0.6; padding:20px;">Nenhum curso cadastrado.</p>'; 
+                return; 
+            }
+            
             snap.forEach(doc => {
                 const c = doc.data();
-                const card = document.createElement('div'); card.className = 'game-card';
-                card.innerHTML = `<img src="${c.coverImage||'assets/images/logo.png'}" class="game-card-img" style="height:150px"><div class="game-card-content"><h3>${c.title}</h3><p>${(c.modules||[]).length} Módulos</p><button class="submit-btn small-btn" onclick="openCourseModal('${doc.id}')">Editar</button></div>`;
+                // Usa imagem padrão se não tiver capa
+                const coverImg = c.coverImage || 'assets/images/logo.png';
+                
+                const card = document.createElement('div'); 
+                card.className = 'game-card'; // Reutilizando estilo de card de jogo
+                card.innerHTML = `
+                    <div style="height:150px; overflow:hidden; position:relative;">
+                        <img src="${coverImg}" style="width:100%; height:100%; object-fit:cover;">
+                    </div>
+                    <div class="game-card-content">
+                        <h3 style="margin-bottom:5px; font-size:1.1rem;">${c.title}</h3>
+                        <p style="font-size:0.85rem; color:#aaa; margin-bottom:10px;">
+                            ${(c.modules || []).length} Módulos
+                        </p>
+                        <button class="submit-btn small-btn" onclick="openCourseModal('${doc.id}')" style="width:100%;">
+                            <ion-icon name="create-outline"></ion-icon> Editar
+                        </button>
+                    </div>`;
                 courseList.appendChild(card);
             });
-        } catch(e) {}
+        } catch(e) { 
+            console.error("Erro ao listar cursos:", e);
+            courseList.innerHTML = '<p style="color:red;">Erro ao carregar cursos.</p>';
+        }
     }
 
+    // --- C. ABRIR MODAL (NOVO OU EDITAR) ---
     window.openCourseModal = async (id = null) => {
+        // 1. Resetar Campos
         document.getElementById('course-id').value = id || '';
         document.getElementById('course-title').value = '';
         document.getElementById('course-desc').value = '';
-        document.getElementById('course-cover').value = '';
+        
+        // 2. Resetar Capa
+        document.getElementById('course-cover-url').value = '';
+        const preview = document.getElementById('course-cover-preview');
+        preview.src = '';
+        preview.style.display = 'none';
+        const statusMsg = document.getElementById('course-cover-status');
+        statusMsg.innerText = "Tamanho recomendado: 800x600";
+        statusMsg.style.color = "#aaa";
+
+        // 3. Resetar Módulos
         currentCourseModules = [];
         
+        // 4. Configurar Botões (Título e Delete)
         const delBtn = document.getElementById('delete-course-btn');
+        const titleEl = document.getElementById('course-modal-title');
+
         if(id) {
-            if(delBtn) delBtn.classList.remove('hidden');
-            const doc = await db.collection('courses').doc(id).get();
-            if(doc.exists) {
-                const d = doc.data();
-                document.getElementById('course-title').value = d.title;
-                document.getElementById('course-desc').value = d.description;
-                document.getElementById('course-cover').value = d.coverImage;
-                currentCourseModules = d.modules || [];
+            // MODO EDIÇÃO
+            titleEl.textContent = "Editar Curso";
+            if(delBtn) {
+                delBtn.classList.remove('hidden');
+                delBtn.onclick = () => deleteCourse(id);
             }
+            
+            try {
+                const doc = await db.collection('courses').doc(id).get();
+                if(doc.exists) {
+                    const d = doc.data();
+                    document.getElementById('course-title').value = d.title;
+                    document.getElementById('course-desc').value = d.description;
+                    
+                    // Carrega Capa Existente
+                    if(d.coverImage) {
+                        document.getElementById('course-cover-url').value = d.coverImage;
+                        preview.src = d.coverImage;
+                        preview.style.display = 'block';
+                    }
+                    
+                    // Carrega Módulos
+                    currentCourseModules = d.modules || [];
+                }
+            } catch(e) { console.error(e); }
         } else {
+            // MODO CRIAÇÃO
+            titleEl.textContent = "Novo Curso";
             if(delBtn) delBtn.classList.add('hidden');
         }
-        renderModulesInput();
+        
+        renderModulesInput(); // Renderiza inputs de módulos
         courseModal.classList.remove('hidden');
     };
 
+    // --- D. GERENCIAMENTO DE MÓDULOS (INTERFACE) ---
+    
+    // Botão Adicionar Módulo
+    document.getElementById('add-module-btn').onclick = () => {
+        currentCourseModules.push({ title: '', videoUrl: '' });
+        renderModulesInput();
+    };
+
     function renderModulesInput() {
-        if(!modulesContainer) return;
         modulesContainer.innerHTML = '';
-        currentCourseModules.forEach((mod, mi) => {
-            const div = document.createElement('div'); div.style.cssText = 'background:rgba(0,0,0,0.2);padding:1rem;margin-bottom:1rem;border-radius:5px;';
-            div.innerHTML = `<div style="display:flex;gap:10px;margin-bottom:10px;"><strong style="color:var(--secondary-color)">Módulo ${mi+1}</strong><input type="text" value="${mod.title}" class="mod-title" data-i="${mi}" style="flex:1"><button type="button" class="submit-btn danger-btn small-btn" onclick="removeModule(${mi})">X</button></div><div class="v-list-${mi}"></div><button type="button" class="submit-btn small-btn secondary-btn" onclick="addVideo(${mi})" style="width:100%">+ Aula</button>`;
-            const vList = div.querySelector(`.v-list-${mi}`);
-            (mod.videos||[]).forEach((v, vi) => {
-                const row = document.createElement('div'); row.style.cssText='display:flex;gap:5px;margin-top:5px;';
-                row.innerHTML = `<input type="text" value="${v.title}" placeholder="Título" onchange="updV(${mi},${vi},'title',this.value)"><input type="text" value="${v.url}" placeholder="Link" onchange="updV(${mi},${vi},'url',this.value)"><button type="button" class="submit-btn danger-btn small-btn" onclick="remV(${mi},${vi})">X</button>`;
-                vList.appendChild(row);
-            });
+        
+        currentCourseModules.forEach((mod, index) => {
+            const div = document.createElement('div');
+            div.className = 'module-item';
+            div.style.background = '#222';
+            div.style.padding = '10px';
+            div.style.marginBottom = '10px';
+            div.style.borderRadius = '5px';
+            div.style.border = '1px solid #333';
+            
+            div.innerHTML = `
+                <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                    <span style="font-weight:bold; color:var(--primary-color);">Módulo ${index + 1}</span>
+                    <button type="button" onclick="removeModule(${index})" style="background:none; border:none; color:#ff4444; cursor:pointer;">
+                        <ion-icon name="trash-outline"></ion-icon>
+                    </button>
+                </div>
+                <input type="text" placeholder="Título do Módulo" value="${mod.title}" 
+                    onchange="updateModule(${index}, 'title', this.value)" 
+                    class="input-field" style="margin-bottom:5px;">
+                <input type="text" placeholder="Link do Vídeo (YouTube/Embed)" value="${mod.videoUrl}" 
+                    onchange="updateModule(${index}, 'videoUrl', this.value)" 
+                    class="input-field">
+            `;
             modulesContainer.appendChild(div);
         });
-        document.querySelectorAll('.mod-title').forEach(i => i.oninput = (e) => currentCourseModules[e.target.dataset.i].title = e.target.value);
     }
 
-    // Helpers Cursos
-    window.addModule = () => { currentCourseModules.push({title:'', videos:[]}); renderModulesInput(); };
-    window.removeModule = (i) => { if(confirm('Remover?')){currentCourseModules.splice(i,1); renderModulesInput();} };
-    window.addVideo = (i) => { currentCourseModules[i].videos.push({title:'', url:''}); renderModulesInput(); };
-    window.remV = (mi, vi) => { currentCourseModules[mi].videos.splice(vi, 1); renderModulesInput(); };
-    window.updV = (mi, vi, f, v) => { currentCourseModules[mi].videos[vi][f] = v; };
+    window.updateModule = (index, field, value) => {
+        currentCourseModules[index][field] = value;
+    };
 
-    if(document.getElementById('add-module-btn')) document.getElementById('add-module-btn').onclick = window.addModule;
-    if(document.getElementById('add-course-btn')) document.getElementById('add-course-btn').onclick = () => window.openCourseModal(null);
+    window.removeModule = (index) => {
+        if(confirm('Remover este módulo?')) {
+            currentCourseModules.splice(index, 1);
+            renderModulesInput();
+        }
+    };
+
+// --- E. SALVAR CURSO (SUBMIT) ---
     if(courseForm) courseForm.onsubmit = async (e) => {
         e.preventDefault();
+        
         const id = document.getElementById('course-id').value;
-        const data = { title: document.getElementById('course-title').value, description: document.getElementById('course-desc').value, coverImage: document.getElementById('course-cover').value, modules: currentCourseModules, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
-        try { if(id) await db.collection('courses').doc(id).update(data); else await db.collection('courses').add(data); alert('Curso salvo!'); courseModal.classList.add('hidden'); loadCourses(); } catch(e) { alert('Erro'); }
-    };
-    if(document.getElementById('delete-course-btn')) document.getElementById('delete-course-btn').onclick = async () => { if(confirm('Excluir?')) { await db.collection('courses').doc(document.getElementById('course-id').value).delete(); courseModal.classList.add('hidden'); loadCourses(); }};
-    if(document.getElementById('close-course-modal')) document.getElementById('close-course-modal').onclick = () => courseModal.classList.add('hidden');
-    if(document.getElementById('cancel-course-btn')) document.getElementById('cancel-course-btn').onclick = () => courseModal.classList.add('hidden');
+        
+        // CORREÇÃO: Busca o botão pelo atributo 'form' pois ele está fora da tag <form>
+        const submitBtn = document.querySelector('button[type="submit"][form="course-form"]');
+        
+        // Bloqueia botão (com verificação de segurança)
+        if(submitBtn) {
+            submitBtn.disabled = true; 
+            submitBtn.innerHTML = '<div class="loader-small"></div> Salvando...';
+        }
 
+        const data = { 
+            title: document.getElementById('course-title').value, 
+            description: document.getElementById('course-desc').value, 
+            coverImage: document.getElementById('course-cover-url').value, 
+            modules: currentCourseModules, 
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp() 
+        };
+
+        try { 
+            if(id) {
+                await db.collection('courses').doc(id).update(data);
+            } else {
+                data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                await db.collection('courses').add(data); 
+            }
+            
+            alert('Curso salvo com sucesso!'); 
+            courseModal.classList.add('hidden'); 
+            loadCourses(); 
+        } catch(e) { 
+            console.error(e);
+            alert('Erro ao salvar curso: ' + e.message); 
+        } finally {
+            if(submitBtn) {
+                submitBtn.disabled = false; 
+                submitBtn.textContent = "Salvar Curso";
+            }
+        }
+    };
+
+    // --- F. EXCLUIR CURSO ---
+    async function deleteCourse(id) {
+        if(confirm('Tem certeza que deseja excluir este curso permanentemente?')) {
+            try {
+                await db.collection('courses').doc(id).delete();
+                alert('Curso excluído.');
+                courseModal.classList.add('hidden');
+                loadCourses();
+            } catch(e) {
+                console.error(e);
+                alert('Erro ao excluir.');
+            }
+        }
+    }
+
+    // Listener para fechar modal
+    document.getElementById('close-course-modal')?.addEventListener('click', () => {
+        courseModal.classList.add('hidden');
+    });
+    
+    document.getElementById('cancel-course-btn')?.addEventListener('click', () => {
+        courseModal.classList.add('hidden');
+    });
 
     // =========================================================================
     // 8. GERENCIAMENTO DE JOGOS (CRUD & CONFIG)
@@ -647,7 +859,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
                             <button class="submit-btn small-btn edit-game-trigger" data-id="${doc.id}">Editar</button>
                             <button class="submit-btn small-btn schedule-game-trigger" data-id="${doc.id}" style="background:var(--primary-color-dark); border:1px solid #444;">Agenda</button>
-                            <button class="submit-btn small-btn test-room-trigger" data-id="${doc.id}" data-name="${g.name}" style="background:rgba(0,255,136,0.1); color:#00ff88; border:1px solid #00ff88;"><ion-icon name="flask-outline"></ion-icon> Testar</button>
+                            <button class="submit-btn small-btn test-room-trigger" onclick="window.createTestSession('${doc.id}')" data-id="${doc.id}" data-name="${g.name}" style="background:rgba(0,255,136,0.1); color:#00ff88; border:1px solid #00ff88;"><ion-icon name="flask-outline"></ion-icon> Testar</button>
                             <button class="submit-btn small-btn sessions-game-trigger" data-id="${doc.id}" data-name="${g.name}" ${sessionBtnState} style="${sessionBtnStyle} display: flex; align-items: center; justify-content: center; gap: 5px;"><ion-icon name="list-outline"></ion-icon> Sessões</button>
                         </div>
                     </div>`;
@@ -707,75 +919,301 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- ABRIR MODAL DE EDIÇÃO/CRIAÇÃO ---
-    window.openGameModal = async (gameId) => {
-        createGameForm.reset();
-        document.getElementById('game-id').value = gameId || '';
-        
-        // Reset Globals
-        currentTags = []; currentGalleryUrls = []; currentSessionAssets = []; currentDecisions = [];
-        tempAssetFile = null;
-        renderTags(); window.renderGallery(); window.renderSessionAssets(); window.renderDecisionsList();
-        
-        // Reset Visuals
-        const coverPreview = document.getElementById('admin-cover-preview');
-        if(coverPreview) coverPreview.style.display = 'none';
-        
-        const chkExtra = document.getElementById('check-extra-life');
-        const extraCont = document.getElementById('extra-life-config-container');
-        if(chkExtra) { chkExtra.checked = false; if(extraCont) extraCont.classList.add('hidden'); }
+    // =================================================================
+// FUNÇÕES DE RENDERIZAÇÃO (Mídias e Decisões)
+// =================================================================
 
-        const title = document.getElementById('game-modal-title');
-        const saveBtn = document.getElementById('save-game-submit-btn');
-        const delBtn = document.getElementById('delete-game-btn');
+// 1. Renderizar Lista de Assets (Mídias)
+window.renderAssetsList = () => {
+    const list = document.getElementById('assets-list');
+    if (!list) return;
+    list.innerHTML = '';
 
-        if (gameId) {
-            if(title) title.textContent = "Editar Jogo";
-            if(saveBtn) saveBtn.textContent = "Salvar Alterações";
-            if(delBtn) delBtn.classList.remove('hidden');
-            
-            try {
-                const doc = await db.collection('games').doc(gameId).get();
-                if(doc.exists) {
-                    const d = doc.data();
-                    const set = (id, v) => { const e = document.getElementById(id); if(e) e.value = v || ''; };
-                    
-                    set('new-game-name', d.name); set('new-game-status', d.status);
-                    set('new-game-duration', d.sessionDuration); set('new-game-price', d.price);
-                    set('new-game-short-desc', d.shortDescription); set('new-game-full-desc', d.fullDescription);
-                    document.getElementById('new-game-duration').value = d.sessionDuration;
-                    document.getElementById('new-game-max-players').value = d.maxPlayers || 1; // Padrão 1 se não existir
-                    set('new-game-cover', d.coverImage); set('new-game-trailer', d.videoPreview);
-                    
-                    // Config Timer
-                    const timerSettings = d.timerSettings || {};
-                    set('edit-timer-type', timerSettings.type || 'regressive');
-                    set('edit-timer-font', timerSettings.font || "'Orbitron', sans-serif");
-                    set('edit-timer-color', timerSettings.color || '#ff0000');
-                    if(window.updateTimerPreview) window.updateTimerPreview();
+    currentSessionAssets.forEach((asset, index) => {
+        const item = document.createElement('div');
+        item.className = 'list-item'; // Certifique-se de ter CSS para isso ou use style inline
+        item.style.cssText = "display:flex; justify-content:space-between; background:#222; padding:8px; margin-bottom:5px; border-radius:4px; align-items:center;";
+        
+        let icon = asset.type === 'video' ? 'videocam' : (asset.type === 'audio' ? 'musical-notes' : 'image');
+        
+        item.innerHTML = `
+            <div style="display:flex; align-items:center; gap:10px; overflow:hidden;">
+                <ion-icon name="${icon}" style="color:#aaa;"></ion-icon>
+                <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:200px;">${asset.name}</span>
+            </div>
+            <button type="button" onclick="removeAsset(${index})" style="background:none; border:none; color:#ff4444; cursor:pointer;">
+                <ion-icon name="trash-outline"></ion-icon>
+            </button>
+        `;
+        list.appendChild(item);
+    });
+};
 
-                    // Previews e Arrays
-                    if(d.coverImage && coverPreview) { coverPreview.src = d.coverImage; coverPreview.style.display = 'block'; }
-                    if(d.tags) { currentTags = d.tags; renderTags(); }
-                    if(d.galleryImages) { currentGalleryUrls = d.galleryImages; window.renderGallery(); }
-                    if(d.sessionAssets) { currentSessionAssets = d.sessionAssets; window.renderSessionAssets(); }
-                    if(d.decisions) { currentDecisions = d.decisions; window.renderDecisionsList(); }
-                    
-                    if(d.hasExtraLife && chkExtra) {
-                        chkExtra.checked = true;
-                        if(extraCont) extraCont.classList.remove('hidden');
-                        document.getElementById('new-game-extra-life-time').value = d.extraLifeDuration || '';
+// 2. Renderizar Lista de Decisões
+window.renderDecisionsList = () => {
+    const list = document.getElementById('decisions-list');
+    if (!list) return;
+    list.innerHTML = '';
+
+    currentGameDecisions.forEach((decision, index) => {
+        const item = document.createElement('div');
+        item.style.cssText = "display:flex; justify-content:space-between; background:#222; padding:8px; margin-bottom:5px; border-radius:4px; align-items:center;";
+        
+        item.innerHTML = `
+            <div style="display:flex; flex-direction:column;">
+                <span style="font-weight:bold; color:var(--primary-color);">${decision.question}</span>
+                <span style="font-size:0.8rem; color:#aaa;">${decision.options.length} opções • ${decision.time}s</span>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button type="button" onclick="editDecision(${index})" style="background:none; border:none; color:#fff; cursor:pointer;">
+                    <ion-icon name="create-outline"></ion-icon>
+                </button>
+                <button type="button" onclick="removeDecision(${index})" style="background:none; border:none; color:#ff4444; cursor:pointer;">
+                    <ion-icon name="trash-outline"></ion-icon>
+                </button>
+            </div>
+        `;
+        list.appendChild(item);
+    });
+};
+
+// Funções auxiliares de remoção (caso não tenha)
+window.removeAsset = (index) => {
+    currentSessionAssets.splice(index, 1);
+    renderAssetsList();
+};
+
+window.removeDecision = (index) => {
+    currentGameDecisions.splice(index, 1);
+    renderDecisionsList();
+};
+
+
+// =================================================================
+// 1. FUNÇÃO AUXILIAR: Configura a UI da Vida Extra (Contextual)
+// =================================================================
+function setupExtraLifeUI(gameData) {
+    const libraryRadio = document.getElementById('radio-library');
+    const libraryLabel = document.getElementById('btn-opt-library');
+    const countLabel = document.getElementById('library-count-label');
+    const select = document.getElementById('extra-life-history-select');
+    
+    // 1. Reseta para estado "Novo/Upload"
+    const uploadRadio = document.querySelector('input[value="upload"]');
+    if(uploadRadio) uploadRadio.checked = true;
+    
+    // Garante visibilidade correta dos containers
+    const uploadDiv = document.getElementById('extra-life-upload-container');
+    const selectDiv = document.getElementById('extra-life-select-container');
+    if(uploadDiv) uploadDiv.classList.remove('hidden');
+    if(selectDiv) selectDiv.classList.add('hidden');
+
+    let availableVideos = [];
+
+    // 2. Se houver dados do jogo, procura vídeos para popular a biblioteca
+    if (gameData) {
+        // A. Verifica vídeo de vida extra atual
+        if (gameData.extraLifeVideo) {
+            availableVideos.push({ name: "Vídeo Atual de Vida Extra", url: gameData.extraLifeVideo });
+        }
+        // B. Verifica assets da sessão (Vídeos enviados na lista de mídias)
+        if (gameData.sessionAssets && Array.isArray(gameData.sessionAssets)) {
+            gameData.sessionAssets.forEach(asset => {
+                if (asset.type === 'video' && asset.url) {
+                    // Evita duplicatas
+                    if (!availableVideos.some(v => v.url === asset.url)) {
+                        availableVideos.push({ name: asset.name || "Vídeo da Sessão", url: asset.url });
                     }
                 }
-            } catch(e) { console.error(e); }
-        } else {
-            if(title) title.textContent = "Criar Novo Jogo";
-            if(saveBtn) saveBtn.textContent = "Criar Jogo";
-            if(delBtn) delBtn.classList.add('hidden');
-            if(window.updateTimerPreview) window.updateTimerPreview();
+            });
         }
-        createGameModal.classList.remove('hidden');
-    };
+    }
+
+    // 3. Atualiza a Interface (Habilita ou Desabilita a aba Biblioteca)
+    if (availableVideos.length > 0) {
+        if(libraryRadio) libraryRadio.disabled = false;
+        if(libraryLabel) {
+            libraryLabel.style.opacity = "1";
+            libraryLabel.style.cursor = "pointer";
+        }
+        if(countLabel) countLabel.innerText = `(${availableVideos.length} vídeos encontrados)`;
+
+        // Preenche Select
+        if(select) {
+            select.innerHTML = '<option value="">-- Selecione --</option>';
+            availableVideos.forEach(vid => {
+                const opt = document.createElement('option');
+                opt.value = vid.url;
+                opt.innerText = vid.name;
+                select.appendChild(opt);
+            });
+        }
+    } else {
+        if(libraryRadio) libraryRadio.disabled = true;
+        if(libraryLabel) {
+            libraryLabel.style.opacity = "0.5";
+            libraryLabel.style.cursor = "not-allowed";
+        }
+        if(countLabel) countLabel.innerText = "(Nenhum vídeo neste jogo)";
+        if(select) select.innerHTML = '<option>Sem vídeos disponíveis</option>';
+    }
+}
+
+// =================================================================
+// 2. FUNÇÃO PRINCIPAL: Abrir Modal (Completa)
+// =================================================================
+window.openGameModal = async (gameId = null) => {
+    console.log("📂 Abrindo Modal de Jogo. ID:", gameId);
+
+    // --- A. GARANTIR ABERTURA ---
+    const modal = document.getElementById('game-modal');
+    if (!modal) {
+        alert("ERRO CRÍTICO: HTML do modal não encontrado.");
+        return;
+    }
+    modal.classList.remove('hidden');
+
+    // --- B. REFERÊNCIAS DE UI ---
+    const modalTitle = document.getElementById('modal-title');
+    const deleteBtn = document.getElementById('delete-game-btn');
+    
+    // --- C. LIMPEZA TOTAL (Resetar campos para vazio) ---
+    document.getElementById('game-id').value = gameId || '';
+
+    // Lista de IDs dos inputs para limpar
+    const inputsToReset = [
+        'game-name', 
+        'game-price', 
+        'game-players', 
+        'game-timer', 
+        'game-short-desc', 
+        'game-long-desc', 
+        'extra-life-duration'
+    ];
+
+    inputsToReset.forEach(id => {
+        const el = document.getElementById(id);
+        if(el) el.value = ''; // Define como vazio (sem defaults)
+    });
+
+    // Resetar Listas
+    if (document.getElementById('assets-list')) document.getElementById('assets-list').innerHTML = '';
+    if (document.getElementById('decisions-list')) document.getElementById('decisions-list').innerHTML = '';
+    
+    // Resetar Variáveis Globais
+    currentSessionAssets = [];
+    currentGameDecisions = [];
+
+    // Resetar Vida Extra
+    const elCheck = document.getElementById('enable-extra-life');
+    if(elCheck) {
+        elCheck.checked = false;
+        if(typeof window.toggleExtraLifeSection === 'function') window.toggleExtraLifeSection();
+    }
+    setupExtraLifeUI(null); // Bloqueia a biblioteca inicialmente
+
+    // --- D. LÓGICA DE EDIÇÃO ---
+    if (gameId) {
+        if(modalTitle) modalTitle.innerText = "Editar Jogo";
+        
+        // Configura botão de deletar
+        if(deleteBtn) {
+            deleteBtn.classList.remove('hidden');
+            deleteBtn.onclick = () => deleteGame(gameId);
+        }
+
+        // Feedback visual
+        const nameInput = document.getElementById('game-name');
+        if(nameInput) nameInput.value = "Carregando dados...";
+
+        try {
+            const doc = await db.collection('games').doc(gameId).get();
+            
+            if (doc.exists) {
+                const gameData = doc.data();
+                console.log("✅ Dados carregados:", gameData);
+
+                // 1. Preencher Campos Básicos (Só preenche se existir dado)
+                if(nameInput) nameInput.value = gameData.name || '';
+                
+                if(document.getElementById('game-price')) 
+                    document.getElementById('game-price').value = gameData.price || '';
+                
+                if(document.getElementById('game-players')) 
+                    document.getElementById('game-players').value = gameData.maxPlayers || '';
+
+                if(document.getElementById('game-timer')) 
+                    document.getElementById('game-timer').value = gameData.sessionDuration || '';
+
+                if(document.getElementById('game-short-desc')) 
+                    document.getElementById('game-short-desc').value = gameData.shortDescription || '';
+
+                if(document.getElementById('game-long-desc')) 
+                    document.getElementById('game-long-desc').value = gameData.longDescription || '';
+
+                // 2. Carregar ASSETS
+                if(gameData.sessionAssets) {
+                    currentSessionAssets = gameData.sessionAssets;
+                    if(typeof renderAssetsList === 'function') renderAssetsList();
+                }
+
+                // 3. Carregar DECISÕES
+                if(gameData.decisions) {
+                    currentGameDecisions = gameData.decisions;
+                    if(typeof renderDecisionsList === 'function') renderDecisionsList();
+                }
+
+                // 4. Carregar VIDA EXTRA
+                setupExtraLifeUI(gameData); // Libera biblioteca com vídeos deste jogo
+
+                if (gameData.extraLifeVideo) {
+                    // Ativa checkbox
+                    if(elCheck) {
+                        elCheck.checked = true;
+                        if(typeof window.toggleExtraLifeSection === 'function') window.toggleExtraLifeSection();
+                    }
+                    
+                    // Define duração (se houver salva)
+                    const elDuration = document.getElementById('extra-life-duration');
+                    if(elDuration) elDuration.value = gameData.extraLifeDuration || '';
+
+                    // Tenta selecionar automaticamente no dropdown
+                    const select = document.getElementById('extra-life-history-select');
+                    const radioLib = document.querySelector('input[value="select"]');
+                    
+                    if (select && radioLib && !radioLib.disabled) {
+                        // Verifica se a URL salva está na lista
+                        const existsInList = Array.from(select.options).some(opt => opt.value === gameData.extraLifeVideo);
+                        
+                        if (existsInList) {
+                            radioLib.checked = true;
+                            select.value = gameData.extraLifeVideo;
+                            
+                            // Atualiza UI para mostrar o select
+                            if(typeof window.toggleExtraLifeSource === 'function') window.toggleExtraLifeSource();
+                            
+                            // Atualiza preview de texto
+                            const preview = document.getElementById('selected-video-preview');
+                            if(preview) preview.innerText = "Selecionado: " + select.options[select.selectedIndex].text;
+                        }
+                    }
+                }
+
+            } else {
+                console.error("Jogo não encontrado no banco.");
+                if(nameInput) nameInput.value = "Erro: Jogo não encontrado";
+            }
+        } catch (error) {
+            console.error("Erro ao carregar jogo:", error);
+            alert("Erro de conexão ao buscar dados.");
+        }
+    } else {
+        // --- E. LÓGICA DE NOVO JOGO ---
+        if(modalTitle) modalTitle.innerText = "Novo Jogo";
+        if(deleteBtn) deleteBtn.classList.add('hidden');
+        // Campos já foram limpos na etapa C
+    }
+};
 
     window.openScheduleModal = async (gameId) => {
         currentAgendaGameId = gameId; currentAgendaData = {};
@@ -811,8 +1249,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if(!files.length) return;
 
             // --- VALIDAÇÃO DE TAMANHO (100MB) ---
-            //const MAX_SIZE = 100 * 1024 * 1024; // 100MB em bytes
-            //const oversizedFile = files.find(f => f.size > MAX_SIZE);
+            const MAX_SIZE = 100 * 1024 * 1024; // 100MB em bytes
+            const oversizedFile = files.find(f => f.size > MAX_SIZE);
 
             if (oversizedFile) {
                 alert(`O arquivo "${oversizedFile.name}" é muito grande (acima de 100MB).\n\nO envio foi cancelado.`);
@@ -949,22 +1387,46 @@ document.addEventListener('DOMContentLoaded', () => {
         const id = document.getElementById('game-id').value;
         const btn = document.getElementById('save-game-submit-btn');
         btn.textContent = "Salvando..."; btn.disabled = true;
+        const extraLifeEnabled = document.getElementById('enable-extra-life').checked;
+let finalExtraLifeUrl = null;
+let finalDuration = null;
+
+if (extraLifeEnabled) {
+    // SÓ PROCESSA SE ESTIVER HABILITADO
+    const extraLifeSource = document.querySelector('input[name="extraLifeSource"]:checked')?.value || 'upload';
+    
+    if (extraLifeSource === 'upload') {
+        const file = document.getElementById('extra-life-video').files[0];
+        if (file) {
+            const storageRef = firebase.storage().ref();
+            const fileRef = storageRef.child(`games/extra-life/${Date.now()}_${file.name}`);
+            await fileRef.put(file);
+            finalExtraLifeUrl = await fileRef.getDownloadURL();
+        }
+    } else {
+        finalExtraLifeUrl = document.getElementById('extra-life-history-select').value;
+    }
+    
+    finalDuration = parseInt(document.getElementById('extra-life-duration').value) || 7;
+}
 
         const data = {
             name: document.getElementById('new-game-name').value,
             slug: document.getElementById('new-game-name').value.toLowerCase().replace(/[^a-z0-9]/g, '-'),
             status: document.getElementById('new-game-status').value,
-            sessionDuration: document.getElementById('new-game-duration').value,
+            sessionDuration: document.getElementById('game-timer').value,
             price: document.getElementById('new-game-price').value,
             hasExtraLife: chkExtra.checked,
+            extraLifeVideo: finalExtraLifeUrl, 
+            extraLifeDuration: finalDuration,
             extraLifeDuration: chkExtra.checked ? document.getElementById('new-game-extra-life-time').value : 0,
             tags: currentTags,
-            shortDescription: document.getElementById('new-game-short-desc').value,
-            fullDescription: document.getElementById('new-game-full-desc').value,
+            shortDescription: document.getElementById('game-short-desc').value,
+            fullDescription: document.getElementById('game-long-desc').value,
             coverImage: document.getElementById('new-game-cover').value,
             videoPreview: document.getElementById('new-game-trailer').value,
             sessionDuration: document.getElementById('new-game-duration').value,
-            maxPlayers: parseInt(document.getElementById('new-game-max-players').value) || 1,
+            maxPlayers: parseInt(document.getElementById('game-players').value) || 1,
             galleryImages: currentGalleryUrls,
             sessionAssets: currentSessionAssets,
             isPaused: document.getElementById('new-game-status').value === 'paused',
@@ -1138,6 +1600,195 @@ document.addEventListener('DOMContentLoaded', () => {
         await db.collection('bookings').doc(bid).set({ type:'test', gameId:id, gameName:name, hostId:loggedInUser.username, date: new Date().toISOString(), status:'confirmed' });
         window.location.href = `sala-host.html?bookingId=${bid}&mode=test`;
     };
+
+    // Adicione ao final do admin.js ou dentro do setupEventListeners
+window.createTestSession = async (gameId) => {
+    try {
+        const db = firebase.firestore();
+        const user = firebase.auth().currentUser;
+
+        if (!user) return alert("Você precisa estar logado.");
+
+        console.log("Criando sessão de teste para o jogo:", gameId);
+
+        // 1. Cria a sessão com TODOS os dados obrigatórios
+        const sessionRef = await db.collection('sessions').add({
+            gameId: gameId,              // <--- O CAMPO QUE FALTAVA
+            hostId: user.uid,
+            status: 'scheduled',
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            clientName: "Teste Admin",
+            clientEmail: user.email,
+            timerCurrent: 0,             // Opcional: começa zerado
+            timerStatus: 'paused'
+        });
+
+        // 2. Redireciona para a sala-host
+        console.log("Sessão criada:", sessionRef.id);
+        window.location.href = `sala-host.html?sessionId=${sessionRef.id}`;
+
+    } catch (error) {
+        console.error("Erro ao criar teste:", error);
+        alert("Erro ao criar sessão de teste.");
+    }
+};
+
+// Variável para armazenar temporariamente a biblioteca de vídeos organizada por jogo
+let videoLibraryCache = {}; 
+
+async function loadExtraLifeHistory() {
+    const gameFilter = document.getElementById('library-game-filter');
+    const videoSelect = document.getElementById('extra-life-history-select');
+    
+    // Feedback visual de carregamento
+    gameFilter.innerHTML = '<option>Carregando...</option>';
+    videoSelect.innerHTML = '<option>Aguarde...</option>';
+    videoSelect.disabled = true;
+
+    try {
+        const db = firebase.firestore();
+        const snapshot = await db.collection('games').orderBy('createdAt', 'desc').get();
+        
+        videoLibraryCache = {}; // Reseta cache
+        
+        // 1. Processa todos os jogos e seus vídeos
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const gameId = doc.id;
+            const gameName = data.name || 'Sem Nome';
+            
+            // Inicializa array para este jogo
+            if (!videoLibraryCache[gameId]) {
+                videoLibraryCache[gameId] = { name: gameName, videos: [] };
+            }
+
+            const seenUrls = new Set();
+
+            // A. Pega vídeo de Vida Extra (se houver)
+            if (data.extraLifeVideo) {
+                videoLibraryCache[gameId].videos.push({
+                    name: "Vídeo de Vida Extra",
+                    url: data.extraLifeVideo
+                });
+                seenUrls.add(data.extraLifeVideo);
+            }
+
+            // B. Pega vídeos dos Assets da Sessão (sessionAssets)
+            if (data.sessionAssets && Array.isArray(data.sessionAssets)) {
+                data.sessionAssets.forEach(asset => {
+                    if (asset.type === 'video' && asset.url && !seenUrls.has(asset.url)) {
+                        videoLibraryCache[gameId].videos.push({
+                            name: asset.name || "Vídeo sem nome",
+                            url: asset.url
+                        });
+                        seenUrls.add(asset.url);
+                    }
+                });
+            }
+        });
+
+        // 2. Preenche o Dropdown de FILTRO DE JOGOS
+        gameFilter.innerHTML = '<option value="">-- Selecione o Jogo --</option>';
+        
+        Object.keys(videoLibraryCache).forEach(gameId => {
+            const gameData = videoLibraryCache[gameId];
+            // Só adiciona o jogo no filtro se ele tiver vídeos
+            if (gameData.videos.length > 0) {
+                const opt = document.createElement('option');
+                opt.value = gameId;
+                opt.innerText = gameData.name;
+                gameFilter.appendChild(opt);
+            }
+        });
+
+        // 3. Listener: Quando mudar o Jogo, atualiza a lista de Vídeos
+        gameFilter.onchange = () => {
+            const selectedGameId = gameFilter.value;
+            videoSelect.innerHTML = '<option value="">-- Selecione o Vídeo --</option>';
+            
+            if (!selectedGameId) {
+                videoSelect.disabled = true;
+                return;
+            }
+
+            const gameVideos = videoLibraryCache[selectedGameId].videos;
+            
+            if (gameVideos.length === 0) {
+                videoSelect.innerHTML = '<option>Sem vídeos neste jogo</option>';
+                videoSelect.disabled = true;
+            } else {
+                gameVideos.forEach(vid => {
+                    const opt = document.createElement('option');
+                    opt.value = vid.url;
+                    opt.innerText = vid.name;
+                    videoSelect.appendChild(opt);
+                });
+                videoSelect.disabled = false;
+            }
+        };
+
+        // 4. Listener: Preview do Vídeo
+        videoSelect.onchange = () => {
+            const preview = document.getElementById('selected-video-preview');
+            if (preview) {
+                preview.innerHTML = videoSelect.value ? 
+                    `<span style="color:#00ff88">Vídeo Selecionado:</span> ${videoSelect.options[videoSelect.selectedIndex].text}` : 
+                    'Nenhum vídeo selecionado';
+            }
+        };
+
+        // Reseta o select de vídeos para o estado inicial
+        videoSelect.innerHTML = '<option value="">Selecione um jogo primeiro</option>';
+        videoSelect.disabled = true;
+
+    } catch (error) {
+        console.error("Erro ao carregar biblioteca:", error);
+        gameFilter.innerHTML = '<option>Erro ao carregar</option>';
+    }
+}
+
+// Alterna a visibilidade da seção inteira
+window.toggleExtraLifeSection = () => {
+    const isChecked = document.getElementById('enable-extra-life').checked;
+    const optionsDiv = document.getElementById('extra-life-options');
+    
+    if (isChecked) {
+        optionsDiv.classList.remove('hidden');
+        // Opcional: Já carrega o histórico se a pessoa abrir
+        if(document.querySelector('input[name="extraLifeSource"][value="select"]').checked) {
+            loadExtraLifeHistory();
+        }
+    } else {
+        optionsDiv.classList.add('hidden');
+    }
+};
+
+// Mantém a função de alternar fonte (Upload/Select) que criamos antes
+    window.toggleExtraLifeSource = () => {
+    // Verifica se os elementos existem antes de tentar usar .classList
+    const uploadDiv = document.getElementById('extra-life-upload-container');
+    const selectDiv = document.getElementById('extra-life-select-container');
+    const sourceInput = document.querySelector('input[name="extraLifeSource"]:checked');
+
+    if (!uploadDiv || !selectDiv || !sourceInput) return; // Sai se algo estiver faltando
+
+    const source = sourceInput.value;
+
+    if (source === 'upload') {
+        uploadDiv.classList.remove('hidden');
+        selectDiv.classList.add('hidden');
+    } else {
+        uploadDiv.classList.add('hidden');
+        selectDiv.classList.remove('hidden');
+        loadExtraLifeHistory(); 
+    }
+};
+
+// Pequeno helper para o preview do select
+document.getElementById('extra-life-history-select').addEventListener('change', function() {
+    const preview = document.getElementById('selected-video-preview');
+    if(this.value) preview.innerText = "Selecionado: " + this.options[this.selectedIndex].text;
+});
 
     window.openDeleteConfirmModal = (id, name) => {
         const m = document.getElementById('delete-confirm-modal');

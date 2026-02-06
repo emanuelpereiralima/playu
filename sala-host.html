@@ -28,25 +28,22 @@
 
     <div class="host-grid-container">
         <div class="host-video-area">
-            <div class="video-wrapper remote">
-                <img src="assets/images/GIF Play.U.gif" class="video-bg-gif" alt="Aguardando...">
-                
-                <video id="host-local-video" autoplay playsinline></video>
-                <div class="video-label">Você (Host)</div>
-            </div>
+        <div id="host-video-wrapper">
+        <video id="host-local-video" autoplay playsinline></video>
+            <div id="host-video-layer"></div>
+        </div>
 
-            <div class="video-wrapper local">
-                <div id="video-grid" class="video-grid">
-                <video id="local-video" autoplay muted></video>
-                </div>
-            </div>
+        <div id="remote-video-container">
+            <video id="remote-video" autoplay playsinline></video>
+            <span class="player-label">JOGADOR</span>
+        </div>
             
             <div id="host-decision-feedback" class="hidden">
                 <div class="feedback-content">
                     <span class="feedback-label">DECISÃO EM ANDAMENTO</span>
                     <h3 id="feedback-question">Pergunta aqui?</h3>
                     <div id="feedback-timer">30s</div>
-                    <button onclick="window.clearPlayerDecision()" class="cancel-decision-btn">Cancelar Agora</button>
+                    <button onclick="window.clearPlayerDecision()" class="submit-btn">Cancelar Agora</button>
                 </div>
             </div>
 
@@ -104,9 +101,19 @@
             </div>
 
             <div id="tab-media" class="sidebar-content active">
-                <div id="host-assets-list" class="assets-list">
-                    <p style="text-align:center; opacity:0.5; margin-top:20px;">Carregando arquivos...</p>
-                </div>
+                <div class="media-section" style="margin-bottom: 20px;">
+        <h4 style="color:#aaa; font-size:0.8rem; margin-bottom:10px; text-transform:uppercase; border-bottom:1px solid #333; padding-bottom:5px;">
+            <ion-icon name="musical-notes"></ion-icon> Áudios & Efeitos
+        </h4>
+        <div id="host-audio-list"></div>
+    </div>
+
+    <div class="media-section">
+        <h4 style="color:#aaa; font-size:0.8rem; margin-bottom:10px; text-transform:uppercase; border-bottom:1px solid #333; padding-bottom:5px;">
+            <ion-icon name="videocam"></ion-icon> Vídeos & Cenas
+        </h4>
+        <div id="host-video-list"></div>
+    </div>
             </div>
 
             <div id="tab-decisions" class="sidebar-content">
@@ -166,6 +173,13 @@
             }
         }
     </script>
+    <div id="media-overlay" class="hidden" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 1000; display: flex; justify-content: center; align-items: center;">
+        <button class="close-overlay-btn" onclick="window.stopMedia()" style="position: absolute; top: 20px; right: 20px; z-index: 1001; background: transparent; border: none; color: white; font-size: 2rem; cursor: pointer;">
+            <ion-icon name="close-circle-outline"></ion-icon>
+        </button>
+        
+        <div id="media-content-area" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;"></div>
+    </div>
 
     <script src="assets/js/sala-host.js"></script>
 </body>
