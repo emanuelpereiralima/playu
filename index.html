@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>play.u Live Entertainment</title>
     <link rel="icon" href="assets/images/logo.png" type="image/png">
-    <script src="assets/js/version.3a106c79.js"></script>
+    <script src="assets/js/version.0f46cde9.js"></script>
     <script>
         function loadAsset(path) {
             const version = typeof SITE_VERSION !== 'undefined' ? SITE_VERSION : new Date().getTime();
@@ -43,17 +43,17 @@
     </header>
 
     <main>
-        <section id="home" class="home-carousel">
-            <h1 data-lang-key="featuredGames">Jogos em Destaque</h1>
-            <div class="carousel-viewport">
-                <div class="carousel-container">
-                    </div>
-            </div>
-            <div class="carousel-nav">
-                <button id="prev-btn" class="nav-btn"><ion-icon name="arrow-back-outline"></ion-icon></button>
-                <button id="next-btn" class="nav-btn"><ion-icon name="arrow-forward-outline"></ion-icon></button>
-            </div>
-        </section>
+       <section class="hero-carousel" style="position: relative; width: 100%; height: 500px; overflow: hidden; background: #000;">
+    
+    <div class="carousel-track" id="carousel-track">
+        </div>
+
+    <button class="carousel-btn prev-btn" onclick="moveCarousel(-1)" style="position: absolute; top: 50%; left: 20px; transform: translateY(-50%); z-index: 10; background: rgba(0,0,0,0.5); border: none; color: white; font-size: 2rem; cursor: pointer;">&#10094;</button>
+    
+    <button class="carousel-btn next-btn" onclick="moveCarousel(1)" style="position: absolute; top: 50%; right: 20px; transform: translateY(-50%); z-index: 10; background: rgba(0,0,0,0.5); border: none; color: white; font-size: 2rem; cursor: pointer;">&#10095;</button>
+
+    <div class="carousel-dots" id="carousel-dots" style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 10; display: flex; gap: 10px;"></div>
+</section>
 
         <section id="sobre" class="main-content alternate-bg">
             <div class="container">
@@ -70,13 +70,76 @@
             </div>
         </section>
 
-        <section id="jogos" class="main-content">
-            <div class="container">
-                <h1 class="page-title" data-lang-key="ourGames">Nossos Jogos</h1>
-                <div class="games-grid">
-                    </div>
-            </div>
-        </section>
+        <section id="games-section" style="padding: 40px 20px; max-width: 1200px; margin: 0 auto;">
+    
+    <h2 style="text-align: center; margin-bottom: 30px; font-size: 2rem;">Nossos Jogos</h2>
+
+    <div class="search-container" style="position: relative; margin-bottom: 30px; display: flex; gap: 10px; flex-wrap: wrap;">
+        
+        <div style="flex: 1; position: relative;">
+            <ion-icon name="search-outline" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #888;"></ion-icon>
+            <input type="text" id="search-input" placeholder="Buscar jogo pelo nome..." 
+                   oninput="applyGameFilters()"
+                   style="width: 100%; padding: 12px 12px 12px 45px; border-radius: 8px; border: 1px solid #333; background: #1a1a1a; color: #fff; font-size: 1rem;">
+        </div>
+
+        <button id="toggle-filter-btn" onclick="toggleFilterPanel()" 
+                style="padding: 0 20px; background: #222; border: 1px solid #333; color: #fff; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 1rem;">
+            <ion-icon name="options-outline"></ion-icon> Filtros
+        </button>
+    </div>
+
+    <div id="filter-panel" class="hidden" style="background: #1a1a1a; border: 1px solid #333; padding: 20px; border-radius: 8px; margin-bottom: 30px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+        
+        <div>
+            <label style="display: block; color: #aaa; margin-bottom: 8px; font-size: 0.9rem;">
+                <ion-icon name="time-outline"></ion-icon> Tempo Máximo (min)
+            </label>
+            <select id="filter-time" onchange="applyGameFilters()" style="width: 100%; padding: 10px; background: #222; border: 1px solid #444; color: #fff; border-radius: 5px;">
+                <option value="all">Qualquer duração</option>
+                <option value="30">Até 30 minutos</option>
+                <option value="60">Até 1 hora</option>
+                <option value="120">Mais de 1 hora</option>
+            </select>
+        </div>
+
+        <div>
+            <label style="display: block; color: #aaa; margin-bottom: 8px; font-size: 0.9rem;">
+                <ion-icon name="people-outline"></ion-icon> Nº de Jogadores
+            </label>
+            <input type="number" id="filter-players" placeholder="Ex: 4" oninput="applyGameFilters()"
+                   style="width: 100%; padding: 10px; background: #222; border: 1px solid #444; color: #fff; border-radius: 5px;">
+        </div>
+
+        <div>
+            <label style="display: block; color: #aaa; margin-bottom: 8px; font-size: 0.9rem;">
+                <ion-icon name="pricetags-outline"></ion-icon> Categoria / Tag
+            </label>
+            <select id="filter-tag" onchange="applyGameFilters()" style="width: 100%; padding: 10px; background: #222; border: 1px solid #444; color: #fff; border-radius: 5px;">
+                <option value="all">Todas as categorias</option>
+                <option value="rpg">RPG</option>
+                <option value="puzzle">Puzzle / Enigma</option>
+                <option value="horror">Terror / Suspense</option>
+                <option value="adventure">Aventura</option>
+            </select>
+        </div>
+        
+        <div style="display: flex; align-items: flex-end;">
+            <button onclick="clearFilters()" style="padding: 10px 20px; background: #333; color: #fff; border: none; border-radius: 5px; cursor: pointer; width: 100%;">
+                Limpar Filtros
+            </button>
+        </div>
+    </div>
+
+    <div id="games-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
+        <p style="color: #666; grid-column: 1 / -1; text-align: center;">Carregando jogos...</p>
+    </div>
+    
+    <p id="no-results-msg" class="hidden" style="text-align: center; color: #888; margin-top: 30px;">
+        Nenhum jogo encontrado com esses filtros.
+    </p>
+
+</section>
 
         <section id="faq" class="main-content">
             <div class="container">
@@ -208,12 +271,12 @@
     </script>
 
     <script>
-        loadAsset('assets/css/style.3a106c79.css');
-        loadAsset('https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js');
-        loadAsset('https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js');
-        loadAsset('assets/js/data-manager.3a106c79.js'); 
-        loadAsset('assets/js/translations.3a106c79.js');
-        loadAsset('assets/js/main.3a106c79.js');
+        loadAsset('assets/css/style.0f46cde9.css');
+        loadAsset('assets/js/data-manager.0f46cde9.js'); 
+        loadAsset('assets/js/translations.0f46cde9.js');
+        loadAsset('assets/js/main.0f46cde9.js');
     </script>
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
 </body>
 </html>
