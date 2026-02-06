@@ -1,12 +1,10 @@
 // =================================================================
-// MAIN.JS - LÓGICA DA HOME, CARROSSEL E LISTAGEM
+// MAIN.JS - LÓGICA GERAL (NAVBAR, TEMA, CARREGAMENTO)
 // =================================================================
 
-// --- Variáveis Globais ---
-let games = []; // Armazena todos os jogos carregados
 const db = firebase.firestore();
-
-// Variáveis do Carrossel
+const auth = firebase.auth();
+let games = []; // Variável global para cache dos jogos
 let slideIndex = 0;
 let slideInterval;
 
@@ -15,136 +13,206 @@ let slideInterval;
 // =================================================================
 document.addEventListener('DOMContentLoaded', async () => {
     
-    // A. Gerencia a Barra de Navegação (Login/Logout)
-    firebase.auth().onAuthStateChanged((user) => {
+    // A. Monitora Login/Logout para ajustar a Navbar
+    auth.onAuthStateChanged((user) => {
         updateNavbar(user);
     });
 
-    // B. Carrega os Jogos se houver um grid na tela
+    // B. Inicializa o Sistema de Tema (Dark/Light)
+    initThemeSystem();
+
+    // C. Carrega jogos se estiver na Home (Grid ou Carrossel)
     if (document.getElementById('games-grid') || document.getElementById('carousel-track')) {
         await loadGames();
     }
 });
 
 // =================================================================
-// 2. CARREGAMENTO DE DADOS (FIRESTORE)
+// 2. NAVBAR (LOGIN vs PERFIL)
+// =================================================================
+function updateNavbar(user) {
+    // Busca o container correto onde estão os botões (baseado no seu index.html)
+    const navControls = document.querySelector('.nav__controls');
+    
+    if (!navControls) return;
+
+    // Preserva o botão de tema se ele estiver dentro dessa lista
+    const themeSwitcher = navControls.querySelector('.theme-switcher');
+    const themeHtml = themeSwitcher ? themeSwitcher.outerHTML : '<div class="theme-switcher"><ion-icon name="sunny-outline" id="theme-toggle"></ion-icon></div>';
+
+    if (user) {
+        // --- USUÁRIO LOGADO ---
+        // PERFIL: Estilo sólido vermelho (Igual ao Login)
+        // SAIR: Estilo com borda e hover (Igual ao Voltar)
+        navControls.innerHTML = `
+            <a href="dashboard.html" class="submit-btn small-btn danger-btn" style="margin-right: 15px; text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">
+                Perfil
+            </a>
+            
+            <button onclick="logout()" style="
+                background: transparent; 
+                border: 1px solid var(--text-muted); 
+                color: var(--text-color); 
+                font-weight: 500; 
+                padding: 8px 20px; 
+                border-radius: 4px; 
+                cursor: pointer; 
+                margin-right: 15px;
+                transition: all 0.3s ease;
+                font-size: 0.9rem;
+            " 
+            onmouseover="this.style.borderColor='var(--primary-color)'; this.style.color='var(--primary-color)'"
+            onmouseout="this.style.borderColor='var(--text-muted)'; this.style.color='var(--text-color)'">
+                Sair
+            </button>
+            
+            ${themeHtml} 
+        `;
+    } else {
+        // --- USUÁRIO DESLOGADO ---
+        // LOGIN: Estilo sólido vermelho
+        navControls.innerHTML = `
+            <a href="login.html" class="submit-btn small-btn danger-btn" style="margin-right: 15px; text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">
+                Login
+            </a>
+            ${themeHtml}
+        `;
+    }
+
+    // Reativa o sistema de tema pois alteramos o HTML
+    initThemeSystem();
+}
+
+window.logout = () => {
+    auth.signOut().then(() => window.location.href = 'index.html');
+};
+
+// =================================================================
+// 3. SISTEMA DE TEMA (CLARO / ESCURO)
+// =================================================================
+function initThemeSystem() {
+    const themeIcon = document.getElementById('theme-toggle');
+    const htmlElement = document.documentElement; // A tag <html>
+
+    if (!themeIcon) return;
+
+    // 1. Recupera tema salvo ou usa 'dark' como padrão
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    
+    // 2. Aplica o tema imediatamente
+    htmlElement.setAttribute('data-theme', savedTheme);
+    updateThemeIcon(themeIcon, savedTheme);
+
+    // 3. Remove event listeners antigos para evitar duplicação
+    const newBtn = themeIcon.cloneNode(true);
+    themeIcon.parentNode.replaceChild(newBtn, themeIcon);
+
+    // 4. Adiciona o evento de clique
+    newBtn.style.cursor = 'pointer';
+    newBtn.addEventListener('click', () => {
+        const currentTheme = htmlElement.getAttribute('data-theme');
+        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+        
+        // Aplica e Salva
+        htmlElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+        updateThemeIcon(newBtn, newTheme);
+    });
+}
+
+function updateThemeIcon(btnElement, theme) {
+    // Se tema for light, mostra a Lua (para ir pro escuro). Se dark, mostra Sol.
+    const iconName = theme === 'light' ? 'moon-outline' : 'sunny-outline';
+    btnElement.setAttribute('name', iconName);
+}
+
+// =================================================================
+// 4. CARREGAMENTO DE JOGOS (HOME)
 // =================================================================
 async function loadGames() {
     const grid = document.getElementById('games-grid');
-    
-    // Feedback de carregamento no grid (se existir)
-    if (grid) {
-        grid.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:#ff4444; margin-top:50px;">Carregando sistema Playnambuco...</p>';
-    }
+    if (grid) grid.innerHTML = '<div class="loader-small" style="margin: 50px auto;"></div>';
 
     try {
-        // Busca jogos ordenados por data de criação (mais novos primeiro)
         const snapshot = await db.collection('games').orderBy('createdAt', 'desc').get();
-
+        
         if (snapshot.empty) {
-            if (grid) grid.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:#aaa;">Nenhum jogo encontrado no banco de dados.</p>';
+            if (grid) grid.innerHTML = '<p style="text-align:center; color:var(--text-muted);">Nenhum jogo encontrado.</p>';
             return;
         }
 
-        games = []; // Limpa array global
-
+        games = [];
         snapshot.forEach(doc => {
             const data = doc.data();
-            // Processa e sanitiza os dados
             games.push({
                 id: doc.id,
                 ...data,
-                // Garante números para filtros matemáticos
                 maxPlayers: parseInt(data.maxPlayers) || 0,
                 sessionDuration: parseInt(data.sessionDuration) || 0,
-                // Garante array de tags (ou infere do texto se estiver vazio)
                 tags: (Array.isArray(data.tags) && data.tags.length > 0) 
                       ? data.tags 
                       : inferTagsFromText(data.name, data.shortDescription, data.longDescription)
             });
         });
 
-        console.log(`✅ ${games.length} jogos carregados.`);
-
-        // --- A. POPULA O CARROSSEL (Hero) ---
+        // Chama as funções de renderização
         setupHeroCarousel(games);
-
-        // --- B. POPULA OS FILTROS DE TAGS ---
         populateDynamicTags(games);
-
-        // --- C. RENDERIZA O GRID ---
         renderGames(games);
 
     } catch (error) {
-        console.error("Erro crítico ao carregar jogos:", error);
-        if (grid) grid.innerHTML = '<p style="color:red; text-align:center;">Erro de conexão com o servidor.</p>';
+        console.error("Erro ao carregar jogos:", error);
+        if(grid) grid.innerHTML = '<p style="text-align:center; color:red;">Erro ao conectar com o servidor.</p>';
     }
 }
 
 // =================================================================
-// 3. CARROSSEL DINÂMICO (HERO SECTION)
+// 5. CARROSSEL DINÂMICO
 // =================================================================
 function setupHeroCarousel(gamesList) {
     const track = document.getElementById('carousel-track');
     const dotsContainer = document.getElementById('carousel-dots');
     
-    // Se não tiver carrossel na página, sai da função
     if (!track) return;
 
-    // Limpa conteúdo anterior
     track.innerHTML = '';
     if (dotsContainer) dotsContainer.innerHTML = '';
 
-    // Pega os 5 primeiros jogos para destaque
-    const featuredGames = gamesList.slice(0, 5);
+    const featuredGames = gamesList.slice(0, 5); // Top 5
 
-    if (featuredGames.length === 0) {
-        track.innerHTML = '<div style="height:100%; display:flex; align-items:center; justify-content:center; color:#888;">Em breve novidades.</div>';
-        return;
-    }
+    if (featuredGames.length === 0) return;
 
-    // Cria os Slides
     featuredGames.forEach((game, index) => {
         const cover = game.coverImage || 'assets/images/logo.png';
         
-        // Slide Element
+        // Slide
         const slide = document.createElement('div');
         slide.className = index === 0 ? 'carousel-slide active' : 'carousel-slide';
-        // Estilos inline para garantir funcionamento base
-        slide.style.cssText = `
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            opacity: ${index === 0 ? '1' : '0'}; transition: opacity 1s ease-in-out;
-        `;
-
-slide.innerHTML = `
+        
+        slide.innerHTML = `
             <img src="${cover}" alt="${game.name}" style="width: 100%; height: 100%; object-fit: cover;">
             
             <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.9)); z-index: 1;"></div>
 
             <div class="carousel-caption" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: #fff; width: 80%; z-index: 2;">
-                
-                <h1 style="font-size: 3rem; margin-bottom: 10px; color: var(--secondary-color, #ff0000); text-transform: uppercase; text-shadow: 2px 2px 10px rgba(0,0,0,0.8);">
+                <h1 style="font-size: 3rem; margin-bottom: 10px; color: var(--secondary-color); text-transform: uppercase; text-shadow: 2px 2px 10px rgba(0,0,0,0.8);">
                     ${game.name}
                 </h1>
-                
                 <p style="font-size: 1.2rem; margin-bottom: 25px; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); color: #ddd;">
                     ${game.shortDescription || 'Uma experiência Playnambuco.'}
                 </p>
-                
-                <a href="jogo-template.html?id=${game.id}" style="display: inline-block; text-decoration: none; padding: 12px 35px; background: var(--secondary-color, #ff0000); color: #fff; font-weight: bold; border-radius: 50px; cursor: pointer; font-size: 1rem; box-shadow: 0 0 15px rgba(255,0,0,0.4); transition: transform 0.2s;">
+                <a href="jogo-template.html?id=${game.id}" style="display: inline-block; text-decoration: none; padding: 12px 35px; background: var(--secondary-color); color: #fff; font-weight: bold; border-radius: 50px; cursor: pointer; font-size: 1rem; box-shadow: 0 0 15px rgba(255,0,0,0.4); transition: transform 0.2s;">
                     JOGAR AGORA
                 </a>
             </div>
         `;
-
         track.appendChild(slide);
 
-        // Dot Element (Bolinha)
+        // Bolinha (Dot)
         if (dotsContainer) {
             const dot = document.createElement('div');
             dot.className = index === 0 ? 'dot active' : 'dot';
-            // Estilos inline das bolinhas
-            dot.style.cssText = `width: 12px; height: 12px; background: ${index === 0 ? '#ff0000' : 'rgba(255,255,255,0.5)'}; border-radius: 50%; cursor: pointer; transition: all 0.3s;`;
+            dot.style.cssText = `width: 12px; height: 12px; background: ${index === 0 ? 'var(--secondary-color)' : 'rgba(255,255,255,0.5)'}; border-radius: 50%; cursor: pointer; transition: all 0.3s;`;
             
             dot.onclick = () => {
                 showSlide(index);
@@ -154,7 +222,6 @@ slide.innerHTML = `
         }
     });
 
-    // Inicia rotação automática
     startAutoSlide();
 }
 
@@ -164,11 +231,8 @@ function showSlide(n) {
 
     if (slides.length === 0) return;
 
-    // 1. Remove a classe 'active' de TODOS os slides e bolinhas
-    // Isso garante que o z-index e pointer-events sejam resetados
     slides.forEach(slide => {
         slide.classList.remove('active');
-        // Removemos estilos inline antigos para garantir que o CSS mande
         slide.style.opacity = ''; 
     });
     
@@ -180,33 +244,26 @@ function showSlide(n) {
         });
     }
 
-    // 2. Calcula o índice (Loop Infinito)
     slideIndex = n;
     if (slideIndex >= slides.length) slideIndex = 0;
     if (slideIndex < 0) slideIndex = slides.length - 1;
 
-    // 3. Adiciona a classe 'active' APENAS no atual
     if (slides[slideIndex]) {
         slides[slideIndex].classList.add('active');
     }
 
     if (dots && dots[slideIndex]) {
         dots[slideIndex].classList.add('active');
-        dots[slideIndex].style.background = '#ff0000';
+        dots[slideIndex].style.background = 'var(--secondary-color)';
         dots[slideIndex].style.transform = 'scale(1.3)';
     }
-}
-
-function moveCarousel(n) {
-    showSlide(slideIndex + n);
-    resetAutoSlide();
 }
 
 function startAutoSlide() {
     if (slideInterval) clearInterval(slideInterval);
     slideInterval = setInterval(() => {
         showSlide(slideIndex + 1);
-    }, 5000); // 5 segundos
+    }, 5000);
 }
 
 function resetAutoSlide() {
@@ -215,7 +272,7 @@ function resetAutoSlide() {
 }
 
 // =================================================================
-// 4. RENDERIZAÇÃO DO GRID (VISUAL RED THEME)
+// 6. RENDERIZAÇÃO DO GRID
 // =================================================================
 function renderGames(list) {
     const grid = document.getElementById('games-grid');
@@ -223,11 +280,8 @@ function renderGames(list) {
 
     if (!grid) return;
     grid.innerHTML = '';
-    
-    // Garante que a classe CSS do grid esteja aplicada
     grid.className = 'games-grid';
 
-    // Estado vazio
     if (!list || list.length === 0) {
         if (noResults) noResults.classList.remove('hidden');
         return;
@@ -240,7 +294,7 @@ function renderGames(list) {
         const isPaused = game.status === 'paused';
 
         const card = document.createElement('div');
-        card.className = 'game-card'; // Usa o CSS "Red Theme" que criamos
+        card.className = 'game-card';
         
         if (isPaused) {
             card.style.opacity = '0.5';
@@ -249,10 +303,9 @@ function renderGames(list) {
             card.style.cursor = 'not-allowed';
         } else {
             card.style.cursor = 'pointer';
-            card.onclick = () => startGame(game.id); // Clica no card todo
+            card.onclick = () => startGame(game.id);
         }
 
-        // HTML do Card
         card.innerHTML = `
             <div style="position:relative; overflow:hidden;">
                 <img src="${cover}" class="game-card-img" alt="${game.name}">
@@ -260,8 +313,8 @@ function renderGames(list) {
             </div>
 
             <div class="game-card-content">
-                <h3>${game.name}</h3>
-                <p>${game.shortDescription || 'Clique para ver detalhes.'}</p>
+                <h3 style="color:var(--text-color);">${game.name}</h3>
+                <p style="color:var(--text-color-light);">${game.shortDescription || 'Clique para ver detalhes.'}</p>
                 
                 <div class="card-footer">
                     <span><ion-icon name="hourglass-outline"></ion-icon> ${game.sessionDuration || 60} min</span>
@@ -275,10 +328,8 @@ function renderGames(list) {
 }
 
 // =================================================================
-// 5. SISTEMA DE FILTROS & TAGS
+// 7. SISTEMA DE FILTROS & TAGS
 // =================================================================
-
-// Popula o select de tags automaticamente lendo os jogos
 function populateDynamicTags(gamesList) {
     const select = document.getElementById('filter-tag');
     if (!select) return;
@@ -288,44 +339,35 @@ function populateDynamicTags(gamesList) {
     gamesList.forEach(game => {
         if (game.tags && Array.isArray(game.tags)) {
             game.tags.forEach(tag => {
-                // Capitaliza (ex: "terror" -> "Terror")
                 const formatted = tag.trim().charAt(0).toUpperCase() + tag.trim().slice(1);
                 uniqueTags.add(formatted);
             });
         }
     });
 
-    // Mantém a opção "Todas" e adiciona as novas
     select.innerHTML = '<option value="all">Todas as Categorias</option>';
-    
     uniqueTags.forEach(tag => {
         const option = document.createElement('option');
-        option.value = tag.toLowerCase(); // Valor interno minúsculo
-        option.innerText = tag;           // Valor visível Capitalizado
+        option.value = tag.toLowerCase();
+        option.innerText = tag;
         select.appendChild(option);
     });
 }
 
-// Aplica os filtros (Search, Time, Players, Tags)
 window.applyGameFilters = () => {
-    // Referências
     const searchInput = document.getElementById('search-input');
     const timeInput = document.getElementById('filter-time');
     const playersInput = document.getElementById('filter-players');
     const tagInput = document.getElementById('filter-tag');
 
-    // Valores (com proteção contra null)
     const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
     const timeFilter = timeInput ? timeInput.value : 'all';
     const playerFilter = playersInput ? playersInput.value : '';
     const tagFilter = tagInput ? tagInput.value : 'all';
 
-    // Filtra array global 'games'
     const filteredGames = games.filter(game => {
-        // 1. Nome
         const nameMatch = (game.name || '').toLowerCase().includes(searchTerm);
         
-        // 2. Tempo
         let timeMatch = true;
         if (timeFilter !== 'all') {
             const d = game.sessionDuration;
@@ -334,17 +376,14 @@ window.applyGameFilters = () => {
             else if (timeFilter === '120') timeMatch = d > 60;
         }
 
-        // 3. Jogadores (Mostra se o jogo aceita a quantidade digitada)
         let playersMatch = true;
         if (playerFilter) {
             playersMatch = game.maxPlayers >= parseInt(playerFilter);
         }
 
-        // 4. Tags
         let tagMatch = true;
         if (tagFilter !== 'all') {
             const gameTags = (game.tags || []).map(t => t.toLowerCase());
-            // Verifica tags OU texto da descrição
             const textContent = JSON.stringify(gameTags) + " " + (game.longDescription || "").toLowerCase();
             tagMatch = textContent.includes(tagFilter);
         }
@@ -355,13 +394,11 @@ window.applyGameFilters = () => {
     renderGames(filteredGames);
 };
 
-// Toggle UI
 window.toggleFilterPanel = () => {
     const panel = document.getElementById('filter-panel');
     if (panel) panel.classList.toggle('hidden');
 };
 
-// Resetar
 window.clearFilters = () => {
     const ids = ['search-input', 'filter-players'];
     ids.forEach(id => { if(document.getElementById(id)) document.getElementById(id).value = ''; });
@@ -373,37 +410,12 @@ window.clearFilters = () => {
 };
 
 // =================================================================
-// 6. NAVEGAÇÃO & UTILITÁRIOS
+// 8. HELPERS
 // =================================================================
-
-// Redireciona para o template do jogo
 window.startGame = (gameId) => {
     window.location.href = `jogo-template.html?id=${gameId}`;
 };
 
-// Atualiza Navbar
-function updateNavbar(user) {
-    const navAuth = document.getElementById('nav-auth-links');
-    if (!navAuth) return;
-
-    if (user) {
-        navAuth.innerHTML = `
-            <a href="painel-usuario.html" class="nav-link">Perfil</a>
-            <button onclick="logout()" class="btn-login" style="background:transparent; border:1px solid #555; margin-left:10px;">Sair</button>
-        `;
-    } else {
-        navAuth.innerHTML = `
-            <a href="login.html" class="nav-link">Login</a>
-            <a href="registro.html" class="btn-login">Criar Conta</a>
-        `;
-    }
-}
-
-window.logout = () => {
-    firebase.auth().signOut().then(() => window.location.reload());
-};
-
-// Auxiliar: Infere tags se não existirem no banco
 function inferTagsFromText(name, short, long) {
     const text = ((name || "") + " " + (short || "") + " " + (long || "")).toLowerCase();
     const tags = [];

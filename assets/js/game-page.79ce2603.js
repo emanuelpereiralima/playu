@@ -265,108 +265,39 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // =================================================================
-    // 6. CONFIRMAÇÃO (LÓGICA: BUSCA ATIVA)
+// =================================================================
+    // 6. REDIRECIONAR PARA PAGAMENTO (ATUALIZADO)
     // =================================================================
     async function confirmSharedBooking(time) {
         const user = auth.currentUser;
+        
+        // Dados para o checkout
+        const checkoutPayload = {
+            gameId: gameData.id,
+            gameName: gameData.name,
+            // Usa a capa carregada ou fallback
+            cover: gameData.coverImage || 'assets/images/logo.png', 
+            date: selectedDateStr,
+            time: time,
+            price: gameData.price || 0 // Passa o preço se existir
+        };
+
+        // Salva na memória temporária
+        sessionStorage.setItem('checkoutData', JSON.stringify(checkoutPayload));
+
         if (!user) {
-            sessionStorage.setItem('pendingBooking', JSON.stringify({ gameId: gameData.id, date: selectedDateStr, time: time }));
-            alert("Faça login para agendar.");
+            // Se não estiver logado, salva intenção e manda pro login
+            sessionStorage.setItem('pendingCheckout', JSON.stringify(checkoutPayload));
+            alert("Faça login para continuar com o pagamento.");
             window.location.href = 'login.html';
             return;
         }
 
-        if(!confirm(`Confirmar agendamento para ${time}?`)) return;
-
-        dom.timeGrid.innerHTML = '<div class="loader-small"></div> Processando...';
-
-        try {
-            // --- PASSO 1: PROCURAR SE JÁ EXISTE SALA ---
-            // Buscamos no banco se existe alguma sessão com essas configs exatas
-            console.log(`🔎 Procurando sala existente: ${gameData.name} | ${selectedDateStr} | ${time}`);
-            
-            let finalSessionId = null;
-            let isFirstCreator = false;
-
-            const existingSessionQuery = await db.collection('sessions')
-                .where('gameId', '==', gameData.id)
-                .where('config.date', '==', selectedDateStr)
-                .where('config.time', '==', time)
-                .limit(1)
-                .get();
-
-            if (!existingSessionQuery.empty) {
-                // SUCESSO! Encontramos a sala criada pelo primeiro jogador
-                const foundSession = existingSessionQuery.docs[0];
-                finalSessionId = foundSession.id;
-                console.log("✅ Sala encontrada! ID:", finalSessionId);
-            } else {
-                // NÃO EXISTE. Nós somos o primeiro.
-                console.log("🆕 Nenhuma sala encontrada. Criando nova...");
-                finalSessionId = generateDeterministicId(gameData.id, selectedDateStr, time);
-                isFirstCreator = true;
-            }
-
-            // --- PASSO 2: BLOQUEIO DE DUPLICIDADE (Usuário) ---
-            const myBookingCheck = await db.collection('bookings')
-                .where('userId', '==', user.uid)
-                .where('sessionId', '==', finalSessionId)
-                .limit(1)
-                .get();
-
-            if (!myBookingCheck.empty) {
-                alert("⚠️ Você já tem vaga garantida nesta sala!");
-                window.location.href = 'dashboard.html';
-                return;
-            }
-
-            // --- PASSO 3: CRIAR AGENDAMENTO (Vinculado ao ID Encontrado/Gerado) ---
-            await db.collection('bookings').add({
-                userId: user.uid,
-                userEmail: user.email,
-                userName: user.displayName || "Jogador",
-                gameId: gameData.id,
-                gameName: gameData.name,
-                cover: gameData.coverImage || '',
-                date: selectedDateStr,
-                time: time,
-                
-                sessionId: finalSessionId, // AQUI ESTÁ A MÁGICA
-                
-                status: 'confirmed',
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
-
-            // --- PASSO 4: CRIAR A SALA (Apenas se formos o primeiro) ---
-            if (isFirstCreator) {
-                await db.collection('sessions').doc(finalSessionId).set({
-                    gameId: gameData.id,
-                    hostStatus: 'offline', // Host entrará depois
-                    config: {
-                        gameName: gameData.name,
-                        date: selectedDateStr,
-                        time: time
-                    },
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-            } else {
-                // Se não somos o primeiro, apenas atualizamos algo trivial para log
-                await db.collection('sessions').doc(finalSessionId).update({
-                    lastBookingAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-            }
-
-            alert("Agendamento confirmado! Você entrou na sala.");
-            window.location.href = 'dashboard.html';
-
-        } catch (error) {
-            console.error("Erro booking:", error);
-            alert("Erro ao agendar: " + error.message);
-            location.reload(); 
-        }
+        // Redireciona para a tela de pagamento
+        window.location.href = 'pagamento.html';
     }
 
+    
     if(dom.prevMonthBtn) dom.prevMonthBtn.onclick = () => { currentDate.setMonth(currentDate.getMonth() - 1); renderCalendar(); };
     if(dom.nextMonthBtn) dom.nextMonthBtn.onclick = () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendar(); };
 });
