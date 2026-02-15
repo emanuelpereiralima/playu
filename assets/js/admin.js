@@ -128,22 +128,22 @@ document.addEventListener('DOMContentLoaded', () => {
     // =========================================================================
     // 2. NOVA FUNÇÃO: PREVIEW DO TIMER (VISUAL)
     // =========================================================================
-    window.updateTimerPreview = () => {
+window.updateTimerPreview = () => {
         const font = document.getElementById('edit-timer-font')?.value;
         const color = document.getElementById('edit-timer-color')?.value;
         const type = document.getElementById('edit-timer-type')?.value;
-        const previewEl = document.getElementById('timer-preview-text');
-
-        if (previewEl && font && color) {
-            previewEl.style.fontFamily = font;
-            previewEl.style.color = color;
-
-            // Apenas visual: muda o texto para indicar o tipo
-            if (type === 'progressive') {
-                previewEl.textContent = "00:00 (Crescente)";
-            } else {
-                previewEl.textContent = "60:00 (Regressivo)";
-            }
+        const el = document.getElementById('timer-preview-text');
+        
+        if(el && font) {
+            // Aplica a fonte
+            el.style.fontFamily = font;
+            
+            // Aplica a cor (texto e sombra/glow)
+            el.style.color = color;
+            el.style.textShadow = `0 0 20px ${color}`; // Aumenta o brilho baseado na cor
+            
+            // Muda o texto
+            el.textContent = (type === 'progressive') ? "00:00" : "60:00";
         }
     };
 

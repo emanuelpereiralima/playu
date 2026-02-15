@@ -168,45 +168,76 @@
 
     <div class="modal-col-right" style="background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: 8px;display: flex; flex-direction: column;">
         <div class="form-group">
-                    <label style="color: var(--secondary-color); margin-bottom: 10px; display: block;">
+    <label style="color: var(--secondary-color); margin-bottom: 10px; display: block;">
         <ion-icon name="timer-outline"></ion-icon> Personalização do Timer
-                    </label>
+    </label>
 
-                    <div class="timer-config-section">
-        <div class="timer-grid">
+    <div class="timer-config-wrapper">
+        <div class="timer-controls-row">
             <div>
-                <label for="edit-timer-type">Modo de Contagem</label>
-                <select id="edit-timer-type" class="admin-input" onchange="updateTimerPreview()">
-                    <option value="regressive">Regressivo (Decrescente)</option>
-                    <option value="progressive">Progressivo (Crescente)</option>
+                <label style="font-size:0.8rem; color:#aaa;">Tipo</label>
+                <select id="edit-timer-type" onchange="updateTimerPreview()">
+                    <option value="regressive">Regressivo (60:00)</option>
+                    <option value="progressive">Progressivo (00:00)</option>
+                </select>
+            </div>
+            
+            <div>
+                <label style="font-size:0.8rem; color:#aaa;">Fonte</label>
+                <select id="edit-timer-font" onchange="updateTimerPreview()">
+                    <optgroup label="Padrão">
+                        <option value="sans-serif">Padrão Clean</option>
+                        <option value="'Courier New', monospace">Máquina de Escrever</option>
+                        <option value="'Arial Black', sans-serif">Bold Impact</option>
+                    </optgroup>
+                    <optgroup label="Futurista / Sci-Fi">
+                        <option value="'Orbitron', sans-serif">Orbitron (Digital)</option>
+                        <option value="'Share Tech Mono', monospace">Tech Mono (Hacker)</option>
+                        <option value="'Black Ops One', cursive">Black Ops (Militar)</option>
+                        <option value="'Russo One', sans-serif">Russo One (Sólido)</option>
+                    </optgroup>
+                    <optgroup label="Retrô / Pixel / Arcade">
+                        <option value="'Press Start 2P', cursive">Pixel Art 8-bit</option>
+                        <option value="'VT323', monospace">Terminal Antigo</option>
+                        <option value="'DotGothic16', sans-serif">Dot Matrix</option>
+                        <option value="'Monoton', cursive">Monoton (Neon 80s)</option>
+                    </optgroup>
+                    <optgroup label="Terror / Suspense">
+                        <option value="'Creepster', cursive">Creepster (Sangrento)</option>
+                        <option value="'Special Elite', cursive">Grunge Typewriter</option>
+                        <option value="'MedievalSharp', cursive">Medieval</option>
+                        <option value="'Cinzel', serif">Cinzel (Romano/Mítico)</option>
+                    </optgroup>
+                    <optgroup label="Divertido / Casual">
+                        <option value="'Fredoka One', cursive">Fredoka (Arredondado)</option>
+                        <option value="'Bangers', cursive">Bangers (Quadrinhos)</option>
+                        <option value="'Lobster', cursive">Lobster (Cursiva)</option>
+                        <option value="'Permanent Marker', cursive">Marcador</option>
+                        <option value="'Pacifico', cursive">Manuscrito</option>
+                    </optgroup>
+                    <optgroup label="Velocidade / Ação">
+                        <option value="'Faster One', cursive">Faster (Rápido)</option>
+                        <option value="'Righteous', cursive">Righteous (Moderno)</option>
+                        <option value="'Anton', sans-serif">Anton (Alto)</option>
+                        <option value="'Oswald', sans-serif">Oswald (Condensado)</option>
+                    </optgroup>
                 </select>
             </div>
 
             <div>
-                <label for="edit-timer-font">Estilo da Fonte</label>
-                <select id="edit-timer-font" class="admin-input" onchange="updateTimerPreview()">
-                    <option value="'Orbitron', sans-serif">Digital (Futurista)</option>
-                    <option value="'Courier New', monospace">Máquina de Escrever</option>
-                    <option value="sans-serif">Padrão (Clean)</option>
-                    <option value="serif">Clássico (Serifa)</option>
-                </select>
-            </div>
-
-            <div>
-                <label for="edit-timer-color">Cor dos Números</label>
-                <div style="display:flex; gap:10px; align-items:center;">
-                    <input type="color" id="edit-timer-color" value="#ff0000" oninput="updateTimerPreview()" style="height:40px; width:60px; border:none; background:none; cursor:pointer;">
-                    <span style="font-size:0.8rem; opacity:0.7;">Escolha a cor</span>
-                </div>
+                <label style="font-size:0.8rem; color:#aaa;">Cor</label>
+                <input type="color" id="edit-timer-color" value="#ff0000" oninput="updateTimerPreview()" style="height:42px; padding:2px; cursor:pointer;">
             </div>
         </div>
 
         <div class="timer-preview-box">
-            <span id="timer-preview-text" class="timer-preview-text">00:00</span>
+            <span id="timer-preview-text" class="timer-preview-text">60:00</span>
         </div>
-                    </div>
+        <p style="text-align:center; font-size:0.75rem; color:#555; margin-top:5px;">* Visualização aproximada. O tamanho real depende da tela do jogador.</p>
+    </div>
+</div>
 
-                    <div class="form-group">
+    <div class="form-group">
     <label style="color: var(--secondary-color); margin-bottom: 10px; display: block;">
         <ion-icon name="git-branch-outline"></ion-icon> Gerenciador de Decisões
     </label>
