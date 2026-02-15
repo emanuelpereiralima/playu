@@ -3,6 +3,7 @@
    ========================================= */
    
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Bangers&family=Black+Ops+One&family=Cinzel:wght@700&family=Courier+Prime:wght@700&family=Creepster&family=DotGothic16&family=Faster+One&family=Fredoka+One&family=Glitch+Goblin&family=Lobster&family=MedievalSharp&family=Monoton&family=Orbitron:wght@700&family=Oswald:wght@700&family=Pacifico&family=Permanent+Marker&family=Press+Start+2P&family=Righteous&family=Russo+One&family=Share+Tech+Mono&family=Special+Elite&family=VT323&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
@@ -748,6 +749,68 @@ img, video { max-width: 100%; height: auto; }
 .host-controls {
     z-index: 30; /* Prioridade máxima */
     bottom: 30px; /* Ajuste a altura */
+}
+
+/* =========================================
+   ESTILO DO TIMER PREVIEW (ADICIONE NO FINAL)
+   ========================================= */
+
+.timer-config-wrapper {
+    background: #111;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #333;
+}
+
+.timer-controls-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 80px;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.timer-preview-box {
+    background-color: #000000;
+    border: 4px solid #222;
+    border-radius: 12px;
+    padding: 20px;
+    min-height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    box-shadow: inset 0 0 30px rgba(0,0,0,0.9); /* Sombra interna para profundidade */
+    overflow: hidden;
+}
+
+/* Efeito de "Vidro/Brilho" no topo da caixa */
+.timer-preview-box::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 40%;
+    background: linear-gradient(to bottom, rgba(255,255,255,0.05), transparent);
+    pointer-events: none;
+}
+
+.timer-preview-text {
+    font-size: 3.5rem; /* Fonte bem grande */
+    line-height: 1;
+    transition: all 0.3s ease;
+    text-shadow: 0 0 15px currentColor; /* Efeito de brilho neon na cor do texto */
+    z-index: 1;
+}
+
+/* Responsividade para telas pequenas */
+@media (max-width: 600px) {
+    .timer-controls-row {
+        grid-template-columns: 1fr;
+    }
+    .timer-preview-text {
+        font-size: 2.5rem;
+    }
 }
 
 /* 5. PAINEL DO TIMER (Se precisar flutuar) */
