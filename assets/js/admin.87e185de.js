@@ -147,81 +147,136 @@ window.updateTimerPreview = () => {
         }
     };
 
+// =========================================================================
+    // LÓGICA DE DECISÕES DINÂMICAS (3 a 9 Opções)
     // =========================================================================
-    // 3. NOVA LÓGICA: GERENCIADOR DE DECISÕES
-    // =========================================================================
-    const decisionQ = document.getElementById('decision-question-input');
-    const opt1 = document.getElementById('decision-opt-1');
-    const opt2 = document.getElementById('decision-opt-2');
-    const opt3 = document.getElementById('decision-opt-3');
-    const addDecBtn = document.getElementById('add-decision-btn');
 
-    if(addDecBtn) addDecBtn.onclick = () => {
-        const q = decisionQ.value.trim();
-        const o1 = opt1.value.trim();
-        const o2 = opt2.value.trim();
-        const o3 = opt3.value.trim();
+    const optionsContainer = document.getElementById('decision-options-container');
 
-        if(!q || !o1 || !o2) return alert("Preencha a pergunta e pelo menos 2 alternativas.");
+    // 1. Renderiza os inputs iniciais (ou recarrega existentes na edição)
+    window.renderDecisionInputs = (existingOptions = []) => {
+        if (!optionsContainer) return;
+        optionsContainer.innerHTML = ''; // Limpa tudo
 
-        const newDecision = {
-            id: Date.now().toString(),
-            question: q,
-            options: [o1, o2]
-        };
-        if(o3) newDecision.options.push(o3);
+        // Lógica: Se é novo, começa com 3. Se editando, mostra os que tem + 1 vazio (até max 9).
+        let count = existingOptions.length;
+        if (count < 3) count = 3; // Mínimo 3 campos visíveis
+        else if (count < 9) count++; // Se tem menos que 9, adiciona um extra para digitar
 
-        currentDecisions.push(newDecision);
-        renderDecisionsList();
-        
-        // Limpar inputs
-        decisionQ.value = ''; opt1.value = ''; opt2.value = ''; opt3.value = '';
+        // Garante limite de 9
+        const totalToRender = Math.min(count, 9);
+
+        // Cria os inputs
+        for (let i = 0; i < totalToRender; i++) {
+            createOptionInput(existingOptions[i] || '');
+        }
     };
 
+    // 2. Cria um input individual e adiciona o evento de "Auto-Criação"
+    function createOptionInput(value) {
+        if (optionsContainer.children.length >= 9) return; // Trava de segurança
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'admin-input decision-opt-input';
+        input.placeholder = `Opção ${optionsContainer.children.length + 1}`;
+        input.value = value;
+        
+        // EVENTO MÁGICO: Quando digitar no último campo, cria um novo
+        input.addEventListener('input', (e) => {
+            const allInputs = optionsContainer.querySelectorAll('input');
+            const isLast = e.target === allInputs[allInputs.length - 1];
+            
+            // Se estou digitando no último E ele não está vazio E ainda cabe mais inputs
+            if (isLast && e.target.value.trim() !== '' && allInputs.length < 9) {
+                createOptionInput('');
+            }
+        });
+
+        optionsContainer.appendChild(input);
+    }
+
+    // 3. Botão Adicionar Decisão (Salvar na lista temporária)
+    const addDecBtn = document.getElementById('add-decision-btn');
+    if(addDecBtn) {
+        addDecBtn.onclick = () => {
+            const qInput = document.getElementById('decision-question-input');
+            const q = qInput.value.trim();
+            
+            // Pega todos os inputs criados dinamicamente
+            const inputs = optionsContainer.querySelectorAll('.decision-opt-input');
+            
+            // Filtra apenas os que têm texto
+            const validOptions = Array.from(inputs)
+                .map(input => input.value.trim())
+                .filter(val => val !== '');
+
+            // Validações
+            if (!q) return alert("Por favor, preencha a pergunta.");
+            if (validOptions.length < 3) return alert("Você precisa preencher no mínimo 3 opções.");
+
+            // Cria o objeto
+            const newDecision = {
+                id: Date.now().toString(),
+                question: q,
+                options: validOptions
+            };
+
+            currentDecisions.push(newDecision);
+            window.renderDecisionsList();
+            
+            // Limpa o formulário para a próxima
+            qInput.value = ''; 
+            window.renderDecisionInputs(); // Reseta para 3 campos vazios
+        };
+    }
+
+    // 4. Renderizar a lista de decisões salvas (visualização lateral)
     window.renderDecisionsList = () => {
-        const list = document.getElementById('decisions-list-container');
+        const list = document.getElementById('decisions-list-container'); // ID corrigido conforme HTML novo
         if(!list) return;
         list.innerHTML = '';
 
         if(currentDecisions.length === 0) {
-            list.innerHTML = '<p style="font-size:0.8rem; opacity:0.5; text-align:center;">Nenhuma decisão criada.</p>';
+            list.innerHTML = '<p style="font-size:0.8rem; opacity:0.5; text-align:center;">Nenhuma decisão salva.</p>';
             return;
         }
 
         currentDecisions.forEach((d, i) => {
-            const optsHtml = d.options.map(o => `<span style="background:rgba(255,255,255,0.1); padding:2px 6px; border-radius:4px; font-size:0.8rem;">${o}</span>`).join(' ');
+            // Cria pílulas visuais para as opções
+            const optsHtml = d.options.map(o => `<span style="background:rgba(255,255,255,0.1); padding:2px 6px; border-radius:4px; font-size:0.75rem;">${o}</span>`).join(' ');
             
             list.innerHTML += `
-            <div class="decision-card" style="background:rgba(0,0,0,0.3); padding:10px; border-radius:6px; margin-bottom:8px; border-left:3px solid var(--secondary-color); display:flex; justify-content:space-between; align-items:center;">
-                <div class="decision-card-content">
-                    <div class="decision-question" style="font-weight:bold; color:#fff; margin-bottom:4px;">${d.question}</div>
-                    <div class="decision-preview-opts" style="display:flex; gap:5px; color:#aaa;">${optsHtml}</div>
+            <div style="background:#222; padding:8px; margin-bottom:5px; border-left:3px solid var(--secondary-color); border-radius:4px; display:flex; justify-content:space-between; align-items:center;">
+                <div style="overflow:hidden;">
+                    <div style="font-weight:bold; font-size:0.9rem; margin-bottom:3px;">${d.question}</div>
+                    <div style="display:flex; flex-wrap:wrap; gap:3px;">${optsHtml}</div>
                 </div>
-                <div style="display:flex; gap:5px;">
-                    <button type="button" class="submit-btn small-btn" onclick="loadDecisionToEdit(${i})" title="Editar (Recarrega nos inputs)">
-                        <ion-icon name="create-outline"></ion-icon>
-                    </button>
-                    <button type="button" class="submit-btn danger-btn small-btn" onclick="removeDecision(${i})" title="Excluir">
-                        <ion-icon name="trash-outline"></ion-icon>
-                    </button>
+                <div style="display:flex; gap:5px; min-width:60px; justify-content:flex-end;">
+                    <button onclick="window.loadDecisionToEdit(${i})" style="color:#fff; background:none; border:none; cursor:pointer;" title="Editar"><ion-icon name="create-outline"></ion-icon></button>
+                    <button onclick="window.removeDecision(${i})" style="color:#ff4444; background:none; border:none; cursor:pointer;" title="Excluir"><ion-icon name="trash-outline"></ion-icon></button>
                 </div>
             </div>`;
         });
     };
 
-    window.removeDecision = (i) => {
-        currentDecisions.splice(i, 1);
-        renderDecisionsList();
+    // 5. Remover e Editar
+    window.removeDecision = (i) => { 
+        currentDecisions.splice(i, 1); 
+        window.renderDecisionsList(); 
     };
 
     window.loadDecisionToEdit = (i) => {
         const d = currentDecisions[i];
-        if(decisionQ) decisionQ.value = d.question;
-        if(opt1) opt1.value = d.options[0] || '';
-        if(opt2) opt2.value = d.options[1] || '';
-        if(opt3) opt3.value = d.options[2] || '';
+        const qInput = document.getElementById('decision-question-input');
         
-        removeDecision(i); // Remove da lista para ser readicionado ao salvar
+        if(qInput) qInput.value = d.question;
+        
+        // Aqui está o segredo: recarrega as opções nos inputs dinâmicos
+        window.renderDecisionInputs(d.options);
+        
+        // Remove da lista (o usuário deve clicar em "Adicionar" novamente para salvar as alterações)
+        window.removeDecision(i); 
     };
 
     // =========================================================================
@@ -721,6 +776,10 @@ window.updateTimerPreview = () => {
         const title = document.getElementById('game-modal-title');
         const saveBtn = document.getElementById('save-game-submit-btn');
         const delBtn = document.getElementById('delete-game-btn');
+
+        if(typeof window.renderDecisionInputs === 'function') {
+            window.renderDecisionInputs(); // Inicia com 3 campos vazios
+        }
 
         if (gameId) {
             if(title) title.textContent = "Editar Jogo";

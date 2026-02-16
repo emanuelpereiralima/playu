@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel Admin - PlayU</title>
-    <script src="assets/js/version.bc04bc57.js"></script>
+    <script src="assets/js/version.87e185de.js"></script>
     <script>
         function loadAsset(path) {
             const version = typeof SITE_VERSION !== 'undefined' ? SITE_VERSION : new Date().getTime();
@@ -238,29 +238,22 @@
 </div>
 
     <div class="form-group">
-    <label style="color: var(--secondary-color); margin-bottom: 10px; display: block;">
-        <ion-icon name="git-branch-outline"></ion-icon> Gerenciador de Decisões
-    </label>
+<h4 style="color: var(--secondary-color); margin-top: 20px;">Decisões</h4>
+<div class="decision-creation-box">
+    <input type="text" id="decision-question-input" class="admin-input" placeholder="Pergunta (Ex: Qual caminho seguir?)" style="margin-bottom:10px;">
     
-    <div class="decision-creation-box">
-        <input type="text" id="decision-question-input" class="admin-input" placeholder="Pergunta (Ex: Qual caminho seguir?)" style="margin-bottom:10px;">
-        
-        <div class="decision-options-grid">
-            <input type="text" id="decision-opt-1" class="admin-input" placeholder="Alternativa A">
-            <input type="text" id="decision-opt-2" class="admin-input" placeholder="Alternativa B">
-            <input type="text" id="decision-opt-3" class="admin-input" placeholder="Alternativa C (Opcional)">
+    <div id="decision-options-container" class="decision-options-grid" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:5px;">
         </div>
 
-        <button type="button" id="add-decision-btn" class="submit-btn small-btn" style="width:100%; margin-top:5px;">
-            <ion-icon name="add-circle-outline"></ion-icon> Adicionar Decisão
-        </button>
+    <button type="button" id="add-decision-btn" class="submit-btn small-btn" style="width:100%; margin-top:5px;">
+        <ion-icon name="add-circle-outline"></ion-icon> Adicionar Decisão
+    </button>
 
-        <div style="margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
-            <label style="font-size:0.85rem; color:#aaa; margin-bottom:10px; display:block;">Decisões Salvas:</label>
-            <div id="decisions-list-container">
-                </div>
-        </div>
+    <div style="margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
+        <label style="font-size:0.85rem; color:#aaa; margin-bottom:10px; display:block;">Decisões Salvas:</label>
+        <div id="decisions-list-container"></div>
     </div>
+</div>
                         <h4 style="color: var(--secondary-color); border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 15px;">
                             <ion-icon name="layers-outline"></ion-icon> Mídias da Sessão
                         </h4>
@@ -407,8 +400,8 @@
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
     <script>
-        loadAsset('assets/css/style.bc04bc57.css');
-        loadAsset('assets/js/admin.bc04bc57.js');
+        loadAsset('assets/css/style.87e185de.css');
+        loadAsset('assets/js/admin.87e185de.js');
     </script>
 </body>
 </html>
