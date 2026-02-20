@@ -768,6 +768,7 @@ window.updateTimerPreview = () => {
         const form = document.getElementById('create-game-form');
         if (form) form.reset();
         
+        window.calculateHostEarnings();
         document.getElementById('game-id').value = gameId || '';
         
         // 2. Reset Listas Visuais e Globais
@@ -836,6 +837,7 @@ window.updateTimerPreview = () => {
                     setVal('new-game-max-players', d.maxPlayers);
                     setVal('new-game-short-desc', d.shortDescription);
                     setVal('new-game-full-desc', d.fullDescription || d.longDescription);
+                    setVal('new-game-price', d.price);
                     
                     // Capa
                     setVal('new-game-cover', d.coverImage);
@@ -914,6 +916,7 @@ window.updateTimerPreview = () => {
             if(modalTitle) modalTitle.textContent = "Criar Novo Jogo";
             if(deleteBtn) deleteBtn.classList.add('hidden');
         }
+        window.calculateHostEarnings();
     };
 
     window.openScheduleModal = async (gameId) => {
@@ -1250,6 +1253,29 @@ window.updateTimerPreview = () => {
     const tagIn = document.getElementById('tag-input-field');
     if(tagIn) tagIn.onkeydown = (e) => { if(e.key==='Enter'||e.key===',') { e.preventDefault(); const v=tagIn.value.trim(); if(v&&!currentTags.includes(v)){currentTags.push(v);renderTags();} tagIn.value=''; } };
 
+
+    // =================================================================
+    // CÁLCULO DE GANHOS DO HOST (70%)
+    // =================================================================
+    window.calculateHostEarnings = () => {
+        const priceInput = document.getElementById('new-game-price');
+        const display = document.getElementById('host-share-display');
+        
+        if (!priceInput || !display) return;
+
+        const price = parseFloat(priceInput.value);
+
+        if (isNaN(price) || price < 0) {
+            display.textContent = "R$ 0,00";
+            return;
+        }
+
+        // Cálculo: 70% para o host
+        const hostShare = price * 0.70;
+
+        // Formatação para Real Brasileiro
+        display.textContent = hostShare.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    };
 
     // =========================================================================
     // LÓGICA DE VIDA EXTRA (UPLOAD & BIBLIOTECA)
