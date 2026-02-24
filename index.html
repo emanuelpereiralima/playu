@@ -31,10 +31,14 @@
             <div class="nav__right-group">
                 <ul class="nav__links right"></ul>
                 
-                <div class="nav__controls">                    
-                    <div class="theme-switcher">
-                        <ion-icon name="sunny-outline" id="theme-toggle" style="cursor: pointer;"></ion-icon>
-                    </div>
+<div class="nav-buttons" id="user-logged-in-menu" style="display: none; gap: 10px; align-items: center;">
+    
+    <a href="admin.html" id="btn-admin-panel" class="submit-btn small-btn hidden" style="background: var(--secondary-color); color: #fff; text-decoration: none;">
+        <ion-icon name="settings-outline"></ion-icon> Painel Admin
+    </a>
+    
+    <a href="perfil.html" class="submit-btn small-btn" style="text-decoration: none;">Meu Perfil</a>
+    <button id="btn-logout" class="submit-btn small-btn secondary-btn">Sair</button>                  
                 </div>
             </div>
         </nav>

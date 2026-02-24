@@ -2,17 +2,26 @@
 // MAIN.JS - LÓGICA GERAL (NAVBAR, TEMA, CARREGAMENTO)
 // =================================================================
 
-const db = firebase.firestore();
-const auth = firebase.auth();
-let games = []; // Variável global para cache dos jogos
+// Deixe as variáveis declaradas sem inicializar ainda para evitar erros
+let db;
+let auth;
+let games = []; 
 let slideIndex = 0;
 let slideInterval;
 
 // =================================================================
-// 1. INICIALIZAÇÃO
+// 1. INICIALIZAÇÃO SEGURA
 // =================================================================
 document.addEventListener('DOMContentLoaded', async () => {
-    
+    // Garante que o Firebase carregou antes de tentar usar
+    if (typeof firebase === 'undefined') {
+        console.error("❌ ERRO: Firebase não encontrado no HTML.");
+        return;
+    }
+
+    db = window.db || firebase.firestore();
+    auth = window.auth || firebase.auth();
+
     // A. Monitora Login/Logout para ajustar a Navbar
     auth.onAuthStateChanged((user) => {
         updateNavbar(user);
@@ -28,24 +37,52 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // =================================================================
-// 2. NAVBAR (LOGIN vs PERFIL)
+// 2. NAVBAR (LOGIN vs PERFIL E ADMIN)
 // =================================================================
-function updateNavbar(user) {
-    // Busca o container correto onde estão os botões (baseado no seu index.html)
-    const navControls = document.querySelector('.nav__controls');
+async function updateNavbar(user) {
+    // Tenta encontrar a div dos botões usando as classes mais comuns do seu projeto
+    const navControls = document.querySelector('.nav__controls') || document.querySelector('.nav-buttons') || document.getElementById('user-logged-in-menu');
     
-    if (!navControls) return;
+    if (!navControls) {
+        console.warn("⚠️ Div dos botões não encontrada no HTML. Verifique se existe a classe '.nav__controls' no menu.");
+        return;
+    }
 
-    // Preserva o botão de tema se ele estiver dentro dessa lista
-    const themeSwitcher = navControls.querySelector('.theme-switcher');
-    const themeHtml = themeSwitcher ? themeSwitcher.outerHTML : '<div class="theme-switcher"><ion-icon name="sunny-outline" id="theme-toggle"></ion-icon></div>';
+    // Garante que a div esteja visível (caso estivesse escondida no CSS)
+    navControls.style.display = 'flex';
+    navControls.style.alignItems = 'center';
+    navControls.style.gap = '15px';
+
+    // Preserva o botão de tema
+    const themeSwitcher = navControls.querySelector('.theme-switcher') || document.getElementById('theme-toggle')?.parentElement;
+    const themeHtml = themeSwitcher ? themeSwitcher.outerHTML : '<div class="theme-switcher" style="cursor:pointer; font-size:1.2rem; display:flex; align-items:center;"><ion-icon name="sunny-outline" id="theme-toggle"></ion-icon></div>';
 
     if (user) {
         // --- USUÁRIO LOGADO ---
-        // PERFIL: Estilo sólido vermelho (Igual ao Login)
-        // SAIR: Estilo com borda e hover (Igual ao Voltar)
+        let isAdmin = false;
+        try {
+            const userDoc = await db.collection('users').doc(user.uid).get();
+            if (userDoc.exists) {
+                const userData = userDoc.data();
+                if (userData.role === 'admin' || userData.isAdmin === true) {
+                    isAdmin = true;
+                }
+            }
+        } catch (error) {
+            console.error("Erro ao verificar permissões:", error);
+        }
+
+        // HTML do botão Admin (Apenas se for admin)
+        const adminBtnHtml = isAdmin 
+            ? `<a href="admin.html" class="submit-btn small-btn" style="background: var(--secondary-color); color: #fff; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; padding: 8px 15px;">
+                    <ion-icon name="settings-outline" style="margin-right: 5px;"></ion-icon> Admin
+               </a>` 
+            : '';
+
         navControls.innerHTML = `
-            <a href="dashboard.html" class="submit-btn small-btn danger-btn" style="margin-right: 15px; text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">
+            ${adminBtnHtml}
+            
+            <a href="dashboard.html" class="submit-btn small-btn danger-btn" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center; padding: 8px 15px;">
                 Perfil
             </a>
             
@@ -54,10 +91,9 @@ function updateNavbar(user) {
                 border: 1px solid var(--text-muted); 
                 color: var(--text-color); 
                 font-weight: 500; 
-                padding: 8px 20px; 
+                padding: 8px 15px; 
                 border-radius: 4px; 
                 cursor: pointer; 
-                margin-right: 15px;
                 transition: all 0.3s ease;
                 font-size: 0.9rem;
             " 
@@ -70,21 +106,20 @@ function updateNavbar(user) {
         `;
     } else {
         // --- USUÁRIO DESLOGADO ---
-        // LOGIN: Estilo sólido vermelho
         navControls.innerHTML = `
-            <a href="login.html" class="submit-btn small-btn danger-btn" style="margin-right: 15px; text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">
-                Login
+            <a href="login.html" class="submit-btn small-btn danger-btn" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center; padding: 8px 15px;">
+                Entrar
             </a>
             ${themeHtml}
         `;
     }
 
-    // Reativa o sistema de tema pois alteramos o HTML
+    // Reativa o clique do solzinho/lua
     initThemeSystem();
 }
 
 window.logout = () => {
-    auth.signOut().then(() => window.location.href = 'index.html');
+    if(auth) auth.signOut().then(() => window.location.href = 'index.html');
 };
 
 // =================================================================
@@ -92,28 +127,21 @@ window.logout = () => {
 // =================================================================
 function initThemeSystem() {
     const themeIcon = document.getElementById('theme-toggle');
-    const htmlElement = document.documentElement; // A tag <html>
+    const htmlElement = document.documentElement;
 
     if (!themeIcon) return;
 
-    // 1. Recupera tema salvo ou usa 'dark' como padrão
     const savedTheme = localStorage.getItem('theme') || 'dark';
-    
-    // 2. Aplica o tema imediatamente
     htmlElement.setAttribute('data-theme', savedTheme);
     updateThemeIcon(themeIcon, savedTheme);
 
-    // 3. Remove event listeners antigos para evitar duplicação
     const newBtn = themeIcon.cloneNode(true);
     themeIcon.parentNode.replaceChild(newBtn, themeIcon);
 
-    // 4. Adiciona o evento de clique
     newBtn.style.cursor = 'pointer';
     newBtn.addEventListener('click', () => {
         const currentTheme = htmlElement.getAttribute('data-theme');
         const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-        
-        // Aplica e Salva
         htmlElement.setAttribute('data-theme', newTheme);
         localStorage.setItem('theme', newTheme);
         updateThemeIcon(newBtn, newTheme);
@@ -121,7 +149,6 @@ function initThemeSystem() {
 }
 
 function updateThemeIcon(btnElement, theme) {
-    // Se tema for light, mostra a Lua (para ir pro escuro). Se dark, mostra Sol.
     const iconName = theme === 'light' ? 'moon-outline' : 'sunny-outline';
     btnElement.setAttribute('name', iconName);
 }
