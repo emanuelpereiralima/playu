@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>play.u Live Entertainment</title>
     <link rel="icon" href="assets/images/logo.png" type="image/png">
-    <script src="assets/js/version.3049befe.js"></script>
+    <script src="assets/js/version.e09d0f3d.js"></script>
     <script>
         function loadAsset(path) {
             const version = typeof SITE_VERSION !== 'undefined' ? SITE_VERSION : new Date().getTime();
@@ -31,10 +31,14 @@
             <div class="nav__right-group">
                 <ul class="nav__links right"></ul>
                 
-                <div class="nav__controls">                    
-                    <div class="theme-switcher">
-                        <ion-icon name="sunny-outline" id="theme-toggle" style="cursor: pointer;"></ion-icon>
-                    </div>
+<div class="nav-buttons" id="user-logged-in-menu" style="display: none; gap: 10px; align-items: center;">
+    
+    <a href="admin.html" id="btn-admin-panel" class="submit-btn small-btn hidden" style="background: var(--secondary-color); color: #fff; text-decoration: none;">
+        <ion-icon name="settings-outline"></ion-icon> Painel Admin
+    </a>
+    
+    <a href="perfil.html" class="submit-btn small-btn" style="text-decoration: none;">Meu Perfil</a>
+    <button id="btn-logout" class="submit-btn small-btn secondary-btn">Sair</button>                  
                 </div>
             </div>
         </nav>
@@ -269,10 +273,10 @@
     </script>
 
     <script>
-        loadAsset('assets/css/style.3049befe.css');
-        loadAsset('assets/js/data-manager.3049befe.js'); 
-        loadAsset('assets/js/translations.3049befe.js');
-        loadAsset('assets/js/main.3049befe.js');
+        loadAsset('assets/css/style.e09d0f3d.css');
+        loadAsset('assets/js/data-manager.e09d0f3d.js'); 
+        loadAsset('assets/js/translations.e09d0f3d.js');
+        loadAsset('assets/js/main.e09d0f3d.js');
     </script>
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>

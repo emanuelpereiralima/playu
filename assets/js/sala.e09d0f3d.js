@@ -11,7 +11,7 @@ window.selectOption = (option) => {
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log("🎮 Iniciando Sala do Jogador (Correção de Conexão)...");
+    console.log("🎮 Iniciando Sala do Jogador (Correção de Conexão e Decisões)...");
 
     // 1. VERIFICAÇÃO DE SEGURANÇA
     if (typeof firebase === 'undefined') {
@@ -19,8 +19,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    const db = firebase.firestore();
-    const auth = firebase.auth();
+    const db = window.db || firebase.firestore();
+    const auth = window.auth || firebase.auth();
 
     // --- ELEMENTOS DOM ---
     const localVideo = document.getElementById('player-local-video'); 
@@ -40,6 +40,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let lastMediaTimestamp = 0;
     let lastDecisionTimestamp = 0;
     let localDecisionInterval = null;
+    let playerName = sessionStorage.getItem('playerName'); // Armazena o nome do jogador
     
     const connectionTime = Date.now();
 
@@ -62,6 +63,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 1. INICIALIZAÇÃO INTELIGENTE (IGUAL AO HOST)
     // =========================================================================
     async function initPlayer() {
+        // Garante que temos o nome do jogador para as decisões
+        if (!playerName) {
+            playerName = prompt("Digite seu nome para entrar na sala:");
+            if (!playerName || playerName.trim() === "") {
+                playerName = "Jogador Anônimo " + Math.floor(Math.random() * 1000);
+            }
+            sessionStorage.setItem('playerName', playerName);
+        }
+
         setupControls(); // Configura botões visuais
 
         if (!isGuest) {
@@ -268,40 +278,48 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (!doc.exists) return;
             const data = doc.data();
 
-            // ... (Lógica de Timer e Mídia mantém igual) ...
             if (data.timer) updateTimer(data.timer);
+            if (data.timerCurrent !== undefined) updateTimerDisplay(data.timerCurrent);
+
             if (data.liveMedia && data.liveMedia.timestamp) {
-                const eventTime = data.liveMedia.timestamp.toMillis();
+                const eventTime = data.liveMedia.timestamp.toMillis ? data.liveMedia.timestamp.toMillis() : data.liveMedia.timestamp;
                 if (eventTime > connectionTime && eventTime !== lastMediaTimestamp) {
                     lastMediaTimestamp = eventTime;
                     showLiveMedia(data.liveMedia);
                 }
+            } else if (!data.liveMedia) {
+                const old = document.getElementById('media-overlay');
+                if (old) old.remove();
             }
 
-            // --- LÓGICA DE DECISÃO ---
+        // --- LÓGICA DE DECISÃO ---
             if (data.activeDecision) {
                 const d = data.activeDecision;
                 
                 // 1. Nova Decisão Ativa
                 if (d.status === 'active') {
-                    // Verifica se é uma decisão nova pelo ID ou Timestamp
-                    const dt = d.timestamp ? d.timestamp.toMillis() : 0;
-                    if (dt > lastDecisionTimestamp) {
-                        lastDecisionTimestamp = dt;
+                    // Usando o ID em vez do Timestamp para ser instantâneo!
+                    if (d.id !== lastDecisionTimestamp) {
+                        lastDecisionTimestamp = d.id;
                         showDecisionUI(d);
                     }
                 } 
                 // 2. Decisão Finalizada (Mostrar Resultado)
                 else if (d.status === 'finished') {
-                    showResultUI(d);
+                    // Impede de mostrar o resultado duas vezes
+                    if (lastDecisionTimestamp !== 'finished_' + d.id) {
+                        lastDecisionTimestamp = 'finished_' + d.id;
+                        showResultUI(d);
+                    }
                 }
             } else {
-                // Se null, limpa tudo
+                // Se null, limpa tudo (O host fechou)
                 const c = document.getElementById('decision-container');
                 const r = document.getElementById('decision-result');
                 if (c) c.classList.add('hidden');
                 if (r) r.remove();
                 if (localDecisionInterval) clearInterval(localDecisionInterval);
+                lastDecisionTimestamp = 0; // Reseta para a próxima
             }
         });
     }
@@ -323,17 +341,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         
         const buttonsHtml = decision.options.map(opt => 
-            `<button class="submit-btn" style="flex:1; margin:5px;" onclick="sendVote('${decision.id}', '${opt.replace(/'/g, "\\'")}')">${opt}</button>`
+            `<button class="submit-btn" style="flex:1; margin:5px; font-size:1.1rem; padding:15px;" onclick="sendVote('${decision.id}', '${opt.replace(/'/g, "\\'")}')">${opt}</button>`
         ).join('');
 
         container.innerHTML = `
-            <div style="background:rgba(0,0,0,0.9); padding:20px; border-radius:10px; border:2px solid #00ff88; text-align:center; box-shadow:0 0 20px rgba(0,255,136,0.2);">
-                <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                    <span style="color:#aaa;">Votação</span>
-                    <span id="player-decision-timer" style="color:#00ff88; font-weight:bold;">--s</span>
+            <div style="background:rgba(0,0,0,0.95); padding:25px; border-radius:12px; border:2px solid var(--secondary-color); text-align:center; box-shadow:0 0 30px rgba(233,69,96,0.3);">
+                <div style="display:flex; justify-content:space-between; margin-bottom:15px; border-bottom:1px solid #333; padding-bottom:10px;">
+                    <span style="color:#aaa; font-weight:bold;">VOTAÇÃO ABERTA</span>
+                    <span id="player-decision-timer" style="color:var(--secondary-color); font-weight:bold; font-size:1.2rem; font-family:'Orbitron', sans-serif;">--s</span>
                 </div>
-                <h3 style="color:#fff; margin-bottom:15px; font-family:'Orbitron', sans-serif;">${decision.question}</h3>
-                <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+                <h3 style="color:#fff; margin-bottom:20px; font-size:1.3rem;">${decision.question}</h3>
+                <div style="display:flex; flex-direction:column; gap:10px;">
                     ${buttonsHtml}
                 </div>
             </div>
@@ -347,7 +365,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             const now = Date.now();
             const left = Math.max(0, Math.ceil((decision.endTime - now) / 1000));
             const timerEl = document.getElementById('player-decision-timer');
-            if(timerEl) timerEl.textContent = `${left}s`;
+            if(timerEl) {
+                timerEl.textContent = `${left}s`;
+                if(left <= 10) timerEl.style.color = '#ff4444';
+            }
             if(left <= 0) clearInterval(localDecisionInterval);
         };
         
@@ -358,15 +379,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Função Global para Enviar Voto
     window.sendVote = async (decisionId, option) => {
         const container = document.getElementById('decision-container');
-        if(container) container.innerHTML = `<div style="padding:20px; background:rgba(0,0,0,0.8); color:#fff; border-radius:10px; text-align:center;">Voto enviado: <b>${option}</b><br>Aguardando resultado...</div>`;
+        if(container) {
+            container.innerHTML = `
+                <div style="padding:30px; background:rgba(0,0,0,0.95); color:#fff; border-radius:12px; border:2px solid #00ff88; text-align:center;">
+                    <ion-icon name="checkmark-circle-outline" style="font-size: 4rem; color: #00ff88; margin-bottom:10px;"></ion-icon>
+                    <h3 style="color:#00ff88; margin-bottom:10px;">Voto Registrado!</h3>
+                    Você escolheu: <b style="color:#fff;">${option}</b><br><br>
+                    <span style="font-size:0.8rem; color:#aaa;">Aguardando os outros jogadores e o fim do tempo...</span>
+                </div>`;
+        }
         
         try {
-            // Salva na subcoleção 'decision_votes'
-            await roomRef.collection('decision_votes').doc(myId).set({
-                decisionId: decisionId,
-                userId: myId,
-                option: option,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            // Atualiza diretamente no objeto da decisão usando o NOME do jogador
+            await roomRef.update({
+                [`activeDecision.votes.${playerName}`]: option
             });
         } catch (e) {
             console.error("Erro ao votar:", e);
@@ -374,7 +400,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     // =========================================================================
-    // UI DE RESULTADO
+    // UI DE RESULTADO (CÁLCULO E EXIBIÇÃO DETALHADA)
     // =========================================================================
     function showResultUI(decision) {
         // Esconde votação
@@ -382,34 +408,75 @@ document.addEventListener('DOMContentLoaded', async () => {
         if(voteContainer) voteContainer.classList.add('hidden');
         if(localDecisionInterval) clearInterval(localDecisionInterval);
 
-        // Cria Overlay de Resultado
+        // Remove overlay antigo se houver
         const oldRes = document.getElementById('decision-result');
         if(oldRes) oldRes.remove();
 
         const resultOverlay = document.createElement('div');
         resultOverlay.id = 'decision-result';
         resultOverlay.className = 'decision-result-overlay';
+        resultOverlay.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:3000; display:flex; justify-content:center; align-items:center;";
 
-        // Formata votos (Ex: Opção A: 5 | Opção B: 2)
-        const statsHtml = Object.entries(decision.votes || {}).map(([opt, count]) => 
-            `<div>${opt}: <b>${count}</b></div>`
-        ).join('<div style="margin:0 10px; color:#555;">|</div>');
+        const votes = decision.votes || {};
+        const totalVotes = Object.keys(votes).length;
+        let resultHtml = "";
+
+        if (totalVotes === 0) {
+            resultHtml = `
+                <ion-icon name="time-outline" style="font-size: 4rem; color: #ffbb00; margin-bottom:15px;"></ion-icon>
+                <div style="font-size:1.5rem; color:#ffbb00; font-weight:bold; margin-bottom:15px;">Tempo Esgotado!</div>
+                <p style="color:#aaa;">Ninguém votou a tempo nesta decisão.</p>
+            `;
+        } else {
+            // Conta os votos para achar a vencedora
+            const counts = {};
+            for (const p in votes) {
+                counts[votes[p]] = (counts[votes[p]] || 0) + 1;
+            }
+            
+            let maxVotes = 0; 
+            let winner = "";
+            for (const opt in counts) {
+                if (counts[opt] > maxVotes) { 
+                    maxVotes = counts[opt]; 
+                    winner = opt; 
+                }
+            }
+
+            // Monta a lista do que CADA usuário escolheu
+            let detailsHtml = `<div style="margin-top:20px; text-align:left; background:rgba(255,255,255,0.05); padding:15px; border-radius:8px; border:1px solid #333;">
+                                <h4 style="color:#aaa; font-size:0.85rem; margin-bottom:10px; text-transform:uppercase;">Como os jogadores votaram:</h4>
+                                <ul style="list-style:none; padding:0; margin:0;">`;
+            
+            for (const player in votes) {
+                detailsHtml += `<li style="margin-bottom:8px; font-size:0.95rem; color:#ccc; display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:5px;">
+                                    <strong>${player}</strong> 
+                                    <em style="color:#00ff88; font-style:normal; text-align:right;">${votes[player]}</em>
+                                </li>`;
+            }
+            detailsHtml += `</ul></div>`;
+
+            resultHtml = `
+                <div style="color:#aaa; font-size:1.1rem; margin-bottom:10px; text-transform:uppercase; letter-spacing:1px;">A opção mais votada foi:</div>
+                <div style="font-family:'Orbitron', sans-serif; font-size:2rem; color:#00ff88; text-shadow:0 0 15px rgba(0,255,136,0.5); margin-bottom:5px;">${winner}</div>
+                <div style="color:#00ff88; font-size:0.9rem;">(${maxVotes} voto${maxVotes > 1 ? 's' : ''})</div>
+                ${detailsHtml}
+            `;
+        }
 
         resultOverlay.innerHTML = `
-            <div class="winner-card">
-                <div class="winner-label">A decisão foi:</div>
-                <div class="winner-text">${decision.winner}</div>
-                <div class="winner-stats">${statsHtml}</div>
-                <button class="secondary-btn" style="margin-top:20px;" onclick="this.parentElement.parentElement.remove()">Fechar</button>
+            <div style="background:#1a1a2e; border:2px solid var(--secondary-color); padding:30px; border-radius:12px; text-align:center; max-width:450px; width:90%; box-shadow: 0 10px 40px rgba(0,0,0,0.8);">
+                ${resultHtml}
+                <button class="submit-btn" style="margin-top:25px; width:100%; padding:15px; font-size:1.1rem;" onclick="this.parentElement.parentElement.remove()">Entendido</button>
             </div>
         `;
 
         document.body.appendChild(resultOverlay);
 
-        // Auto remover após 8 segundos
+        // Auto-remover após 15 segundos
         setTimeout(() => {
             if(resultOverlay.parentNode) resultOverlay.remove();
-        }, 8000);
+        }, 15000);
     }
 
     // =========================================================================
@@ -454,6 +521,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         if(content) modal.appendChild(content);
     }
 
+    function updateTimerDisplay(seconds) {
+        const el = document.getElementById('player-timer-display');
+        if (el) {
+            const min = Math.floor(seconds / 60);
+            const sec = seconds % 60;
+            el.innerText = `${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+        }
+    }
+
+    function updateTimer(t) {
+        if (!timerDisplay) return;
+        const h = Math.floor(t.value/3600), m = Math.floor((t.value%3600)/60), s = t.value%60;
+        const timeStr = h > 0 
+            ? `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
+            : `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+            
+        timerDisplay.textContent = timeStr;
+        if(t.color) timerDisplay.style.color = t.color;
+        if(t.font) timerDisplay.style.fontFamily = t.font;
+    }
+
+    // Código legado mantido para retrocompatibilidade caso exista no HTML
     function showDecision(decision) {
         let container = document.getElementById('decision-container');
         if (!container) {
@@ -477,18 +566,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
         `;
         container.classList.remove('hidden');
-    }
-
-    function updateTimer(t) {
-        if (!timerDisplay) return;
-        const h = Math.floor(t.value/3600), m = Math.floor((t.value%3600)/60), s = t.value%60;
-        const timeStr = h > 0 
-            ? `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
-            : `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-            
-        timerDisplay.textContent = timeStr;
-        if(t.color) timerDisplay.style.color = t.color;
-        if(t.font) timerDisplay.style.fontFamily = t.font;
     }
 
     initPlayer();

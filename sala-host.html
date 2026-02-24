@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sala do Host - PlayU</title>
     
-    <link rel="stylesheet" href="assets/css/style.3049befe.css">
+    <link rel="stylesheet" href="assets/css/style.e09d0f3d.css">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
     
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
@@ -17,7 +17,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
 
     <script src="assets/js/firebase-config.js"></script>
-    <script src="assets/js/main.3049befe.js"></script>
+    <script src="assets/js/main.e09d0f3d.js"></script>
 </head>
 <body class="host-room-body">
 
@@ -71,7 +71,7 @@
             <div class="sidebar-header" style="flex-direction: column; align-items: flex-start; gap: 10px;">
                 <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
                     <h3 style="margin:0;">Painel Mestre</h3>
-                    <button id="reopen-invite-btn" class="sidebar-icon-btn" title="Ver Link de Convite">
+                    <button id="copy-invite-btn" class="sidebar-icon-btn" title="Ver Link de Convite">
                         <ion-icon name="link-outline"></ion-icon>
                     </button>
                 </div>
@@ -108,6 +108,13 @@
         <div id="host-audio-list"></div>
     </div>
 
+    <div class="master-volume-control" style="background: rgba(0,0,0,0.4); padding: 15px; border-radius: 8px; border: 1px solid #444; margin-bottom: 20px; display: flex; align-items: center; gap: 15px;">
+    <ion-icon name="volume-high-outline" style="color: var(--secondary-color); font-size: 1.8rem;"></ion-icon>
+    <div style="flex: 1;">
+        <label style="font-size: 0.85rem; color: #aaa; display: block; margin-bottom: 5px; font-weight: bold;">Volume Geral Vídeos</label>
+        <input type="range" id="master-volume-slider" min="0" max="1" step="0.05" value="1" style="width: 100%; cursor: pointer;" oninput="window.adjustMasterVolume(this.value)">
+    </div>
+</div>
     <div class="media-section">
         <h4 style="color:#aaa; font-size:0.8rem; margin-bottom:10px; text-transform:uppercase; border-bottom:1px solid #333; padding-bottom:5px;">
             <ion-icon name="videocam"></ion-icon> Vídeos & Cenas
@@ -181,7 +188,7 @@
         <div id="media-content-area" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;"></div>
     </div>
 
-    <script src="assets/js/sala-host.3049befe.js"></script>
+    <script src="assets/js/sala-host.e09d0f3d.js"></script>
 </body>
 <div id="rotate-device-overlay">
     <div class="rotate-content">

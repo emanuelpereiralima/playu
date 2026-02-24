@@ -528,6 +528,49 @@ img, video { max-width: 100%; height: auto; }
 /* LAYOUT IMERSIVO DO HOST                   */
 /* ========================================= */
 
+/* 1. Trava a página inteira para não rolar */
+.host-room-body {
+    overflow: hidden !important; 
+    height: 100vh;
+    width: 100vw;
+    margin: 0;
+    background-color: #0f0f13;
+    color: #fff;
+    height: 100vh;
+    font-family: 'Poppins', sans-serif;
+}
+
+/* 2. Mantém os botões da câmera sempre fixos na tela (por cima do vídeo) */
+.host-controls-bar {
+    position: fixed !important; 
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2000;
+}
+
+/* 3. A Barra Lateral não pode passar de 100vh */
+.host-sidebar {
+    position: fixed;
+    right: 0;
+    top: 0;
+    height: 100vh !important; /* Limite cravado na altura da tela */
+    width: 320px;
+    background: rgba(18, 18, 18, 0.95);
+    backdrop-filter: blur(10px);
+    z-index: 20;
+    border-left: 1px solid #333;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-content {
+    flex: 1; /* Ocupa todo o espaço restante abaixo do título da aba */
+    overflow-y: auto !important; /* Cria a barra de rolagem AQUI */
+    padding: 15px;
+    padding-bottom: 80px; /* Dá um respiro no final para o último item */
+}
+
 #host-video-wrapper {
     position: fixed;
     top: 0; left: 0; width: 100vw; height: 100vh;
@@ -801,19 +844,6 @@ img, video { max-width: 100%; height: auto; }
     height: 180px;
 }
 
-/* 3. GARANTIR QUE A SIDEBAR FIQUE VISÍVEL */
-.host-sidebar {
-    position: fixed;
-    right: 0;
-    top: 0;
-    height: 100vh;
-    width: 300px; /* Ajuste conforme seu design atual */
-    background: rgba(18, 18, 18, 0.95); /* Fundo semi-transparente para ler sobre o vídeo */
-    backdrop-filter: blur(10px);
-    z-index: 20;
-    border-left: 1px solid #333;
-}
-
 /* 4. GARANTIR QUE OS CONTROLES FIQUEM VISÍVEIS */
 .host-controls {
     z-index: 30; /* Prioridade máxima */
@@ -919,11 +949,6 @@ img, video { max-width: 100%; height: auto; }
 .control-btn.active { background: #ff4444; border: 1px solid red; }
 .control-btn.danger { background: #ff4444; }
 
-/* Sidebar do Host */
-.host-sidebar {
-    background: #1a1a2e; border-left: 1px solid #333;
-    display: flex; flex-direction: column; height: 100vh;
-}
 .sidebar-header { padding: 15px; border-bottom: 1px solid #333; background: #16213e; }
 .sidebar-tabs { display: flex; background: #111; }
 .sidebar-content { flex: 1; padding: 15px; overflow-y: auto; display: none; }
@@ -1013,15 +1038,6 @@ img, video { max-width: 100%; height: auto; }
 
 /* Agenda Página do Jogo */
 .booking-section { margin-top: 4rem; display: grid; grid-template-columns: 1.5fr 1fr; gap: 3rem;}
-
-.host-room-body {
-    background-color: #0f0f13;
-    color: #fff;
-    height: 100vh;
-    overflow: hidden;
-    margin: 0;
-    font-family: 'Poppins', sans-serif;
-}
 
 /* Camada de Bloqueio (Pausado) */
 .booking-blocked-overlay {

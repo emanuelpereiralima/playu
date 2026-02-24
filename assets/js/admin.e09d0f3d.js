@@ -108,6 +108,76 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // =================================================================
+    // LÓGICA DE CATEGORIAS / PACOTES DE PREÇO
+    // =================================================================
+    let currentGameCategories = []; // Variável global para guardar os pacotes
+
+    window.openCategoryModal = () => {
+        document.getElementById('category-modal').classList.remove('hidden');
+        document.getElementById('cat-name').value = '';
+        document.getElementById('cat-price').value = '';
+        document.getElementById('cat-duration').value = '';
+    };
+
+    window.closeCategoryModal = () => {
+        document.getElementById('category-modal').classList.add('hidden');
+    };
+
+    window.addCategory = () => {
+        const name = document.getElementById('cat-name').value.trim();
+        const price = parseFloat(document.getElementById('cat-price').value);
+        const duration = parseInt(document.getElementById('cat-duration').value);
+
+        if(!name || isNaN(price) || isNaN(duration)) {
+            return alert("Preencha o nome, o valor e a duração corretamente.");
+        }
+
+        currentGameCategories.push({ 
+            id: Date.now().toString(),
+            name: name, 
+            price: price, 
+            duration: duration 
+        });
+
+        window.renderCategories();
+        window.closeCategoryModal();
+    };
+
+    window.removeCategory = (index) => {
+        currentGameCategories.splice(index, 1);
+        window.renderCategories();
+    };
+
+    window.renderCategories = () => {
+        const list = document.getElementById('game-categories-list');
+        if(!list) return;
+        list.innerHTML = '';
+        
+        if(currentGameCategories.length === 0) {
+            list.innerHTML = '<p style="font-size:0.8rem; color:#666; text-align:center;">Nenhum pacote extra. O valor padrão será a única opção.</p>';
+            return;
+        }
+
+        currentGameCategories.forEach((cat, i) => {
+            const hostShare = (cat.price * 0.70).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            
+            list.innerHTML += `
+                <div style="background:#222; padding:10px; border-radius:6px; display:flex; justify-content:space-between; align-items:center; border-left:3px solid var(--secondary-color);">
+                    <div>
+                        <strong style="color:#fff; font-size:0.9rem;">${cat.name}</strong><br>
+                        <span style="color:#00ff88; font-size:0.85rem; font-weight:bold;">R$ ${cat.price.toFixed(2)}</span> 
+                        <span style="color:#aaa; font-size:0.8rem;">| <ion-icon name="time-outline"></ion-icon> ${cat.duration} min</span>
+                        <div style="font-size:0.7rem; color:#888; margin-top:2px;">Seu repasse: ${hostShare}</div>
+                    </div>
+                    <button type="button" class="submit-btn small-btn danger-btn" onclick="window.removeCategory(${i})" style="padding:4px 8px; min-width:auto;">
+                        <ion-icon name="trash-outline"></ion-icon>
+                    </button>
+                </div>
+            `;
+        });
+    };
+
     // --- NAVEGAÇÃO ENTRE ABAS DO DASHBOARD ---
     window.switchAdminTab = (tabId) => {
         document.querySelectorAll('.dashboard-section').forEach(s => s.classList.add('hidden-section'));
@@ -648,60 +718,128 @@ window.updateTimerPreview = () => {
         });
     }
 
-    // Carregar Lista de Jogos
-    window.loadAllGames = async function() {
-        if(!gameListContainer) return;
-        gameListContainer.innerHTML = '<div class="loader"></div>';
-        
+// Carregar Lista de Jogos
+    async function loadAllGames() {
+        const container = document.getElementById('game-list-container');
+        if (!container) return;
+        container.innerHTML = '<div class="loader"></div>';
+
         try {
-            const gamesSnap = await db.collection('games').get();
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const day = String(now.getDate()).padStart(2, '0');
-            const todayStr = `${year}-${month}-${day}`; 
-
-            const bookingsSnap = await db.collection('bookings').where('date', '>=', todayStr).get();
-            const gamesWithSessions = new Set();
-            const toleranceTime = new Date(now.getTime() - (2 * 60 * 60 * 1000));
-
-            bookingsSnap.forEach(doc => {
-                const data = doc.data();
-                if (data.gameId && data.status !== 'cancelled') {
-                    const sessionDateTime = new Date(`${data.date}T${data.time}`);
-                    if (sessionDateTime >= toleranceTime) gamesWithSessions.add(data.gameId);
-                }
-            });
-
-            gameListContainer.innerHTML = '';
-            if(gamesSnap.empty) { gameListContainer.innerHTML = '<p>Nenhum jogo.</p>'; return; }
+            const snap = await db.collection('games').orderBy('createdAt', 'desc').get();
+            container.innerHTML = '';
             
-            gamesSnap.forEach(doc => {
-                const g = doc.data();
-                if(g.tags) g.tags.forEach(t => allKnownTags.add(t));
-                
-                const hasFutureSession = gamesWithSessions.has(doc.id);
-                const sessionBtnState = hasFutureSession ? '' : 'disabled';
-                const sessionBtnStyle = hasFutureSession ? 'background:var(--secondary-color); color:#fff; border:none;' : 'background:rgba(255,255,255,0.05); color:#666; border:1px solid #444; cursor:not-allowed; opacity:0.6;'; 
+            if(snap.empty) { container.innerHTML = '<p>Nenhum jogo.</p>'; return; }
 
-                const card = document.createElement('div'); card.className = 'game-card';
+            // Pegar a data de hoje no formato YYYY-MM-DD para comparação
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            const todayStr = `${yyyy}-${mm}-${dd}`;
+
+            // 1. Verifica em paralelo se cada jogo possui sessões futuras agendadas
+            const gamesWithSessionStatus = await Promise.all(snap.docs.map(async (doc) => {
+                const g = doc.data();
+                
+                // Busca todas as sessões desse jogo
+                const sessionsSnap = await db.collection('bookings')
+                                           .where('gameId', '==', doc.id)
+                                           .get();
+                
+                // Filtro via JavaScript (evita erros de Indexação do Firebase)
+                // Retorna 'true' se encontrar QUALQUER sessão com data maior ou igual a hoje
+                const hasFutureSessions = sessionsSnap.docs.some(sessionDoc => {
+                    const sessionData = sessionDoc.data();
+                    // Compara a string de data salva com a data de hoje
+                    return sessionData.date && sessionData.date >= todayStr;
+                });
+                                           
+                return {
+                    id: doc.id,
+                    data: g,
+                    hasSessions: hasFutureSessions
+                };
+            }));
+
+            // 2. Renderiza os cards baseados na verificação
+            gamesWithSessionStatus.forEach(gameInfo => {
+                const docId = gameInfo.id;
+                const g = gameInfo.data;
+                const hasSessions = gameInfo.hasSessions;
+
+                // Monta o botão de sessões de acordo com o status
+                const sessionsButtonHtml = hasSessions 
+                    ? `<button class="submit-btn small-btn sessions-game-trigger" data-id="${docId}" data-name="${g.name}" style="background:var(--secondary-color);">Sessões</button>`
+                    : `<button class="submit-btn small-btn" disabled style="background:#333; color:#666; cursor:not-allowed;" title="Nenhuma sessão futura agendada">Sem Sessões</button>`;
+
+                const card = document.createElement('div'); 
+                card.className = 'game-card';
                 card.innerHTML = `
-                    <button class="delete-corner-btn delete-game-trigger" data-id="${doc.id}" data-name="${g.name}"><ion-icon name="trash-outline"></ion-icon></button>
-                    <img src="${g.coverImage||'assets/images/logo.png'}" class="game-card-img" style="height:150px; object-fit: cover;">
+                    <div style="position:relative; height:150px;">
+                        <img src="${g.coverImage || 'assets/images/logo.png'}" style="width:100%; height:100%; object-fit:cover;">
+                        <button class="delete-game-trigger delete-corner-btn" data-id="${docId}" data-name="${g.name}"><ion-icon name="trash-outline"></ion-icon></button>
+                    </div>
                     <div class="game-card-content">
-                        <div style="margin-bottom:1rem;">
-                            <h3 style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${g.name}</h3>
-                            <small>${g.status === 'available'? '<span style="color:#00ff88">● Disponível</span>': g.status === 'paused' ? '<span style="color:#ffbb00">● Pausado</span>' : '<span style="color:#aaaaaa">● Rascunho</span>'}</small>                        </div>
-                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-                            <button class="submit-btn small-btn edit-game-trigger" data-id="${doc.id}">Editar</button>
-                            <button class="submit-btn small-btn schedule-game-trigger" data-id="${doc.id}" style="background:var(--primary-color-dark); border:1px solid #444;">Agenda</button>
-                            <button class="submit-btn small-btn test-room-trigger" data-id="${doc.id}" data-name="${g.name}" style="background:rgba(0,255,136,0.1); color:#00ff88; border:1px solid #00ff88;"><ion-icon name="flask-outline"></ion-icon> Testar</button>
-                            <button class="submit-btn small-btn sessions-game-trigger" data-id="${doc.id}" data-name="${g.name}" ${sessionBtnState} style="${sessionBtnStyle} display: flex; align-items: center; justify-content: center; gap: 5px;"><ion-icon name="list-outline"></ion-icon> Sessões</button>
+                        <h3 style="margin-bottom:5px;">${g.name}</h3>
+                        <small>
+                            ${g.status === 'available' 
+                                ? '<span style="color:#00ff88">● Disponível</span>' 
+                                : g.status === 'paused' 
+                                    ? '<span style="color:#ffbb00">● Pausado</span>' 
+                                    : '<span style="color:#aaaaaa">● Rascunho</span>'
+                            }
+                        </small>                        
+                        
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px;">
+                            <button class="submit-btn small-btn edit-game-trigger" data-id="${docId}">Editar</button>
+                            <button class="submit-btn small-btn schedule-game-trigger" data-id="${docId}" style="background:#444;">Agenda</button>
+                            
+                            ${sessionsButtonHtml}
+                            
+                            <button class="submit-btn small-btn test-room-trigger" data-id="${docId}" data-name="${g.name}" style="background:rgba(0,255,136,0.1); color:#00ff88; border:1px solid #00ff88; width:100%;">
+                                <ion-icon name="flask-outline"></ion-icon> Testar Sala
+                            </button>
                         </div>
                     </div>`;
-                gameListContainer.appendChild(card);
+                container.appendChild(card);
             });
-        } catch(e) { console.error(e); }
+        } catch(e) { 
+            console.error(e); 
+            container.innerHTML = '<p>Erro ao carregar jogos.</p>'; 
+        }
+    }
+
+    // =================================================================
+    // CRIAR SESSÃO DE TESTE
+    // =================================================================
+    window.createTestSession = async (gameId) => {
+        if (!gameId) {
+            alert("Erro: ID do jogo não encontrado no botão.");
+            return;
+        }
+
+        const user = window.auth.currentUser || firebase.auth().currentUser;
+        if (!user) return alert("Login necessário.");
+        
+        try {
+            // Cria a sessão com o gameId ATRELADO!
+            const ref = await db.collection('sessions').add({
+                gameId: gameId,          // Isso resolve o problema!
+                hostId: user.uid,
+                status: 'scheduled',
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                clientName: "Teste Admin",
+                timerCurrent: 0,
+                timerStatus: 'paused'
+            });
+            
+            // Abre a sala-host em uma nova aba
+            window.open(`sala-host.html?sessionId=${ref.id}`, '_blank');
+            
+        } catch (e) {
+            console.error(e);
+            alert("Erro ao criar sessão de teste.");
+        }
     };
 
     // =========================================================================
@@ -783,6 +921,7 @@ window.updateTimerPreview = () => {
         currentDecisions = [];
         currentGalleryUrls = [];
         currentTags = [];
+        currentGameCategories = [];
         
         // Reset Decisões (Função Dinâmica)
         if(typeof window.renderDecisionInputs === 'function') window.renderDecisionInputs(); 
@@ -805,6 +944,11 @@ window.updateTimerPreview = () => {
         
         const trailerStatus = document.getElementById('trailer-status');
         if(trailerStatus) trailerStatus.textContent = '';
+
+        if (d.pricingCategories) { 
+        currentGameCategories = d.pricingCategories; 
+        if(typeof window.renderCategories === 'function') window.renderCategories(); 
+    }
 
         // Reset Tags
         if(typeof renderTags === 'function') renderTags();
@@ -1395,8 +1539,9 @@ window.updateTimerPreview = () => {
             name: document.getElementById('new-game-name').value,
             slug: document.getElementById('new-game-name').value.toLowerCase().replace(/[^a-z0-9]/g, '-'),
             status: document.getElementById('new-game-status').value,
-            sessionDuration: document.getElementById('new-game-duration').value,
-            price: document.getElementById('new-game-price').value,
+            price: parseFloat(document.getElementById('new-game-price').value),
+            sessionDuration: parseInt(document.getElementById('new-game-duration').value),
+            pricingCategories: currentGameCategories,
             hasExtraLife: hasExtra,
             extraLifeDuration: document.getElementById('new-game-extra-life-time').value,
             extraLifeVideo: extraLifeUrl,
