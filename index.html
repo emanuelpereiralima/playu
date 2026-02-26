@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>play.u Live Entertainment</title>
     <link rel="icon" href="assets/images/logo.png" type="image/png">
-    <script src="assets/js/version.e09d0f3d.js"></script>
+    <script src="assets/js/version.8f3f5b8c.js"></script>
     <script>
         function loadAsset(path) {
             const version = typeof SITE_VERSION !== 'undefined' ? SITE_VERSION : new Date().getTime();
@@ -50,9 +50,9 @@
     <div class="carousel-track" id="carousel-track">
         </div>
 
-    <button class="carousel-btn prev-btn" onclick="moveCarousel(-1)" style="position: absolute; top: 50%; left: 20px; transform: translateY(-50%); z-index: 10; background: rgba(0,0,0,0.5); border: none; color: white; font-size: 2rem; cursor: pointer;">&#10094;</button>
-    
-    <button class="carousel-btn next-btn" onclick="moveCarousel(1)" style="position: absolute; top: 50%; right: 20px; transform: translateY(-50%); z-index: 10; background: rgba(0,0,0,0.5); border: none; color: white; font-size: 2rem; cursor: pointer;">&#10095;</button>
+    <button class="carousel-control prev" onclick="window.prevSlide()" style="position: absolute; top: 50%; left: 20px; transform: translateY(-50%); z-index: 10; background: rgba(0,0,0,0.5); border: none; color: white; font-size: 2rem; cursor: pointer; padding: 5px 15px; border-radius: 8px;">&#10094;</button>
+
+    <button class="carousel-control next" onclick="window.nextSlide()" style="position: absolute; top: 50%; right: 20px; transform: translateY(-50%); z-index: 10; background: rgba(0,0,0,0.5); border: none; color: white; font-size: 2rem; cursor: pointer; padding: 5px 15px; border-radius: 8px;">&#10095;</button>
 
     <div class="carousel-dots" id="carousel-dots" style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 10; display: flex; gap: 10px;"></div>
 </section>
@@ -273,10 +273,10 @@
     </script>
 
     <script>
-        loadAsset('assets/css/style.e09d0f3d.css');
-        loadAsset('assets/js/data-manager.e09d0f3d.js'); 
-        loadAsset('assets/js/translations.e09d0f3d.js');
-        loadAsset('assets/js/main.e09d0f3d.js');
+        loadAsset('assets/css/style.8f3f5b8c.css');
+        loadAsset('assets/js/data-manager.8f3f5b8c.js'); 
+        loadAsset('assets/js/translations.8f3f5b8c.js');
+        loadAsset('assets/js/main.8f3f5b8c.js');
     </script>
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>

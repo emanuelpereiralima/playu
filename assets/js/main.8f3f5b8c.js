@@ -298,6 +298,16 @@ function resetAutoSlide() {
     startAutoSlide();
 }
 
+window.nextSlide = () => {
+    showSlide(slideIndex + 1);
+    resetAutoSlide();
+};
+
+window.prevSlide = () => {
+    showSlide(slideIndex - 1);
+    resetAutoSlide();
+};
+
 // =================================================================
 // 6. RENDERIZAÇÃO DO GRID
 // =================================================================

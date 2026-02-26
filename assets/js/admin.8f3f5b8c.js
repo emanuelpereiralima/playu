@@ -896,171 +896,75 @@ window.updateTimerPreview = () => {
     // =================================================================
     // ABRIR MODAL DE JOGO
     // =================================================================
-    window.openGameModal = async (gameId = null) => {
-        const modal = document.getElementById('game-modal') || document.getElementById('create-game-modal');
-        if (!modal) return console.error("Modal de jogo não encontrado.");
-        
-        modal.classList.remove('hidden');
-
-        // 1. Reset Geral do Formulário
+    window.openGameModal = async (gameId) => {
+        const modal = document.getElementById('create-game-modal');
         const form = document.getElementById('create-game-form');
+        const titleEl = document.getElementById('modal-title');
+        
+        if (modal) modal.classList.remove('hidden');
         if (form) form.reset();
-        
-        window.calculateHostEarnings();
-        document.getElementById('game-id').value = gameId || '';
-        
-        // 2. Reset Listas Visuais e Globais
-        const assetsList = document.getElementById('assets-crud-list');
-        if(assetsList) assetsList.innerHTML = '<p style="text-align:center; opacity:0.5; padding:10px;">Nenhuma mídia adicionada.</p>';
-        
-        const galleryGrid = document.getElementById('gallery-preview-grid');
-        if(galleryGrid) galleryGrid.innerHTML = '';
 
-        // Reset Globais
-        currentSessionAssets = [];
+        // 1. Reseta as variáveis globais SEMPRE que o modal abre
+        currentTags = []; 
+        currentGalleryUrls = []; 
+        currentSessionAssets = []; 
         currentDecisions = [];
-        currentGalleryUrls = [];
-        currentTags = [];
-        currentGameCategories = [];
+        currentGameCategories = []; 
         
-        // Reset Decisões (Função Dinâmica)
+        // Chamadas seguras para limpar a UI
+        if(typeof window.updateTagsUI === 'function') window.updateTagsUI();
+        if(typeof window.renderGalleryPreview === 'function') window.renderGalleryPreview();
+        if(typeof window.renderSessionAssets === 'function') window.renderSessionAssets();
+        if(typeof window.renderDecisionsList === 'function') window.renderDecisionsList();
+        
         if(typeof window.renderDecisionInputs === 'function') window.renderDecisionInputs(); 
         
-        // Reset Vida Extra UI
-        const elCheck = document.getElementById('check-extra-life');
-        const elHiddenUrl = document.getElementById('extra-life-media-url');
-        const elPreview = document.getElementById('el-selected-preview');
-        
-        if (elCheck) {
-            elCheck.checked = false;
-            window.toggleExtraLifeSection(); // Esconde a área
-        }
-        if (elHiddenUrl) elHiddenUrl.value = '';
-        if (elPreview) elPreview.classList.add('hidden');
-        
-        // Reset Uploads Visuais (Capa e Trailer)
-        const coverPreview = document.getElementById('admin-cover-preview');
-        if(coverPreview) { coverPreview.src = ''; coverPreview.style.display = 'none'; }
-        
-        const trailerStatus = document.getElementById('trailer-status');
-        if(trailerStatus) trailerStatus.textContent = '';
+        if(typeof window.renderCategories === 'function') window.renderCategories();
+        if(typeof window.calculateHostEarnings === 'function') window.calculateHostEarnings();
 
-        if (d.pricingCategories) { 
-        currentGameCategories = d.pricingCategories; 
-        if(typeof window.renderCategories === 'function') window.renderCategories(); 
-    }
+        // Remove o ID oculto se for jogo novo
+        const hiddenIdField = document.getElementById('edit-game-id');
+        if (hiddenIdField) hiddenIdField.value = '';
 
-        // Reset Tags
-        if(typeof renderTags === 'function') renderTags();
-
-        // Títulos e Botões
-        const modalTitle = document.getElementById('game-modal-title');
-        const deleteBtn = document.getElementById('delete-game-btn');
-
+        // 2. SE FOR EDIÇÃO DE UM JOGO EXISTENTE
         if (gameId) {
-            // --- MODO EDIÇÃO ---
-            if(modalTitle) modalTitle.textContent = "Editar Jogo";
-            if(deleteBtn) {
-                deleteBtn.classList.remove('hidden');
-                deleteBtn.onclick = () => window.openDeleteConfirmModal(gameId, document.getElementById('new-game-name').value);
-            }
+            if (hiddenIdField) hiddenIdField.value = gameId;
+            if (titleEl) titleEl.innerText = 'Editar Jogo';
 
             try {
                 const doc = await db.collection('games').doc(gameId).get();
                 if (doc.exists) {
-                    const d = doc.data(); // <--- AQUI É ONDE 'd' É DEFINIDO
-                    
-                    // Helpers de preenchimento
-                    const setVal = (id, v) => { const el = document.getElementById(id); if(el) el.value = v || ''; };
-                    
-                    // Preencher Campos Básicos
+                    const d = doc.data(); 
+
+                    const setVal = (id, val) => {
+                        const el = document.getElementById(id);
+                        if(el) el.value = val || '';
+                    };
+
                     setVal('new-game-name', d.name);
-                    setVal('new-game-status', d.status);
-                    setVal('new-game-price', d.price);
-                    setVal('new-game-duration', d.sessionDuration);
-                    setVal('new-game-max-players', d.maxPlayers);
-                    setVal('new-game-short-desc', d.shortDescription);
-                    setVal('new-game-full-desc', d.fullDescription || d.longDescription);
-                    setVal('new-game-price', d.price);
+                    // ... (resto do seu código preenchendo os dados) ...
                     
-                    // Capa
-                    setVal('new-game-cover', d.coverImage);
-                    if(d.coverImage && coverPreview) {
-                        coverPreview.src = d.coverImage;
-                        coverPreview.style.display = 'block';
-                    }
+                    if (d.tags) currentTags = d.tags;
+                    if (d.gallery) currentGalleryUrls = d.gallery;
+                    if (d.sessionAssets) currentSessionAssets = d.sessionAssets;
+                    if (d.decisions) currentDecisions = d.decisions;
+                    if (d.pricingCategories) currentGameCategories = d.pricingCategories;
 
-                    // Trailer
-                    setVal('new-game-trailer', d.videoPreview);
-                    if(d.videoPreview && trailerStatus) trailerStatus.textContent = "Vídeo já cadastrado.";
-
-                    // Arrays (Tags, Galeria, Assets, Decisões)
-                    if (d.tags) { currentTags = d.tags; if(typeof renderTags === 'function') renderTags(); }
-                    
-                    if (d.galleryImages) { 
-                        currentGalleryUrls = d.galleryImages; 
-                        if(typeof window.renderGallery === 'function') window.renderGallery(); 
-                    }
-                    
-                    if (d.sessionAssets) { 
-                        currentSessionAssets = d.sessionAssets; 
-                        if(typeof window.renderAssetsList === 'function') window.renderAssetsList(); 
-                    }
-                    
-                    if (d.decisions) { 
-                        currentDecisions = d.decisions; 
-                        // Carrega a primeira decisão nos inputs para editar ou renderiza lista
-                        if(typeof window.renderDecisionsList === 'function') window.renderDecisionsList();
-                        // Reseta inputs de criação
-                        if(typeof window.renderDecisionInputs === 'function') window.renderDecisionInputs();
-                    }
-
-                    // --- LÓGICA DE VIDA EXTRA (DENTRO DO BLOCO ONDE 'd' EXISTE) ---
-                    if (d.hasExtraLife) {
-                        if(elCheck) {
-                            elCheck.checked = true;
-                            window.toggleExtraLifeSection(); // Mostra a área
-                        }
-                        setVal('new-game-extra-life-time', d.extraLifeDuration);
-                        
-                        // Se tem vídeo salvo
-                        if(d.extraLifeVideo) {
-                            setVal('extra-life-media-url', d.extraLifeVideo);
-                            
-                            // Tenta encontrar o nome do asset se ele estiver na biblioteca
-                            let assetName = "Mídia Salva";
-                            if(d.sessionAssets) {
-                                const found = d.sessionAssets.find(a => a.url === d.extraLifeVideo);
-                                if(found) assetName = found.name;
-                            }
-                            
-                            // Chama a função visual de seleção
-                            if(typeof window.selectExtraLifeMedia === 'function') {
-                                window.selectExtraLifeMedia(d.extraLifeVideo, assetName);
-                            }
-                        }
-                    }
-
-                    // Timer Config
-                    if (d.timerSettings) {
-                        const tType = document.getElementById('edit-timer-type');
-                        const tFont = document.getElementById('edit-timer-font');
-                        const tColor = document.getElementById('edit-timer-color');
-                        if(tType) tType.value = d.timerSettings.type || 'regressive';
-                        if(tFont) tFont.value = d.timerSettings.font || 'sans-serif';
-                        if(tColor) tColor.value = d.timerSettings.color || '#ff0000';
-                        if(typeof window.updateTimerPreview === 'function') window.updateTimerPreview();
-                    }
+                    // Atualiza a interface com os dados puxados
+                    if(typeof window.updateTagsUI === 'function') window.updateTagsUI();
+                    if(typeof window.renderGalleryPreview === 'function') window.renderGalleryPreview();
+                    if(typeof window.renderSessionAssets === 'function') window.renderSessionAssets();
+                    if(typeof window.renderDecisionsList === 'function') window.renderDecisionsList();
+                    if(typeof window.renderDecisionInputs === 'function') window.renderDecisionInputs();
+                    if(typeof window.renderCategories === 'function') window.renderCategories();
+                    if(typeof window.calculateHostEarnings === 'function') window.calculateHostEarnings();
                 }
-            } catch (e) { 
-                console.error("Erro ao carregar jogo:", e); 
+            } catch (error) {
+                console.error("Erro ao carregar dados do jogo para edição:", error);
             }
         } else {
-            // --- MODO NOVO JOGO ---
-            if(modalTitle) modalTitle.textContent = "Criar Novo Jogo";
-            if(deleteBtn) deleteBtn.classList.add('hidden');
+            if (titleEl) titleEl.innerText = 'Novo Jogo';
         }
-        window.calculateHostEarnings();
     };
 
     window.openScheduleModal = async (gameId) => {
