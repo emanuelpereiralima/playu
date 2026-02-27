@@ -166,15 +166,11 @@
                         </button>
                     </div>
                     <hr style="border: 0; border-top: 1px solid #333; margin: 10px 0;">
-                    <div class="form-group">
-                        <label style="font-size: 0.8rem; color: #aaa;">Ajuste Rápido</label>
-                        <div style="display: flex; gap: 5px; margin-top: 5px;">
-                            <button onclick="window.adjustTimer(1)" class="submit-btn small-btn">+1m</button>
-                            <button onclick="window.adjustTimer(5)" class="submit-btn small-btn">+5m</button>
-                            <button onclick="window.adjustTimer(-1)" class="submit-btn small-btn">-1m</button>
-                            <button onclick="window.adjustTimer(-5)" class="submit-btn small-btn">-5m</button>
-                        </div>
-                    </div>
+                    <div class="timer-quick-adjust" style="display: flex; gap: 10px; margin-top: 10px;">
+    <button class="submit-btn small-btn danger-btn" onclick="window.adjustTimer(-300)">- 5 Min</button>
+    
+    <button class="submit-btn small-btn" onclick="window.adjustTimer(300)">+ 5 Min</button>
+</div>
                 </div>
             </div>
         </div>

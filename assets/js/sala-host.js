@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let peerConnection = null;
     let currentTimer = 0;
     let timerInterval = null;
+    let extraLifeUsed = false;
 
     let currentAudioObj = null;
     let currentPlayingUrl = null;
@@ -463,6 +464,94 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =================================================================
+    // LÓGICA DO CRONÔMETRO E VIDA EXTRA
+    // =================================================================
+    
+    // Função exclusiva para disparar a Vida Extra
+    window.triggerExtraLife = async () => {
+        if (extraLifeUsed) return; // Garante que só vai acontecer uma vez
+        
+        extraLifeUsed = true;
+        console.log("Tempo esgotado! Iniciando Vida Extra...");
+        
+        // 1. Procura a mídia ignorando maiúsculas, minúsculas e acentos
+        const extraLifeAsset = localMediaAssets.find(a => {
+            if (!a.name) return false; // Evita erro se o arquivo não tiver nome
+            
+            // Tira acentos e deixa tudo minúsculo para a busca não falhar
+            const nameClean = a.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            return nameClean.includes('vida extra');
+        });
+        
+        if (extraLifeAsset) {
+            const assetIndex = localMediaAssets.indexOf(extraLifeAsset);
+            const safeId = "ind-" + assetIndex;
+            
+            // Para o que estiver tocando e roda a vida extra
+            if (currentPlayingUrl) await stopMedia(); 
+            currentPlayingUrl = extraLifeAsset.url;
+            if(typeof updateVisuals === 'function') updateVisuals(safeId, 'play');
+            if(typeof playMedia === 'function') playMedia(extraLifeAsset);
+        } else {
+            console.warn("Nenhum vídeo com o nome 'Vida Extra' foi encontrado na lista.");
+        }
+        
+        // 2. Adiciona o tempo da Vida Extra (300 segundos = 5 minutos)
+        currentTimer = 300; 
+        updateTimerDisplay(currentTimer);
+        
+        // 3. Volta a correr o relógio automaticamente
+        startTimerInterval();
+    };
+
+    function startTimerInterval() {
+        if (timerInterval) clearInterval(timerInterval);
+        if(roomRef) roomRef.update({ timerStatus: 'running' });
+        
+        timerInterval = setInterval(() => {
+            if (currentTimer > 0) {
+                currentTimer--; 
+                updateTimerDisplay(currentTimer);
+                if (currentTimer % 5 === 0 && roomRef) roomRef.update({ timerCurrent: currentTimer });
+            } else {
+                // O TEMPO ACABOU SOZINHO PELO RELÓGIO!
+                clearInterval(timerInterval);
+                
+                if (!extraLifeUsed) {
+                    window.triggerExtraLife(); // Chama a função que criamos acima
+                } else {
+                    if(roomRef) roomRef.update({ timerStatus: 'finished', timerCurrent: 0 });
+                }
+            }
+        }, 1000);
+    }
+
+    // =================================================================
+    // AJUSTE RÁPIDO DO TIMER (+/- Minutos)
+    // =================================================================
+    window.adjustTimer = (secondsToAdd) => {
+        currentTimer += secondsToAdd;
+        
+        if (currentTimer <= 0) {
+            currentTimer = 0;
+            updateTimerDisplay(currentTimer);
+            if (roomRef) roomRef.update({ timerCurrent: 0 });
+            
+            // Se você zerou o tempo no botão (ex: clicando em -5 min) e a vida extra não foi usada, ele dispara ela na mesma hora!
+            if (!extraLifeUsed) {
+                if (timerInterval) clearInterval(timerInterval);
+                window.triggerExtraLife();
+            } else {
+                if (timerInterval) clearInterval(timerInterval);
+                if(roomRef) roomRef.update({ timerStatus: 'finished' });
+            }
+        } else {
+            updateTimerDisplay(currentTimer);
+            if (roomRef) roomRef.update({ timerCurrent: currentTimer });
+        }
+    };
+
+    // =================================================================
     // CONTROLES DE UI (Timers, Câmera, Microfone, Link)
     // =================================================================
     function setupUIControls() {
@@ -488,7 +577,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if(btnReset) btnReset.onclick = () => {
             if (timerInterval) clearInterval(timerInterval);
-            currentTimer = originalGameDuration; updateTimerDisplay(currentTimer);
+            currentTimer = originalGameDuration; extraLifeUsed = false; updateTimerDisplay(currentTimer);
             if(roomRef) roomRef.update({ timerCurrent: currentTimer, timerStatus: 'paused' });
         };
         
