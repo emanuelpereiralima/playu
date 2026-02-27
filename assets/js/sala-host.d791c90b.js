@@ -25,6 +25,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentAudioObj = null;
     let currentPlayingUrl = null;
     let originalGameDuration = 3600;
+    
+    // Variáveis Globais de Controle de Mídia
+    let masterVolume = 1.0; 
+    let localMediaAssets = []; 
 
     const servers = {
         iceServers: [ { urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'] } ]
@@ -51,11 +55,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         console.log("🔗 Procurando sessão ID:", sessionId);
 
-        // Tenta achar na coleção 'sessions'
         roomRef = db.collection('sessions').doc(sessionId);
         let checkDoc = await roomRef.get();
         
-        // Se não achar, tenta na coleção 'bookings' (retrocompatibilidade)
         if (!checkDoc.exists) {
             console.log("⚠️ Sessão não encontrada em 'sessions', buscando em 'bookings'...");
             roomRef = db.collection('bookings').doc(sessionId);
@@ -80,147 +82,148 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // =================================================================
-    // 3. CARREGAMENTO DE DADOS DO FIREBASE
+// =================================================================
+    // 3. CARREGAMENTO DE DADOS DO FIREBASE E RENDERIZAÇÃO
     // =================================================================
     async function loadSessionData() {
         console.log("🔄 Carregando dados da sessão e do jogo...");
 
         const sessionSnap = await roomRef.get();
         const sessionData = sessionSnap.data();
-        
-        console.log("📄 Dados da Sessão:", sessionData);
 
         const inviteInput = document.getElementById('floating-invite-link');
         if(inviteInput) inviteInput.value = `${window.location.origin}/sala.html?sessionId=${roomRef.id}`;
 
-        // BUSCAR DADOS DO JOGO (Mídias, Decisões, Timer)
+        // 1. Pegar os dados do Jogo
         if (sessionData.gameId) {
-            console.log("🎮 Buscando jogo ID:", sessionData.gameId);
             const gameSnap = await db.collection('games').doc(sessionData.gameId).get();
             
             if (gameSnap.exists) {
                 const gameData = gameSnap.data();
-                console.log("📦 Dados do Jogo recebidos:", gameData);
                 
-                // Renderiza Mídias
-                if (gameData.sessionAssets) {
-                    console.log(`Encontradas ${gameData.sessionAssets.length} mídias.`);
-                    renderAssets(gameData.sessionAssets);
-                } else {
-                    console.warn("Nenhuma mídia (sessionAssets) salva neste jogo.");
-                    renderAssets([]); // Força mostrar mensagem de vazio
-                }
+                // Carrega Mídias e Decisões
+                renderAssets(gameData.sessionAssets || []);
+                renderDecisions(gameData.decisions || []);
                 
-                // Renderiza Decisões
-                if (gameData.decisions) {
-                    console.log(`Encontradas ${gameData.decisions.length} decisões.`);
-                    renderDecisions(gameData.decisions);
-                } else {
-                    console.warn("Nenhuma decisão salva neste jogo.");
-                    renderDecisions([]);
-                }
-                
-                // Configura Timer
+                // Define a duração original do jogo baseada no banco de dados
                 if(gameData.sessionDuration) {
                     originalGameDuration = parseInt(gameData.sessionDuration) * 60;
                 }
             } else {
-                console.error("❌ O Jogo associado a esta sessão foi excluído ou não existe.");
+                console.error("❌ O Jogo associado a esta sessão não existe.");
             }
-        } else {
-            console.warn("⚠️ Esta sessão não tem um 'gameId' atrelado.");
         }
 
-        // Define o Timer Atual
-        if (sessionData.timerCurrent !== undefined && sessionData.timerCurrent !== null) {
+        // 2. CORREÇÃO DO TIMER
+        // Se a sala já estava rodando ou pausada no meio do jogo, mantém o tempo.
+        // Se for uma sala nova, puxa o tempo correto do Jogo.
+        if (sessionData.timerCurrent !== undefined && sessionData.timerStatus === 'running') {
             currentTimer = parseInt(sessionData.timerCurrent);
-            if (currentTimer === 0 && sessionData.status !== 'finished') {
-                currentTimer = originalGameDuration;
-                roomRef.update({ timerCurrent: currentTimer });
-            }
+        } else if (sessionData.timerCurrent !== undefined && sessionData.timerCurrent > 0 && sessionData.timerCurrent < originalGameDuration) {
+            currentTimer = parseInt(sessionData.timerCurrent);
         } else {
-            currentTimer = originalGameDuration;
-            roomRef.update({ timerCurrent: currentTimer });
+            currentTimer = originalGameDuration; // Puxa do jogo real!
+            roomRef.update({ timerCurrent: currentTimer, timerStatus: 'paused' });
         }
 
         updateTimerDisplay(currentTimer);
     }
 
     // =================================================================
-    // 4. RENDERIZAÇÃO NA TELA
+    // 4. RENDERIZAÇÃO NA TELA (SIMPLES, SEM SETAS)
     // =================================================================
-    function renderAssets(assets) {
+    
+    // Deixei a função de reordenar vazia caso algum botão velho ainda chame ela
+    window.moveAssetOrder = () => {}; 
+
+    function renderAssets(assetsArray) {
+        if (assetsArray) {
+            localMediaAssets = assetsArray;
+        }
+
+        // 1. Procura as três listas no seu HTML
         const audioList = document.getElementById('host-audio-list');
         const videoList = document.getElementById('host-video-list');
-        const generalList = document.getElementById('media-assets-list'); 
+        const imageList = document.getElementById('host-image-list'); // NOVA LISTA DE FOTOS
+        const generalList = document.getElementById('media-assets-list'); // Fallback (caso esqueça alguma)
 
+        // Limpa todas as listas antes de preencher
         if (audioList) audioList.innerHTML = '';
         if (videoList) videoList.innerHTML = '';
+        if (imageList) imageList.innerHTML = '';
         if (generalList) generalList.innerHTML = '';
 
-        if (!assets || assets.length === 0) {
+        if (!localMediaAssets || localMediaAssets.length === 0) {
             const emptyHtml = '<p style="color:#666; font-size:0.85rem; padding:10px; text-align:center;">Nenhuma mídia cadastrada.</p>';
-            if(generalList) generalList.innerHTML = emptyHtml;
             if(audioList) audioList.innerHTML = emptyHtml;
             if(videoList) videoList.innerHTML = emptyHtml;
+            if(imageList) imageList.innerHTML = emptyHtml;
+            if(generalList) generalList.innerHTML = emptyHtml;
             return;
         }
 
-        assets.forEach((asset, index) => {
+        localMediaAssets.forEach((asset, index) => {
             const card = document.createElement('div');
             card.className = 'media-card';
-            card.style.cssText = "background:#222; padding:12px; margin-bottom:8px; border-radius:6px; border:1px solid #333; transition:0.2s;";
+            
+            // Design blindado que quebra o texto perfeitamente
+            card.style.cssText = "background:#222; padding:12px; margin-bottom:8px; border-radius:6px; border:1px solid #333; display:flex; justify-content:space-between; align-items:center; cursor:pointer; transition:0.2s; width:100%; box-sizing:border-box;";
             
             let iconName = asset.type === 'audio' ? 'musical-notes' : 'videocam';
             if (asset.type === 'image') iconName = 'image';
 
             const safeId = "ind-" + index;
 
-            // HTML DO CARD (AGORA SEM O SLIDER INDIVIDUAL)
             card.innerHTML = `
-                <div class="media-header" style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
-                    <div class="media-info" style="display:flex; align-items:center; gap:10px; overflow:hidden;">
-                        <ion-icon name="${iconName}" style="color:var(--secondary-color); font-size:1.3rem; min-width:20px;"></ion-icon>
-                        <span style="font-size:0.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${asset.name}</span>
-                    </div>
-                    <div class="play-indicator" id="${safeId}" style="min-width:30px; text-align:right;">
-                        <ion-icon name="play-circle-outline" style="font-size:1.8rem; color:#00ff88; transition:0.2s;"></ion-icon>
-                    </div>
+                <div class="media-info" style="display:flex; align-items:center; gap:10px; flex:1 1 auto; min-width:0;">
+                    <ion-icon name="${iconName}" style="color:var(--secondary-color); font-size:1.3rem; flex-shrink:0;"></ion-icon>
+                    <span style="font-size:0.95rem; word-break:break-word; line-height:1.4; display:block; width:100%;">
+                        ${asset.name}
+                    </span>
+                </div>
+                <div class="play-indicator" id="${safeId}" style="width:30px; text-align:right; flex-shrink:0; margin-left:10px;">
+                    <ion-icon name="play-circle-outline" style="font-size:1.8rem; color:#00ff88; transition:0.2s;"></ion-icon>
                 </div>
             `;
 
-            // Clique para tocar a mídia
+            // Clique simples para tocar
             card.addEventListener('click', () => toggleMedia(asset, safeId));
 
-            if (generalList) {
+            // 2. SEPARAÇÃO MÁGICA: Joga o cartão na lista correta de acordo com o tipo
+            if (asset.type === 'audio' && audioList) {
+                audioList.appendChild(card);
+            } else if (asset.type === 'video' && videoList) {
+                videoList.appendChild(card);
+            } else if (asset.type === 'image' && imageList) {
+                imageList.appendChild(card);
+            } else if (generalList) {
+                // Se o HTML específico não existir, usa a lista geral
                 generalList.appendChild(card);
-            } else {
-                if (asset.type === 'audio' && audioList) audioList.appendChild(card);
-                else if (videoList) videoList.appendChild(card);
             }
         });
     }
 
+    // --- CORREÇÃO DAS DECISÕES ---
     function renderDecisions(decisions) {
-        const list = document.getElementById('host-decisions-list');
+        // Multiplos IDs de busca para garantir que encontre a div no seu HTML
+        const list = document.getElementById('host-decisions-list') || document.getElementById('decisions-list') || document.getElementById('decision-list');
         if (!list) return;
 
         list.innerHTML = '';
 
         if (!Array.isArray(decisions) || decisions.length === 0) {
-            list.innerHTML = '<p style="color:#666; text-align:center; padding:10px;">Sem decisões salvas.</p>';
+            list.innerHTML = '<p style="color:#666; text-align:center; padding:10px;">Sem decisões salvas para este jogo.</p>';
             return;
         }
 
         decisions.forEach(dec => {
             const btn = document.createElement('button');
             btn.className = 'secondary-btn';
-            btn.style.cssText = "width:100%; text-align:left; margin-bottom:8px; background:#333; padding:10px; border:1px solid #444; color:#fff; display:flex; flex-direction:column; gap:5px;";
+            btn.style.cssText = "width:100%; text-align:left; margin-bottom:8px; background:#333; padding:12px; border:1px solid #444; color:#fff; display:flex; flex-direction:column; gap:5px; border-radius:6px; cursor:pointer;";
             
             btn.innerHTML = `
-                <div style="font-weight:bold; color:var(--secondary-color);"><ion-icon name="help-circle-outline"></ion-icon> ${dec.question}</div>
-                <div style="font-size:0.75rem; color:#aaa;">Opções: ${dec.options.join(' / ')}</div>
+                <div style="font-weight:bold; color:var(--secondary-color); font-size:1rem;"><ion-icon name="help-circle-outline"></ion-icon> ${dec.question}</div>
+                <div style="font-size:0.8rem; color:#aaa;">Opções: ${dec.options.join(' / ')}</div>
             `;
             
             btn.onclick = () => sendDecision(dec);
@@ -228,36 +231,39 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // --- CORREÇÃO DO DISPLAY DO TIMER ---
+    function updateTimerDisplay(seconds) {
+        // Multiplos IDs de busca para garantir que o relógio atualize
+        const el = document.getElementById('session-timer') || document.getElementById('timer-display') || document.getElementById('host-timer');
+        if (el) {
+            const min = Math.floor(seconds / 60); 
+            const sec = seconds % 60;
+            el.innerText = `${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+        }
+    }
+
     // =================================================================
     // 5. FUNÇÕES DE MÍDIA E CONTROLES (Globais Seguros)
     // =================================================================
 
-// =================================================================
-    // CONTROLE DE VOLUME GERAL
-    // =================================================================
     window.adjustMasterVolume = (val) => {
         masterVolume = parseFloat(val);
         
-        // Altera o volume do áudio tocando agora
         if (currentAudioObj) {
             currentAudioObj.volume = masterVolume;
         }
         
-        // Altera o volume do vídeo tocando agora
         const videoEl = document.querySelector('#host-video-layer video');
         if (videoEl) {
             videoEl.volume = masterVolume;
         }
     };
 
-    // =================================================================
-    // TOCAR MÍDIA (Agora usa o masterVolume)
-    // =================================================================
     async function playMedia(asset) {
         if (asset.type === 'audio') {
             currentAudioObj = new Audio(asset.url);
             currentAudioObj.loop = true; 
-            currentAudioObj.volume = masterVolume; // Aplica o volume geral
+            currentAudioObj.volume = masterVolume; 
             currentAudioObj.play().catch(e => console.error("Erro ao tocar áudio:", e));
         }
         
@@ -270,7 +276,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     vid.src = asset.url; 
                     vid.autoplay = true; 
                     vid.loop = true; 
-                    vid.volume = masterVolume; // Aplica o volume geral
+                    vid.volume = masterVolume;
                     vid.removeAttribute('controls');
                     layer.appendChild(vid);
                 } else if (asset.type === 'image') {
@@ -312,7 +318,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-
     async function stopMedia(skipDb = false) {
         if (currentAudioObj) { currentAudioObj.pause(); currentAudioObj = null; }
         const layer = document.getElementById('host-video-layer');
@@ -327,16 +332,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- DECISÕES (COM TIMER REAL E RESULTADOS) ---
     // =================================================================
     
-    let decisionTimerInterval = null; // Variável para guardar o cronômetro
+    let decisionTimerInterval = null;
 
     async function sendDecision(decision) {
         const fb = document.getElementById('host-decision-feedback');
         const qEl = document.getElementById('feedback-question');
         const tEl = document.getElementById('feedback-timer');
         
-        let timeLeft = decision.time || 30; // 30 segundos padrão
+        let timeLeft = decision.time || 30; 
 
-        // Limpa a tela de resultados anterior (se houver)
         let resBox = document.getElementById('decision-results-display');
         if (resBox) resBox.style.display = 'none';
 
@@ -348,33 +352,29 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if(roomRef) {
-            // 1. Envia a decisão para o Firebase e ZERA os votos
             await roomRef.update({
                 activeDecision: {
                     ...decision,
                     id: Date.now().toString(),
                     endTime: Date.now() + (timeLeft * 1000),
                     status: 'active',
-                    votes: {}, // Cria o objeto vazio para receber os votos dos jogadores
+                    votes: {}, 
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 }
             });
 
-            // 2. Inicia o Cronômetro Local
             if (decisionTimerInterval) clearInterval(decisionTimerInterval);
             
             decisionTimerInterval = setInterval(async () => {
                 timeLeft--;
                 if (tEl) tEl.innerText = timeLeft + 's';
 
-                // Efeito visual quando o tempo está acabando (10s)
                 if (timeLeft <= 10 && tEl) tEl.style.color = '#ff4444';
 
-                // 3. Quando o tempo acaba!
                 if (timeLeft <= 0) {
                     clearInterval(decisionTimerInterval);
                     if(tEl) tEl.innerText = "Encerrado!";
-                    await finishDecision(); // Chama a função que calcula os votos
+                    await finishDecision(); 
                 }
             }, 1000);
         }
@@ -383,17 +383,14 @@ document.addEventListener('DOMContentLoaded', () => {
     async function finishDecision() {
         if (!roomRef) return;
 
-        // 1. Puxa os dados atualizados do banco (com os votos)
         const snap = await roomRef.get();
         const data = snap.data();
         const activeDecision = data.activeDecision;
 
         if (!activeDecision) return;
 
-        // 2. Fecha a votação no banco para os jogadores não votarem mais
         await roomRef.update({ 'activeDecision.status': 'finished' });
 
-        // 3. Calcula os Resultados
         const votes = activeDecision.votes || {}; 
         const totalVotes = Object.keys(votes).length;
         let resultHTML = "";
@@ -403,7 +400,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             <span style="color:#ffbb00; font-weight:bold;">Ninguém votou a tempo!</span>
                           </div>`;
         } else {
-            // Conta qual opção teve mais votos
             const counts = {};
             for (const player in votes) {
                 const opt = votes[player];
@@ -419,7 +415,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // Monta o HTML do resultado
             resultHTML = `
                 <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #444;">
                     <h4 style="color:#00ff88; margin-bottom: 10px;">🏆 Mais votada: <br><span style="color:#fff;">${winningOption}</span> (${maxVotes} votos)</h4>
@@ -433,11 +428,9 @@ document.addEventListener('DOMContentLoaded', () => {
             resultHTML += `</ul></div>`;
         }
 
-        // 4. Exibe na tela do Host
         const fbBox = document.getElementById('host-decision-feedback');
         let resBox = document.getElementById('decision-results-display');
         
-        // Se a caixa de resultados não existir, cria ela
         if (!resBox) {
             resBox = document.createElement('div');
             resBox.id = 'decision-results-display';
@@ -448,9 +441,8 @@ document.addEventListener('DOMContentLoaded', () => {
         resBox.style.display = 'block';
     }
 
-    // Função para limpar e fechar o painel de decisão
     window.clearPlayerDecision = async () => {
-        if (decisionTimerInterval) clearInterval(decisionTimerInterval); // Para o timer se fechar antes
+        if (decisionTimerInterval) clearInterval(decisionTimerInterval); 
         
         const fbBox = document.getElementById('host-decision-feedback');
         if (fbBox) fbBox.classList.add('hidden');
@@ -470,11 +462,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-// =================================================================
+    // =================================================================
     // CONTROLES DE UI (Timers, Câmera, Microfone, Link)
     // =================================================================
     function setupUIControls() {
-        // --- TIMERS ---
         const btnStart = document.getElementById('timer-start-btn');
         const btnPause = document.getElementById('timer-pause-btn');
         const btnReset = document.getElementById('timer-reset-btn');
@@ -501,7 +492,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if(roomRef) roomRef.update({ timerCurrent: currentTimer, timerStatus: 'paused' });
         };
         
-        // --- COPIAR LINK ---
         const copyBtn = document.getElementById('copy-invite-btn');
         const inviteInput = document.getElementById('floating-invite-link');
         if (copyBtn && inviteInput) {
@@ -515,7 +505,6 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         }
 
-        // --- CÂMERA E MICROFONE ---
         const micBtn = document.getElementById('host-mic-btn');
         const camBtn = document.getElementById('host-cam-btn');
         const endBtn = document.getElementById('end-call-btn');
@@ -528,7 +517,6 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // Função que liga/desliga a mídia da câmera e microfone
     function toggleLocalTrack(kind, btn) {
         if (!localStream) {
             alert(`Acesso à ${kind === 'audio' ? 'microfone' : 'câmera'} não iniciado ou bloqueado pelo navegador.`);
@@ -542,11 +530,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const track = tracks[0];
-        track.enabled = !track.enabled; // Inverte o status (liga/desliga)
+        track.enabled = !track.enabled;
 
         const iconName = kind === 'audio' ? 'mic' : 'videocam';
         
-        // Atualiza o visual do botão
         if (track.enabled) {
             btn.style.background = '#333';
             btn.innerHTML = `<ion-icon name="${iconName}-outline"></ion-icon>`;
@@ -557,7 +544,6 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.classList.add('danger');
         }
 
-        // Se for vídeo, escurece a caixinha local
         if (kind === 'video') {
             const videoEl = document.getElementById('host-local-video');
             if (videoEl) {
@@ -567,7 +553,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- WEBRTC (Câmera Local) ---
     async function setupLocalMedia() {
         try {
             localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
@@ -576,19 +561,43 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) { console.warn("Sem permissão de mídia."); }
     }
 
+    // --- WEBRTC CORRIGIDO PARA O HOST INICIAR A CÂMERA ---
     function setupWebRTC() {
         peerConnection = new RTCPeerConnection(servers);
-        if (localStream) localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
         
+        if (localStream) {
+            localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+        }
+        
+        // Host envia os ICE Candidates
+        peerConnection.onicecandidate = event => {
+            if(event.candidate && roomRef) {
+                roomRef.collection('offerCandidates').add(event.candidate.toJSON());
+            }
+        };
+
+        // HOST CRIA A OFERTA
+        peerConnection.createOffer().then(async offer => {
+            await peerConnection.setLocalDescription(offer);
+            if(roomRef) await roomRef.update({ offer: { type: offer.type, sdp: offer.sdp } });
+        });
+        
+        // Host escuta a resposta
         roomRef.onSnapshot(async snapshot => {
             const data = snapshot.data();
-            if (data?.offer && !peerConnection.currentRemoteDescription) {
-                await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
-                const answer = await peerConnection.createAnswer();
-                await peerConnection.setLocalDescription(answer);
-                roomRef.update({ answer: { type: answer.type, sdp: answer.sdp } });
+            if (data?.answer && !peerConnection.currentRemoteDescription) {
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
             }
+        });
+
+        // Host coleta os candidatos de resposta do jogador
+        roomRef.collection('answerCandidates').onSnapshot(snap => {
+            snap.docChanges().forEach(change => {
+                if (change.type === 'added') {
+                    peerConnection.addIceCandidate(new RTCIceCandidate(change.doc.data()));
+                }
+            });
         });
     }
 
-}); // FIM DO ENCAPSULAMENTO
+});
