@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sala do Host - PlayU</title>
     
-    <link rel="stylesheet" href="assets/css/style.d791c90b.css">
+    <link rel="stylesheet" href="assets/css/style.0aadd63c.css">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
     
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
@@ -17,7 +17,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
 
     <script src="assets/js/firebase-config.js"></script>
-    <script src="assets/js/main.d791c90b.js"></script>
+    <script src="assets/js/main.0aadd63c.js"></script>
 </head>
 <body class="host-room-body">
 
@@ -166,15 +166,11 @@
                         </button>
                     </div>
                     <hr style="border: 0; border-top: 1px solid #333; margin: 10px 0;">
-                    <div class="form-group">
-                        <label style="font-size: 0.8rem; color: #aaa;">Ajuste Rápido</label>
-                        <div style="display: flex; gap: 5px; margin-top: 5px;">
-                            <button onclick="window.adjustTimer(1)" class="submit-btn small-btn">+1m</button>
-                            <button onclick="window.adjustTimer(5)" class="submit-btn small-btn">+5m</button>
-                            <button onclick="window.adjustTimer(-1)" class="submit-btn small-btn">-1m</button>
-                            <button onclick="window.adjustTimer(-5)" class="submit-btn small-btn">-5m</button>
-                        </div>
-                    </div>
+                    <div class="timer-quick-adjust" style="display: flex; gap: 10px; margin-top: 10px;">
+    <button class="submit-btn small-btn danger-btn" onclick="window.adjustTimer(-300)">- 5 Min</button>
+    
+    <button class="submit-btn small-btn" onclick="window.adjustTimer(300)">+ 5 Min</button>
+</div>
                 </div>
             </div>
         </div>
@@ -205,7 +201,7 @@
         <div id="media-content-area" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;"></div>
     </div>
 
-    <script src="assets/js/sala-host.d791c90b.js"></script>
+    <script src="assets/js/sala-host.0aadd63c.js"></script>
 </body>
 <div id="rotate-device-overlay">
     <div class="rotate-content">
