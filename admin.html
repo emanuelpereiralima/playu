@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel Admin - PlayU</title>
-    <script src="assets/js/version.0aadd63c.js"></script>
+    <script src="assets/js/version.4263430a.js"></script>
     <script>
         function loadAsset(path) {
             const version = typeof SITE_VERSION !== 'undefined' ? SITE_VERSION : new Date().getTime();
@@ -94,6 +94,23 @@
     <div id="edit-user-modal" class="modal-overlay hidden"><div class="modal-content"><button id="close-user-modal" class="close-overlay-btn">&times;</button><h3>Editar Usuário</h3><form id="edit-user-form"><input type="hidden" id="edit-user-id"><div class="form-group"><label>Nome</label><input type="text" id="edit-user-name" required></div><div class="form-group"><label>Cargo</label><select id="edit-user-role" class="role-select" style="width:100%"><option value="user">Jogador</option><option value="host">Host</option><option value="admin">Admin</option></select></div><div class="modal-footer"><button type="button" id="delete-user-btn" class="submit-btn danger-btn">Excluir</button><div class="right-buttons"><button type="button" id="cancel-edit-btn" class="submit-btn secondary-btn">Cancelar</button><button type="submit" class="submit-btn primary-btn">Salvar</button></div></div></form></div></div>
     <div id="faq-modal" class="modal-overlay hidden"><div class="modal-content"><button id="close-faq-modal" class="close-overlay-btn">&times;</button><h3 id="faq-modal-title">Pergunta</h3><form id="faq-form"><input type="hidden" id="faq-id"><div class="form-group"><label>Pergunta</label><input type="text" id="faq-question" required></div><div class="form-group"><label>Resposta</label><textarea id="faq-answer" rows="4" required></textarea></div><div class="modal-footer"><button type="button" id="delete-faq-btn" class="submit-btn danger-btn hidden">Excluir</button><div class="right-buttons"><button type="button" id="cancel-faq-btn" class="submit-btn secondary-btn">Cancelar</button><button type="submit" class="submit-btn">Salvar</button></div></div></form></div></div>
     <div id="course-modal" class="modal-overlay hidden"><div class="modal-content large-modal"><button id="close-course-modal" class="close-overlay-btn">&times;</button><h3 id="course-modal-title">Curso</h3><form id="course-form" class="scrollable-form"><input type="hidden" id="course-id"><div class="form-group"><label>Título</label><input type="text" id="course-title" required></div><div class="form-group"><label>Descrição</label><textarea id="course-desc" rows="3"></textarea></div><div class="form-group">
+    <div class="form-group" style="margin-top: 20px; padding: 15px; background: #1a1a1a; border: 1px solid #333; border-radius: 8px;">
+    <h3 style="color: var(--secondary-color); margin-bottom: 15px; font-size: 1.1rem;">
+        <ion-icon name="people-outline"></ion-icon> Criadores e Autores
+    </h3>
+    
+    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+        <select id="course-creator-select" class="admin-input" style="flex: 2; background: #222; color: #fff;">
+            <option value="">Carregando usuários...</option>
+        </select>
+        
+        <input type="text" id="course-creator-role" placeholder="Função (Ex: Professor)" class="admin-input" style="flex: 1;">
+        <button type="button" class="submit-btn" onclick="window.addCreator('course')">Adicionar</button>
+    </div>
+
+        <div id="creators-list" style="display: flex; flex-direction: column; gap: 8px;">
+        </div>
+</div>
     <label>Capa do Curso</label>
     
     <div class="upload-box-container upload-btn" onclick="document.getElementById('course-cover-upload').click()">
@@ -121,6 +138,23 @@
     <h4 style="color: var(--secondary-color); border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 15px;">Informações</h4>
     
     <div class="form-row"><div class="form-group"><label>Nome *</label><input type="text" id="new-game-name" required></div><div class="form-group"><label>Status</label><select id="new-game-status"><option value="available">Disponível</option><option value="paused">Pausado</option></select></div></div>
+<div class="form-group" style="margin-top: 20px; padding: 15px; background: #1a1a1a; border: 1px solid #333; border-radius: 8px;">
+    <h3 style="color: var(--secondary-color); margin-bottom: 15px; font-size: 1.1rem;">
+        <ion-icon name="people-outline"></ion-icon> Criadores e Autores
+    </h3>
+    
+    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+        <select id="game-creator-select" class="admin-input" style="flex: 2; background: #222; color: #fff;">
+            <option value="">Carregando usuários...</option>
+        </select>
+        
+        <input type="text" id="game-creator-role" placeholder="Função (Ex: Game Designer)" class="admin-input" style="flex: 1;">
+        <button type="button" class="submit-btn" onclick="window.addCreator('game')">Adicionar</button>
+    </div>
+
+    <div id="creators-list" style="display: flex; flex-direction: column; gap: 8px;">
+        </div>
+</div>
 <div class="form-row">
     <div class="form-group">
         <label>Duração Padrão (Min)</label>
@@ -501,8 +535,8 @@
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
     <script>
-        loadAsset('assets/css/style.0aadd63c.css');
-        loadAsset('assets/js/admin.0aadd63c.js');
+        loadAsset('assets/css/style.4263430a.css');
+        loadAsset('assets/js/admin.4263430a.js');
     </script>
 </body>
 </html>
