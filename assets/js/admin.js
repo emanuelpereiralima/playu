@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentGalleryUrls = []; 
     let currentSessionAssets = []; 
     let currentTags = [];
+    let currentCreators = [];
     let currentDecisions = []; // [NOVO] Array de decisões
     let allKnownTags = new Set(["Ação", "Aventura", "RPG", "Terror", "Estratégia"]);
     
@@ -215,6 +216,100 @@ window.updateTimerPreview = () => {
             // Muda o texto
             el.textContent = (type === 'progressive') ? "00:00" : "60:00";
         }
+    };
+
+// =================================================================
+    // LÓGICA DE CRIADORES / AUTORES (COM BUSCA NO BANCO DE USUÁRIOS)
+    // =================================================================
+    
+    window.loadUsersForDropdown = async () => {
+        // Procura as caixinhas tanto no modal de jogos quanto no de cursos
+        const gameSelect = document.getElementById('game-creator-select');
+        const courseSelect = document.getElementById('course-creator-select');
+
+        if (gameSelect) gameSelect.innerHTML = '<option value="">Carregando...</option>';
+        if (courseSelect) courseSelect.innerHTML = '<option value="">Carregando...</option>';
+
+        try {
+            const snap = await db.collection('users').get();
+            let optionsHtml = '<option value="">Selecione um usuário da lista...</option>';
+            
+            snap.forEach(doc => {
+                const u = doc.data();
+                const displayName = u.name || u.username || u.email || 'Usuário Sem Nome';
+                optionsHtml += `<option value="${displayName}">${displayName}</option>`;
+            });
+
+            // Injeta a lista pronta nos dois modais
+            if (gameSelect) gameSelect.innerHTML = optionsHtml;
+            if (courseSelect) courseSelect.innerHTML = optionsHtml;
+            
+        } catch (error) {
+            console.error("Erro ao carregar lista de usuários:", error);
+            const errorHtml = '<option value="">Erro ao carregar usuários</option>';
+            if (gameSelect) gameSelect.innerHTML = errorHtml;
+            if (courseSelect) courseSelect.innerHTML = errorHtml;
+        }
+    };
+
+    // Agora a função sabe se você está clicando no modal de Jogo ou de Curso
+    window.addCreator = (type) => {
+        const selectId = type === 'game' ? 'game-creator-select' : 'course-creator-select';
+        const roleId = type === 'game' ? 'game-creator-role' : 'course-creator-role';
+
+        const selectEl = document.getElementById(selectId);
+        const roleInput = document.getElementById(roleId);
+        
+        const name = selectEl ? selectEl.value : '';
+        const role = roleInput && roleInput.value.trim() !== '' ? roleInput.value.trim() : 'Autor'; 
+
+        if (name) {
+            const alreadyExists = currentCreators.find(c => c.name === name);
+            if (alreadyExists) {
+                alert("Este usuário já está na lista de criadores!");
+                return;
+            }
+
+            currentCreators.push({ name, role });
+            
+            if (selectEl) selectEl.value = '';
+            if (roleInput) roleInput.value = '';
+            
+            window.renderCreators();
+        } else {
+            alert("Por favor, selecione um usuário na lista antes de adicionar.");
+        }
+    };
+
+    window.removeCreator = (index) => {
+        currentCreators.splice(index, 1);
+        window.renderCreators();
+    };
+
+    window.renderCreators = () => {
+        const list = document.getElementById('creators-list');
+        if (!list) return;
+        
+        list.innerHTML = '';
+        
+        if (currentCreators.length === 0) {
+            list.innerHTML = '<p style="color:#666; font-size:0.85rem; text-align:center;">Nenhum criador adicionado ainda.</p>';
+            return;
+        }
+
+        currentCreators.forEach((creator, index) => {
+            list.innerHTML += `
+                <div style="display:flex; justify-content:space-between; align-items:center; background:#333; padding:8px 12px; border-radius:4px;">
+                    <div>
+                        <strong style="color: #fff;">${creator.name}</strong> 
+                        <span style="font-size:0.8rem; color:var(--secondary-color); margin-left:5px;">(${creator.role})</span>
+                    </div>
+                    <button type="button" class="submit-btn small-btn danger-btn" onclick="window.removeCreator(${index})" style="padding: 6px 10px;">
+                        <ion-icon name="trash-outline"></ion-icon>
+                    </button>
+                </div>
+            `;
+        });
     };
 
 // =========================================================================
@@ -603,7 +698,7 @@ window.updateTimerPreview = () => {
     // =========================================================================
     const courseList = document.getElementById('course-list-admin');
     const courseModal = document.getElementById('course-modal');
-    const courseForm = document.getElementById('course-form');
+    const courseForm = document.getElementById('create-course-form') || document.getElementById('course-form');
     const modulesContainer = document.getElementById('modules-container');
 
     async function loadCourses() {
@@ -621,31 +716,6 @@ window.updateTimerPreview = () => {
             });
         } catch(e) {}
     }
-
-    window.openCourseModal = async (id = null) => {
-        document.getElementById('course-id').value = id || '';
-        document.getElementById('course-title').value = '';
-        document.getElementById('course-desc').value = '';
-        document.getElementById('course-cover').value = '';
-        currentCourseModules = [];
-        
-        const delBtn = document.getElementById('delete-course-btn');
-        if(id) {
-            if(delBtn) delBtn.classList.remove('hidden');
-            const doc = await db.collection('courses').doc(id).get();
-            if(doc.exists) {
-                const d = doc.data();
-                document.getElementById('course-title').value = d.title;
-                document.getElementById('course-desc').value = d.description;
-                document.getElementById('course-cover').value = d.coverImage;
-                currentCourseModules = d.modules || [];
-            }
-        } else {
-            if(delBtn) delBtn.classList.add('hidden');
-        }
-        renderModulesInput();
-        courseModal.classList.remove('hidden');
-    };
 
     function renderModulesInput() {
         if(!modulesContainer) return;
@@ -675,9 +745,47 @@ window.updateTimerPreview = () => {
     if(document.getElementById('add-course-btn')) document.getElementById('add-course-btn').onclick = () => window.openCourseModal(null);
     if(courseForm) courseForm.onsubmit = async (e) => {
         e.preventDefault();
-        const id = document.getElementById('course-id').value;
-        const data = { title: document.getElementById('course-title').value, description: document.getElementById('course-desc').value, coverImage: document.getElementById('course-cover').value, modules: currentCourseModules, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
-        try { if(id) await db.collection('courses').doc(id).update(data); else await db.collection('courses').add(data); alert('Curso salvo!'); courseModal.classList.add('hidden'); loadCourses(); } catch(e) { alert('Erro'); }
+        
+        // Função auxiliar blindada (evita o erro "Cannot read properties of null")
+        const getVal = (id) => {
+            const el = document.getElementById(id);
+            return el ? el.value : '';
+        };
+
+        const id = getVal('course-id');
+        
+        const data = { 
+            title: getVal('course-title'), 
+            description: getVal('course-desc'),
+            creators: typeof currentCreators !== 'undefined' ? currentCreators : [], 
+            coverImage: getVal('course-cover-url') || getVal('course-cover'),
+            modules: typeof currentCourseModules !== 'undefined' ? currentCourseModules : [], 
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp() 
+        };
+        
+        try { 
+            if (id) {
+                await db.collection('courses').doc(id).update(data); 
+            } else {
+                data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                await db.collection('courses').add(data); 
+            }
+            
+            alert('Curso salvo!'); 
+            
+            if (courseModal) courseModal.classList.add('hidden'); 
+            
+            // Limpa o formulário e as variáveis de memória para o próximo uso
+            courseForm.reset();
+            if (typeof currentCourseModules !== 'undefined') currentCourseModules = [];
+            if (typeof currentCreators !== 'undefined') currentCreators = [];
+            
+            if (typeof loadCourses === 'function') loadCourses(); 
+            
+        } catch(error) { 
+            console.error("Erro ao salvar curso:", error);
+            alert('Erro ao salvar: ' + error.message); 
+        }
     };
     if(document.getElementById('delete-course-btn')) document.getElementById('delete-course-btn').onclick = async () => { if(confirm('Excluir?')) { await db.collection('courses').doc(document.getElementById('course-id').value).delete(); courseModal.classList.add('hidden'); loadCourses(); }};
     if(document.getElementById('close-course-modal')) document.getElementById('close-course-modal').onclick = () => courseModal.classList.add('hidden');
@@ -900,8 +1008,9 @@ window.updateTimerPreview = () => {
         const modal = document.getElementById('create-game-modal');
         const form = document.getElementById('create-game-form');
         const titleEl = document.getElementById('modal-title');
-        
+
         if (modal) modal.classList.remove('hidden');
+        if(typeof window.loadUsersForDropdown === 'function') {window.loadUsersForDropdown();}   
         if (form) form.reset();
 
         // 1. Reseta as variáveis globais SEMPRE que o modal abre
@@ -916,14 +1025,13 @@ window.updateTimerPreview = () => {
         if(typeof window.renderGalleryPreview === 'function') window.renderGalleryPreview();
         if(typeof window.renderSessionAssets === 'function') window.renderSessionAssets();
         if(typeof window.renderDecisionsList === 'function') window.renderDecisionsList();
-        
         if(typeof window.renderDecisionInputs === 'function') window.renderDecisionInputs(); 
         
         if(typeof window.renderCategories === 'function') window.renderCategories();
         if(typeof window.calculateHostEarnings === 'function') window.calculateHostEarnings();
 
         // Remove o ID oculto se for jogo novo
-        const hiddenIdField = document.getElementById('edit-game-id');
+        const hiddenIdField = document.getElementById('game-id');
         if (hiddenIdField) hiddenIdField.value = '';
 
         // 2. SE FOR EDIÇÃO DE UM JOGO EXISTENTE
@@ -1074,18 +1182,21 @@ window.updateTimerPreview = () => {
         window.renderGallery();
     });
 
-// D) CAPA DO CURSO
+// =================================================================
+    // D) ABRIR MODAL DE CURSO
+    // =================================================================
     window.openCourseModal = async (id = null) => {
         const modal = document.getElementById('course-modal');
         if(!modal) return console.error("Modal de curso não encontrado.");
         
         modal.classList.remove('hidden');
+        if(typeof window.loadUsersForDropdown === 'function') window.loadUsersForDropdown();
         
-        // 1. Reset Seguro dos Campos
+        // 1. Reset Seguro dos Campos Visuais
         const idInput = document.getElementById('course-id');
         const titleInput = document.getElementById('course-title');
         const descInput = document.getElementById('course-desc');
-        const coverUrlInput = document.getElementById('course-cover-url'); // Novo ID
+        const coverUrlInput = document.getElementById('course-cover-url'); 
         const coverPreview = document.getElementById('course-cover-preview');
         const coverUpload = document.getElementById('course-cover-upload');
         const coverText = coverUpload ? coverUpload.parentElement.querySelector('.upload-box-text') : null;
@@ -1102,11 +1213,12 @@ window.updateTimerPreview = () => {
         }
         if(coverText) coverText.textContent = "Clique para enviar imagem da capa";
 
-        // Reset Módulos
+        // 2. Reset das Listas do Curso (Módulos e Criadores)
         currentCourseModules = [];
+        currentCreators = [];
         renderModulesInput();
 
-        // Títulos e Botões
+        // 3. Títulos e Botões
         const modalTitle = document.getElementById('course-modal-title');
         const delBtn = document.getElementById('delete-course-btn');
 
@@ -1115,7 +1227,7 @@ window.updateTimerPreview = () => {
             if(modalTitle) modalTitle.textContent = "Editar Curso";
             if(delBtn) {
                 delBtn.classList.remove('hidden');
-                delBtn.onclick = () => window.deleteCourse(id);
+                // O botão deletar curso usa o ID passado
             }
 
             try {
@@ -1136,8 +1248,13 @@ window.updateTimerPreview = () => {
                         if(coverText) coverText.textContent = "Enviar Capa";
                     }
 
+                    // Puxar Arrays Salvos (Módulos e Criadores)
                     currentCourseModules = d.modules || [];
+                    if (d.creators) currentCreators = d.creators;
+
+                    // Atualiza a tela
                     renderModulesInput();
+                    if(typeof window.renderCreators === 'function') window.renderCreators();
                 }
             } catch(e) { 
                 console.error("Erro ao carregar dados do curso:", e); 
@@ -1146,6 +1263,22 @@ window.updateTimerPreview = () => {
             // --- MODO NOVO CURSO ---
             if(modalTitle) modalTitle.textContent = "Criar Curso";
             if(delBtn) delBtn.classList.add('hidden');
+
+            // --- LÓGICA DO USUÁRIO AUTOMÁTICO (CRIADORES) ---
+            let currentUserName = "Admin"; 
+            
+            if (auth && auth.currentUser && auth.currentUser.displayName) {
+                currentUserName = auth.currentUser.displayName;
+            } else if (typeof loggedInUser !== 'undefined' && loggedInUser.name) {
+                // Pega o primeiro nome da variável de sessão (ex: João de "João Silva")
+                currentUserName = loggedInUser.name.split(' ')[0]; 
+            } else if (typeof loggedInUser !== 'undefined' && loggedInUser.username) {
+                currentUserName = loggedInUser.username; 
+            }
+
+            // Injeta o usuário logado e exibe na tela
+            currentCreators = [{ name: currentUserName, role: "Criador do Curso" }];
+            if(typeof window.renderCreators === 'function') window.renderCreators();
         }
     };
 
