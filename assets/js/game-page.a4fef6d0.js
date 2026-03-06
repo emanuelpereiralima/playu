@@ -54,6 +54,70 @@ document.addEventListener('DOMContentLoaded', async () => {
     let selectedDateStr = null;
 
     // =================================================================
+    // 1. LÓGICA DO MODAL DO CRIADOR E BUSCA DE JOGOS
+    // =================================================================
+    window.openCreatorModal = async (creatorName) => {
+        const modal = document.getElementById('creator-modal');
+        const title = document.getElementById('creator-modal-title');
+        const list = document.getElementById('creator-games-list');
+        
+        if (!modal || !list) return;
+        
+        modal.classList.remove('hidden');
+        title.textContent = `Jogos de ${creatorName}`;
+        list.innerHTML = '<p style="text-align:center; color:#888; padding: 20px;">Procurando jogos...</p>';
+        
+        try {
+            // Busca todos os jogos ativos no banco
+            const snap = await db.collection('games').get();
+            let foundGames = [];
+            
+            // Filtra manualmente os jogos onde este criador está na lista
+            snap.forEach(doc => {
+                const g = doc.data();
+                if (g.creators && g.creators.some(c => c.name === creatorName)) {
+                    foundGames.push({ id: doc.id, ...g });
+                }
+            });
+            
+            list.innerHTML = ''; 
+            
+            if (foundGames.length === 0) {
+                list.innerHTML = '<p style="text-align:center; color:#888; padding: 20px;">Nenhum outro jogo encontrado.</p>';
+                return;
+            }
+            
+            // Cria um "mini-card" para cada jogo encontrado
+            foundGames.forEach(g => {
+                const item = document.createElement('div');
+                item.style.cssText = "display: flex; gap: 15px; background: #222; padding: 12px; border-radius: 8px; align-items: center; cursor: pointer; border: 1px solid #333; transition: 0.2s;";
+                item.onmouseover = () => item.style.borderColor = "var(--secondary-color)";
+                item.onmouseout = () => item.style.borderColor = "#333";
+                
+                // Ao clicar no jogo, redireciona para a página dele
+                item.onclick = () => window.location.href = `jogo-template.html?id=${g.id}`;
+                
+                // Pega a primeira imagem da galeria ou uma padrão
+                const imgUrl = (g.gallery && g.gallery.length > 0) ? g.gallery[0] : (g.coverImage || 'assets/images/placeholder.png');
+                
+                item.innerHTML = `
+                    <img src="${imgUrl}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 6px;">
+                    <div style="flex: 1; min-width: 0;">
+                        <strong style="color: #fff; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 1.1rem;">${g.name || g.title}</strong>
+                        <span style="font-size: 0.85rem; color: #aaa; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${g.shortDescription || 'Sem descrição'}</span>
+                    </div>
+                    <ion-icon name="chevron-forward-outline" style="color: var(--secondary-color); font-size: 1.2rem;"></ion-icon>
+                `;
+                list.appendChild(item);
+            });
+            
+        } catch (error) {
+            console.error("Erro ao buscar jogos do criador:", error);
+            list.innerHTML = '<p style="text-align:center; color:#ff4444; padding: 20px;">Erro ao carregar os jogos.</p>';
+        }
+    };
+
+    // =================================================================
     // 2. FUNÇÃO GERADORA DE ID (BACKUP)
     // =================================================================
     function generateDeterministicId(gameId, date, time) {
@@ -105,27 +169,94 @@ document.addEventListener('DOMContentLoaded', async () => {
         if(dom.cover) dom.cover.src = gameData.coverImage || 'assets/images/logo.png';
         if(dom.duration) dom.duration.textContent = gameData.sessionDuration ? `${gameData.sessionDuration} min` : '--';
         if(dom.desc) dom.desc.textContent = gameData.fullDescription || gameData.shortDescription || '';
-        if(dom.tags && gameData.tags) dom.tags.textContent = Array.isArray(gameData.tags) ? gameData.tags.join(' • ') : gameData.tags;
+        
+        // ==========================================
+        // 1. MELHORIA VISUAL DAS TAGS (BADGES)
+        // ==========================================
+        if(dom.tags && gameData.tags && gameData.tags.length > 0) {
+            dom.tags.innerHTML = ''; // Limpa o texto antigo
+            
+            const tagsArray = Array.isArray(gameData.tags) ? gameData.tags : [gameData.tags];
+            
+            tagsArray.forEach(tag => {
+                const tagEl = document.createElement('span');
+                tagEl.textContent = tag;
+                // Estilo moderno em formato de "Pílula" (Badge)
+                tagEl.style.cssText = "background: rgba(0, 255, 136, 0.1); color: var(--secondary-color); border: 1px solid var(--secondary-color); padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;";
+                dom.tags.appendChild(tagEl);
+            });
+        }
 
+        // ==========================================
+        // 2. INJEÇÃO DOS CRIADORES COM LINKS CLICÁVEIS
+        // ==========================================
+        const creatorsContainer = document.getElementById('game-creators-container');
+        
+        if (creatorsContainer) {
+            creatorsContainer.innerHTML = ''; // Limpa a área para evitar duplicação
+            
+            // Verifica se a gaveta de criadores existe e se tem alguém lá dentro
+            if (gameData.creators && gameData.creators.length > 0) {
+                creatorsContainer.innerHTML = '<ion-icon name="people-outline" style="color: var(--secondary-color); font-size: 1.2rem; margin-right: 5px; vertical-align: -2px;"></ion-icon> <span style="color:#aaa; margin-right: 5px;">Criado por:</span> ';
+                
+                gameData.creators.forEach((c, index) => {
+                    const btn = document.createElement('span');
+                    btn.textContent = c.name;
+                    
+                    // Estilo de link interativo
+                    btn.style.cssText = "color: #fff; cursor: pointer; transition: 0.2s; font-weight: bold; border-bottom: 1px dashed transparent;";
+                    
+                    // Efeito Hover (passar o mouse)
+                    btn.onmouseover = () => { 
+                        btn.style.color = "var(--secondary-color)"; 
+                        btn.style.borderBottom = "1px dashed var(--secondary-color)"; 
+                    };
+                    btn.onmouseout = () => { 
+                        btn.style.color = "#fff"; 
+                        btn.style.borderBottom = "1px dashed transparent"; 
+                    };
+                    
+                    // Ação de clique para abrir o modal
+                    btn.onclick = () => window.openCreatorModal(c.name);
+                    
+                    creatorsContainer.appendChild(btn);
+                    
+                    // Adiciona uma vírgula entre os nomes (exceto no último)
+                    if (index < gameData.creators.length - 1) {
+                        const comma = document.createElement('span');
+                        comma.textContent = ', ';
+                        comma.style.color = '#aaa';
+                        comma.style.marginRight = '5px';
+                        creatorsContainer.appendChild(comma);
+                    }
+                });
+            } else {
+                // AVISO VISUAL: Se não tiver nenhum criador, mostra isso na tela!
+                creatorsContainer.innerHTML = '<span style="color: #666; font-size: 0.9rem; font-style: italic;">(Nenhum criador associado a este jogo ainda)</span>';
+            }
+        } else {
+            console.error("⚠️ ERRO: A div 'game-creators-container' não foi encontrada no HTML!");
+        }
+
+        // ==========================================
+        // STATUS PAUSADO E MÍDIAS (MANTIDO DO ORIGINAL)
+        // ==========================================
         const status = gameData.status || 'available';
 
         if (status === 'paused') {
-            // Pega o elemento pai do grid (o container principal do calendário)
             const calendarWrapper = dom.calendarGrid ? dom.calendarGrid.parentNode : null;
 
             if (calendarWrapper) {
-                // Garante que o pai tenha posição relativa para o filho absoluto funcionar
                 calendarWrapper.style.position = 'relative'; 
-                calendarWrapper.style.overflow = 'hidden'; // Garante bordas arredondadas
+                calendarWrapper.style.overflow = 'hidden'; 
 
-                // Cria o Overlay
                 const overlay = document.createElement('div');
                 overlay.style.cssText = `
                     position: absolute;
                     top: 0; left: 0;
                     width: 100%; height: 100%;
-                    background: rgba(0, 0, 0, 0.85); /* Fundo escuro transparente */
-                    backdrop-filter: blur(4px); /* Efeito de desfoque no fundo */
+                    background: rgba(0, 0, 0, 0.85); 
+                    backdrop-filter: blur(4px); 
                     display: flex;
                     flex-direction: column;
                     justify-content: center;
@@ -143,18 +274,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </p>
                 `;
 
-                // Adiciona o overlay POR CIMA do calendário
                 calendarWrapper.appendChild(overlay);
 
-                // Desabilita visualmente os botões de navegação do mês
                 if(dom.prevMonthBtn) dom.prevMonthBtn.style.opacity = '0';
                 if(dom.nextMonthBtn) dom.nextMonthBtn.style.opacity = '0';
                 
-                // Adiciona badge no título
                 if(dom.title) {
                     dom.title.innerHTML += ` <span style="font-size: 0.5em; vertical-align: middle; background: #ffbb00; color: #000; padding: 2px 8px; border-radius: 4px; margin-left: 10px;">PAUSADO</span>`;
                 }
-            }}
+            }
+        }
 
         if (gameData.galleryImages?.length > 0 && dom.carouselSection) {
             dom.carouselSection.classList.remove('hidden');
@@ -164,6 +293,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 ).join('');
             }
         }
+        
         if (gameData.videoPreview && dom.trailerSection) {
             dom.trailerSection.classList.remove('hidden');
             if(dom.trailerWrapper) {

@@ -205,7 +205,14 @@ function setupHeroCarousel(gamesList) {
     track.innerHTML = '';
     if (dotsContainer) dotsContainer.innerHTML = '';
 
-    const featuredGames = gamesList.slice(0, 5); // Top 5
+    // 1. Cria uma cópia da lista para não alterar a ordem do grid principal
+    let shuffledGames = [...gamesList];
+
+    // 2. A MÁGICA: Embaralha a cópia da lista de forma aleatória
+    shuffledGames.sort(() => Math.random() - 0.5);
+
+    // 3. Pega os 5 primeiros jogos já embaralhados
+    const featuredGames = shuffledGames.slice(0, 5); // Top 5 aleatório
 
     if (featuredGames.length === 0) return;
 

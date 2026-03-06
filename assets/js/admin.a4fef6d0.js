@@ -287,29 +287,33 @@ window.updateTimerPreview = () => {
     };
 
     window.renderCreators = () => {
-        const list = document.getElementById('creators-list');
-        if (!list) return;
+        // Procura as listas em ambos os modais
+        const gameList = document.getElementById('game-creators-list');
+        const courseList = document.getElementById('course-creators-list');
         
-        list.innerHTML = '';
+        let htmlContent = '';
         
-        if (currentCreators.length === 0) {
-            list.innerHTML = '<p style="color:#666; font-size:0.85rem; text-align:center;">Nenhum criador adicionado ainda.</p>';
-            return;
+        if (!currentCreators || currentCreators.length === 0) {
+            htmlContent = '<p style="color:#666; font-size:0.85rem; text-align:center;">Nenhum criador adicionado ainda.</p>';
+        } else {
+            currentCreators.forEach((creator, index) => {
+                htmlContent += `
+                    <div style="display:flex; justify-content:space-between; align-items:center; background:#333; padding:8px 12px; border-radius:4px; margin-bottom: 5px;">
+                        <div>
+                            <strong style="color: #fff;">${creator.name}</strong> 
+                            <span style="font-size:0.8rem; color:var(--secondary-color); margin-left:5px;">(${creator.role})</span>
+                        </div>
+                        <button type="button" class="submit-btn small-btn danger-btn" onclick="window.removeCreator(${index})" style="padding: 6px 10px;" title="Remover">
+                            <ion-icon name="trash-outline"></ion-icon>
+                        </button>
+                    </div>
+                `;
+            });
         }
 
-        currentCreators.forEach((creator, index) => {
-            list.innerHTML += `
-                <div style="display:flex; justify-content:space-between; align-items:center; background:#333; padding:8px 12px; border-radius:4px;">
-                    <div>
-                        <strong style="color: #fff;">${creator.name}</strong> 
-                        <span style="font-size:0.8rem; color:var(--secondary-color); margin-left:5px;">(${creator.role})</span>
-                    </div>
-                    <button type="button" class="submit-btn small-btn danger-btn" onclick="window.removeCreator(${index})" style="padding: 6px 10px;">
-                        <ion-icon name="trash-outline"></ion-icon>
-                    </button>
-                </div>
-            `;
-        });
+        // Injeta o HTML desenhado nos dois lugares (o que estiver aberto vai exibir)
+        if (gameList) gameList.innerHTML = htmlContent;
+        if (courseList) courseList.innerHTML = htmlContent;
     };
 
 // =========================================================================
@@ -1004,37 +1008,42 @@ window.updateTimerPreview = () => {
     // =================================================================
     // ABRIR MODAL DE JOGO
     // =================================================================
+    // =================================================================
+    // ABRIR MODAL DE JOGOS (NOVO OU EDIÇÃO)
+    // =================================================================
     window.openGameModal = async (gameId) => {
-        const modal = document.getElementById('create-game-modal');
-        const form = document.getElementById('create-game-form');
-        const titleEl = document.getElementById('modal-title');
-
+        // Tenta encontrar os elementos do modal e do formulário (com variações de ID para evitar falhas)
+        const modal = document.getElementById('create-game-modal') || document.getElementById('game-modal');
+        const form = document.getElementById('create-game-form') || document.getElementById('game-form');
+        const titleEl = document.getElementById('modal-title-game') || document.getElementById('game-modal-title') || document.getElementById('modal-title');
+        
+        // O campo oculto que guarda o ID (Lembre-se que corrigimos para 'game-id' anteriormente)
+        const hiddenIdField = document.getElementById('game-id'); 
+        
         if (modal) modal.classList.remove('hidden');
-        if(typeof window.loadUsersForDropdown === 'function') {window.loadUsersForDropdown();}   
         if (form) form.reset();
-
-        // 1. Reseta as variáveis globais SEMPRE que o modal abre
-        currentTags = []; 
-        currentGalleryUrls = []; 
-        currentSessionAssets = []; 
-        currentDecisions = [];
-        currentGameCategories = []; 
-        
-        // Chamadas seguras para limpar a UI
-        if(typeof window.updateTagsUI === 'function') window.updateTagsUI();
-        if(typeof window.renderGalleryPreview === 'function') window.renderGalleryPreview();
-        if(typeof window.renderSessionAssets === 'function') window.renderSessionAssets();
-        if(typeof window.renderDecisionsList === 'function') window.renderDecisionsList();
-        if(typeof window.renderDecisionInputs === 'function') window.renderDecisionInputs(); 
-        
-        if(typeof window.renderCategories === 'function') window.renderCategories();
-        if(typeof window.calculateHostEarnings === 'function') window.calculateHostEarnings();
-
-        // Remove o ID oculto se for jogo novo
-        const hiddenIdField = document.getElementById('game-id');
         if (hiddenIdField) hiddenIdField.value = '';
 
-        // 2. SE FOR EDIÇÃO DE UM JOGO EXISTENTE
+        // 1. DISPARA A BUSCA DE USUÁRIOS PRO DROPDOWN DE CRIADORES
+        if(typeof window.loadUsersForDropdown === 'function') {
+            window.loadUsersForDropdown();
+        }
+
+        // 2. LIMPA AS VARIÁVEIS PARA NÃO TRAZER LIXO DE OUTROS JOGOS
+        currentTags = [];
+        currentGalleryUrls = [];
+        currentSessionAssets = [];
+        currentDecisions = [];
+        currentGameCategories = [];
+        currentCreators = []; // <--- GARANTE QUE A LISTA DE CRIADORES COMEÇA COMPLETAMENTE VAZIA
+
+        // Função auxiliar segura para preencher inputs sem dar erro de "null"
+        const setVal = (id, val) => {
+            const el = document.getElementById(id);
+            if(el) el.value = val || '';
+        };
+
+        // 3. VERIFICA SE ESTÁ EDITANDO UM JOGO EXISTENTE
         if (gameId) {
             if (hiddenIdField) hiddenIdField.value = gameId;
             if (titleEl) titleEl.innerText = 'Editar Jogo';
@@ -1042,36 +1051,49 @@ window.updateTimerPreview = () => {
             try {
                 const doc = await db.collection('games').doc(gameId).get();
                 if (doc.exists) {
-                    const d = doc.data(); 
-
-                    const setVal = (id, val) => {
-                        const el = document.getElementById(id);
-                        if(el) el.value = val || '';
-                    };
-
-                    setVal('new-game-name', d.name);
-                    // ... (resto do seu código preenchendo os dados) ...
+                    const d = doc.data();
                     
+                    // Preenche os campos de texto 
+                    // (Ajuste os IDs abaixo se no seu HTML eles estiverem com nomes diferentes)
+                    setVal('new-game-name', d.name || d.title);
+                    setVal('new-game-short-desc', d.shortDescription);
+                    setVal('new-game-long-desc', d.longDescription);
+                    setVal('new-game-duration', d.sessionDuration);
+                    setVal('new-game-price', d.price);
+                    setVal('new-game-players', d.maxPlayers);
+
+                    // Puxa as listas e arrays salvos no banco de dados
                     if (d.tags) currentTags = d.tags;
                     if (d.gallery) currentGalleryUrls = d.gallery;
                     if (d.sessionAssets) currentSessionAssets = d.sessionAssets;
                     if (d.decisions) currentDecisions = d.decisions;
                     if (d.pricingCategories) currentGameCategories = d.pricingCategories;
+                    
+                    // Puxa os criadores salvos para este jogo específico!
+                    if (d.creators) currentCreators = d.creators; 
 
-                    // Atualiza a interface com os dados puxados
-                    if(typeof window.updateTagsUI === 'function') window.updateTagsUI();
-                    if(typeof window.renderGalleryPreview === 'function') window.renderGalleryPreview();
-                    if(typeof window.renderSessionAssets === 'function') window.renderSessionAssets();
-                    if(typeof window.renderDecisionsList === 'function') window.renderDecisionsList();
-                    if(typeof window.renderDecisionInputs === 'function') window.renderDecisionInputs();
+                    // Atualiza a tela com os dados puxados
+                    if(typeof window.renderTags === 'function') window.renderTags();
+                    if(typeof window.renderGallery === 'function') window.renderGallery();
+                    if(typeof window.renderAssets === 'function') window.renderAssets();
+                    if(typeof window.renderDecisions === 'function') window.renderDecisions();
                     if(typeof window.renderCategories === 'function') window.renderCategories();
-                    if(typeof window.calculateHostEarnings === 'function') window.calculateHostEarnings();
+                    if(typeof window.renderCreators === 'function') window.renderCreators();
                 }
             } catch (error) {
-                console.error("Erro ao carregar dados do jogo para edição:", error);
+                console.error("Erro ao carregar dados do jogo:", error);
             }
         } else {
+            // 4. MODO NOVO JOGO
             if (titleEl) titleEl.innerText = 'Novo Jogo';
+
+            // Garante que todas as listas visuais comecem limpas na tela
+            if(typeof window.renderTags === 'function') window.renderTags();
+            if(typeof window.renderGallery === 'function') window.renderGallery();
+            if(typeof window.renderAssets === 'function') window.renderAssets();
+            if(typeof window.renderDecisions === 'function') window.renderDecisions();
+            if(typeof window.renderCategories === 'function') window.renderCategories();
+            if(typeof window.renderCreators === 'function') window.renderCreators(); // Renderiza a lista de criadores vazia
         }
     };
 
@@ -1563,59 +1585,87 @@ window.updateTimerPreview = () => {
         });
     }
 
-    // --- SALVAR JOGO (SUBMIT) ---
+// --- SALVAR JOGO (SUBMIT) ---
     if(createGameForm) createGameForm.onsubmit = async (e) => {
         e.preventDefault();
-        const id = document.getElementById('game-id').value;
-        const btn = document.getElementById('save-game-submit-btn');
-        const extraLifeUrl = document.getElementById('extra-life-media-url').value;
-        const hasExtra = document.getElementById('check-extra-life').checked;
-        btn.textContent = "Salvando..."; btn.disabled = true;
+        
+        // 1. Função blindada para pegar valores (evita o erro "Cannot read properties of null")
+        const getVal = (id) => {
+            const el = document.getElementById(id);
+            return el ? el.value : '';
+        };
 
+        const id = getVal('game-id');
+        const btn = document.getElementById('save-game-submit-btn');
+        const hasExtra = document.getElementById('check-extra-life') ? document.getElementById('check-extra-life').checked : false;
+        
+        if(btn) { btn.textContent = "Salvando..."; btn.disabled = true; }
+
+        // 2. MONTA O PACOTE DE DADOS (Com proteção contra perda de listas)
         const data = {
-            name: document.getElementById('new-game-name').value,
-            slug: document.getElementById('new-game-name').value.toLowerCase().replace(/[^a-z0-9]/g, '-'),
-            status: document.getElementById('new-game-status').value,
-            price: parseFloat(document.getElementById('new-game-price').value),
-            sessionDuration: parseInt(document.getElementById('new-game-duration').value),
-            pricingCategories: currentGameCategories,
-            hasExtraLife: hasExtra,
-            extraLifeDuration: document.getElementById('new-game-extra-life-time').value,
-            extraLifeVideo: extraLifeUrl,
-            tags: currentTags,
-            shortDescription: document.getElementById('new-game-short-desc').value,
-            fullDescription: document.getElementById('new-game-full-desc').value,
-            coverImage: document.getElementById('new-game-cover').value,
-            videoPreview: document.getElementById('new-game-trailer').value,
-            sessionDuration: document.getElementById('new-game-duration').value,
-            maxPlayers: parseInt(document.getElementById('new-game-max-players').value) || 1,
-            galleryImages: currentGalleryUrls,
-            sessionAssets: currentSessionAssets,
-            isPaused: document.getElementById('new-game-status').value === 'paused',
+            name: getVal('new-game-name'),
+            slug: getVal('new-game-name').toLowerCase().replace(/[^a-z0-9]/g, '-'),
+            status: getVal('new-game-status'),
+            price: parseFloat(getVal('new-game-price')) || 0,
+            sessionDuration: parseInt(getVal('new-game-duration')) || 0,
+            shortDescription: getVal('new-game-short-desc'),
+            fullDescription: getVal('new-game-full-desc'),
+            coverImage: getVal('new-game-cover'),
+            videoPreview: getVal('new-game-trailer'),
+            maxPlayers: parseInt(getVal('new-game-max-players')) || 1,
+            isPaused: getVal('new-game-status') === 'paused',
             
-            // Novos Campos
-            decisions: currentDecisions,
+            // Vida Extra
+            hasExtraLife: hasExtra,
+            extraLifeDuration: getVal('new-game-extra-life-time'),
+            extraLifeVideo: getVal('extra-life-media-url'),
+            
+            // Arrays blindados (O SEGREDO PARA NÃO APAGAR AS MÍDIAS E SALVAR OS CRIADORES)
+            pricingCategories: typeof currentGameCategories !== 'undefined' ? currentGameCategories : [],
+            tags: typeof currentTags !== 'undefined' ? currentTags : [],
+            galleryImages: typeof currentGalleryUrls !== 'undefined' ? currentGalleryUrls : [],
+            sessionAssets: typeof currentSessionAssets !== 'undefined' ? currentSessionAssets : [],
+            decisions: typeof currentDecisions !== 'undefined' ? currentDecisions : [],
+            creators: typeof currentCreators !== 'undefined' ? currentCreators : [], // <--- A LISTA DE CRIADORES AGORA SALVA AQUI!
+            
+            // Configurações do Timer
             timerSettings: {
-                type: document.getElementById('edit-timer-type').value,
-                font: document.getElementById('edit-timer-font').value,
-                color: document.getElementById('edit-timer-color').value
-            }
+                type: getVal('edit-timer-type'),
+                font: getVal('edit-timer-font'),
+                color: getVal('edit-timer-color')
+            },
+            
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
         };
 
         try {
             if(id) {
+                // ATUALIZA JOGO
                 await db.collection('games').doc(id).update(data);
-                alert("Salvo!"); createGameModal.classList.add('hidden');
+                alert("Salvo!"); 
+                if (createGameModal) createGameModal.classList.add('hidden');
+                
+                // Limpa as variáveis para não dar conflito na próxima abertura
+                currentTags = []; currentGalleryUrls = []; currentSessionAssets = []; 
+                currentDecisions = []; currentGameCategories = []; currentCreators = [];
             } else {
+                // NOVO JOGO
                 data.ownerId = loggedInUser.username;
                 data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
                 data.availability = {};
                 const ref = await db.collection('games').add(data);
-                alert("Criado!"); window.openGameModal(ref.id);
+                alert("Criado!"); 
+                window.openGameModal(ref.id);
             }
-            loadAllGames();
-        } catch(e) { alert("Erro ao salvar."); }
-        finally { btn.textContent = "Salvar Alterações"; btn.disabled = false; }
+            
+            if (typeof loadAllGames === 'function') loadAllGames();
+            
+        } catch(error) { 
+            console.error("Erro ao salvar jogo:", error);
+            alert("Erro ao salvar: " + error.message); 
+        } finally { 
+            if(btn) { btn.textContent = "Salvar Alterações"; btn.disabled = false; }
+        }
     };
 
     // =========================================================================
