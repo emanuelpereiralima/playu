@@ -109,22 +109,53 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // =================================================================
-    // LÓGICA DE CATEGORIAS / PACOTES DE PREÇO
+// =================================================================
+    // LÓGICA DE CATEGORIAS / PACOTES DE PREÇO (CRIAR E EDITAR)
     // =================================================================
     let currentGameCategories = []; // Variável global para guardar os pacotes
+    let editingCategoryIndex = null; // Guarda qual pacote estamos editando
 
-    window.openCategoryModal = () => {
-        document.getElementById('category-modal').classList.remove('hidden');
-        document.getElementById('cat-name').value = '';
-        document.getElementById('cat-price').value = '';
-        document.getElementById('cat-duration').value = '';
+    // A função agora aceita um índice. Se receber número, é Edição. Se vazio, é Novo.
+    window.openCategoryModal = (index = null) => {
+        const modal = document.getElementById('category-modal');
+        const titleEl = modal.querySelector('h3'); // Pega o título do modal
+        const btnEl = modal.querySelector('.modal-footer .submit-btn:not(.secondary-btn)'); // Pega o botão de salvar
+
+        modal.classList.remove('hidden');
+
+        if (index !== null && index !== undefined) {
+            // --- MODO EDIÇÃO ---
+            editingCategoryIndex = index;
+            const cat = currentGameCategories[index];
+            
+            // Preenche os campos com os dados existentes
+            document.getElementById('cat-name').value = cat.name || cat.title || '';
+            document.getElementById('cat-price').value = cat.price || '';
+            document.getElementById('cat-duration').value = cat.duration || '';
+            
+            // Muda os textos visualmente para "Editar"
+            if (titleEl) titleEl.textContent = 'Editar Pacote de Jogo';
+            if (btnEl) btnEl.textContent = 'Salvar Alterações';
+        } else {
+            // --- MODO NOVO PACOTE ---
+            editingCategoryIndex = null;
+            
+            // Limpa os campos
+            document.getElementById('cat-name').value = '';
+            document.getElementById('cat-price').value = '';
+            document.getElementById('cat-duration').value = '';
+
+            // Muda os textos visualmente para "Novo"
+            if (titleEl) titleEl.textContent = 'Novo Pacote de Jogo';
+            if (btnEl) btnEl.textContent = 'Adicionar Pacote';
+        }
     };
 
     window.closeCategoryModal = () => {
         document.getElementById('category-modal').classList.add('hidden');
     };
 
+    // Esta função agora serve tanto para adicionar um novo quanto para salvar a edição
     window.addCategory = () => {
         const name = document.getElementById('cat-name').value.trim();
         const price = parseFloat(document.getElementById('cat-price').value);
@@ -134,22 +165,38 @@ document.addEventListener('DOMContentLoaded', () => {
             return alert("Preencha o nome, o valor e a duração corretamente.");
         }
 
-        currentGameCategories.push({ 
-            id: Date.now().toString(),
-            name: name, 
-            price: price, 
-            duration: duration 
-        });
+        if (editingCategoryIndex !== null) {
+            // ATUALIZA O PACOTE EXISTENTE
+            currentGameCategories[editingCategoryIndex] = {
+                ...currentGameCategories[editingCategoryIndex], // Mantém outros dados ocultos (como IDs)
+                name: name, 
+                title: name, // Duplicado por segurança de leitura
+                price: price, 
+                duration: duration 
+            };
+        } else {
+            // CRIA UM PACOTE NOVO
+            currentGameCategories.push({ 
+                id: Date.now().toString(),
+                name: name, 
+                title: name,
+                price: price, 
+                duration: duration 
+            });
+        }
 
         window.renderCategories();
         window.closeCategoryModal();
     };
 
     window.removeCategory = (index) => {
-        currentGameCategories.splice(index, 1);
-        window.renderCategories();
+        if(confirm('Tem a certeza que deseja excluir este pacote?')) {
+            currentGameCategories.splice(index, 1);
+            window.renderCategories();
+        }
     };
 
+    // Renderiza a lista na tela (Agora com o botão de Editar e ícone modernizado)
     window.renderCategories = () => {
         const list = document.getElementById('game-categories-list');
         if(!list) return;
@@ -162,22 +209,55 @@ document.addEventListener('DOMContentLoaded', () => {
 
         currentGameCategories.forEach((cat, i) => {
             const hostShare = (cat.price * 0.70).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            const catName = cat.name || cat.title || 'Sem Nome';
             
             list.innerHTML += `
-                <div style="background:#222; padding:10px; border-radius:6px; display:flex; justify-content:space-between; align-items:center; border-left:3px solid var(--secondary-color);">
+                <div style="background:#222; padding:10px; border-radius:6px; display:flex; justify-content:space-between; align-items:center; border-left:3px solid var(--secondary-color); margin-bottom: 6px; border-top: 1px solid #333; border-right: 1px solid #333; border-bottom: 1px solid #333;">
                     <div>
-                        <strong style="color:#fff; font-size:0.9rem;">${cat.name}</strong><br>
+                        <strong style="color:#fff; font-size:0.95rem;">${catName}</strong><br>
                         <span style="color:#00ff88; font-size:0.85rem; font-weight:bold;">R$ ${cat.price.toFixed(2)}</span> 
-                        <span style="color:#aaa; font-size:0.8rem;">| <ion-icon name="time-outline"></ion-icon> ${cat.duration} min</span>
-                        <div style="font-size:0.7rem; color:#888; margin-top:2px;">Seu repasse: ${hostShare}</div>
+                        <span style="color:#aaa; font-size:0.8rem;">| <ion-icon name="time-outline" style="vertical-align:-2px;"></ion-icon> ${cat.duration} min</span>
+                        <div style="font-size:0.75rem; color:#888; margin-top:2px;">Seu repasse: ${hostShare}</div>
                     </div>
-                    <button type="button" class="submit-btn small-btn danger-btn" onclick="window.removeCategory(${i})" style="padding:4px 8px; min-width:auto;">
-                        <ion-icon name="trash-outline"></ion-icon>
-                    </button>
+                    <div style="display:flex; gap: 8px;">
+                        <button type="button" class="submit-btn small-btn" onclick="window.openCategoryModal(${i})" style="padding:6px 10px; min-width:auto; background: rgba(0, 255, 136, 0.1); border: 1px solid var(--secondary-color); color: var(--secondary-color);" title="Editar">
+                            <ion-icon name="create-outline" style="font-size: 1.1rem;"></ion-icon>
+                        </button>
+                        <button type="button" class="submit-btn small-btn danger-btn" onclick="window.removeCategory(${i})" style="padding:6px 10px; min-width:auto;" title="Excluir">
+                            <ion-icon name="trash-outline" style="font-size: 1.1rem;"></ion-icon>
+                        </button>
+                    </div>
                 </div>
             `;
         });
     };
+
+    // 2. Salva as informações modificadas e fecha o modal
+    window.saveCategoryEdit = () => {
+        const index = document.getElementById('edit-cat-index').value;
+        const newName = document.getElementById('edit-cat-name').value;
+        const newPrice = document.getElementById('edit-cat-price').value;
+
+        if (!newName || newName.trim() === '') {
+            alert("O nome do pacote não pode estar vazio.");
+            return;
+        }
+
+        // Atualiza a memória
+        currentGameCategories[index] = {
+            ...currentGameCategories[index],
+            name: newName.trim(),
+            title: newName.trim(), 
+            price: parseFloat(newPrice) || 0
+        };
+
+        // Fecha a janela
+        document.getElementById('edit-category-modal').classList.add('hidden');
+        
+        // Atualiza a lista na tela
+        if (typeof window.renderCategories === 'function') window.renderCategories();
+    };
+
 
     // --- NAVEGAÇÃO ENTRE ABAS DO DASHBOARD ---
     window.switchAdminTab = (tabId) => {
@@ -1061,6 +1141,8 @@ window.updateTimerPreview = () => {
                     setVal('new-game-duration', d.sessionDuration);
                     setVal('new-game-price', d.price);
                     setVal('new-game-players', d.maxPlayers);
+                    setVal('new-game-cover', d.coverImage);
+                    setVal('new-game-trailer', d.videoPreview);
 
                     // Puxa as listas e arrays salvos no banco de dados
                     if (d.tags) currentTags = d.tags;
@@ -1098,7 +1180,52 @@ window.updateTimerPreview = () => {
     };
 
     window.openScheduleModal = async (gameId) => {
-        currentAgendaGameId = gameId; currentAgendaData = {};
+        // ==========================================
+        // 1. FAXINA VISUAL INSTANTÂNEA (Antes de carregar)
+        // ==========================================
+        const modal = document.getElementById('schedule-modal') || document.getElementById('agenda-modal');
+        const grid = document.getElementById('admin-calendar-grid') || document.querySelector('.calendar-grid');
+        const label = document.getElementById('agenda-game-name');
+        
+        // Coloca uma mensagem de carregamento e apaga o calendário antigo na mesma hora
+        if (grid) grid.innerHTML = '<div style="text-align:center; padding: 20px; grid-column: 1 / -1;">Carregando calendário...</div>';
+        if (label) label.textContent = 'Carregando...';
+        
+        // Abre o modal imediatamente para o usuário ver que está carregando
+        if (modal) modal.classList.remove('hidden');
+
+        // ==========================================
+        // 2. FAXINA DE MEMÓRIA PROFUNDA
+        // ==========================================
+        currentAgendaGameId = gameId; 
+        currentAgendaData = {}; // Zera os horários
+        editingDateStr = null; 
+        bulkTimesArray = [];   
+        
+        // Força a data do calendário voltar para o Mês atual!
+        currentAdminDate = new Date(); 
+        currentAdminDate.setDate(1);
+
+        // ==========================================
+        // 3. LIMPEZA DOS CAMPOS DE INSERÇÃO
+        // ==========================================
+        const singleDayEditor = document.getElementById('single-day-editor');
+        if (singleDayEditor) singleDayEditor.classList.add('hidden'); 
+
+        const bulkList = document.getElementById('bulk-times-list');
+        if (bulkList) bulkList.innerHTML = ''; 
+
+        const bulkTimeIn = document.getElementById('bulk-time-input');
+        if (bulkTimeIn) bulkTimeIn.value = ''; 
+
+        const bulkStart = document.getElementById('bulk-start-date');
+        const bulkEnd = document.getElementById('bulk-end-date');
+        if (bulkStart) bulkStart.value = ''; 
+        if (bulkEnd) bulkEnd.value = '';     
+
+        document.querySelectorAll('#schedule-view-bulk input[type="checkbox"]').forEach(c => c.checked = false);
+
+        // Reseta as abas para o modo Calendário padrão
         const viewCal = document.getElementById('schedule-view-calendar');
         const viewBulk = document.getElementById('schedule-view-bulk');
         const tabCal = document.getElementById('tab-calendar-view');
@@ -1109,17 +1236,32 @@ window.updateTimerPreview = () => {
         if(tabCal) tabCal.classList.add('active');
         if(tabBulk) tabBulk.classList.remove('active');
         
+        // ==========================================
+        // 4. BUSCA SEGURA NO FIREBASE
+        // ==========================================
         try {
             const doc = await db.collection('games').doc(gameId).get();
             if(doc.exists) {
                 const d = doc.data();
-                currentAgendaData = d.availability || {};
-                const label = document.getElementById('agenda-game-name');
-                if(label) label.textContent = d.name;
-                renderAdminCalendar();
-                agendaModal.classList.remove('hidden');
+                
+                // O SEGREDO: Cria uma cópia DESVINCULADA dos dados para não misturar!
+                if (d.availability) {
+                    currentAgendaData = JSON.parse(JSON.stringify(d.availability));
+                } else {
+                    currentAgendaData = {};
+                }
+                
+                if(label) label.textContent = d.name || d.title;
+                
+                // Desenha o calendário limpinho com os novos dados
+                if(typeof renderAdminCalendar === 'function') {
+                    renderAdminCalendar();
+                }
             }
-        } catch(e) { alert("Erro ao abrir agenda."); }
+        } catch(e) { 
+            console.error("Erro ao carregar agenda: ", e);
+            if (grid) grid.innerHTML = '<div style="color: red; padding: 20px; grid-column: 1 / -1;">Erro ao carregar.</div>';
+        }
     };
 
 // =================================================================
@@ -1610,8 +1752,8 @@ window.updateTimerPreview = () => {
             sessionDuration: parseInt(getVal('new-game-duration')) || 0,
             shortDescription: getVal('new-game-short-desc'),
             fullDescription: getVal('new-game-full-desc'),
-            coverImage: getVal('new-game-cover'),
-            videoPreview: getVal('new-game-trailer'),
+            coverImage: getVal('new-game-cover-url') || getVal('new-game-cover'),
+            videoPreview: getVal('new-game-trailer-url') || getVal('new-game-trailer'),
             maxPlayers: parseInt(getVal('new-game-max-players')) || 1,
             isPaused: getVal('new-game-status') === 'paused',
             
@@ -1691,9 +1833,21 @@ window.updateTimerPreview = () => {
             const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
             const el = document.createElement('div'); el.className = 'calendar-day'; el.textContent = d; el.dataset.date = dateStr;
             const dateObj = new Date(y, m, d);
-            if(dateObj < today) { /* Passado */ } else {
+            
+            if(dateObj < today) { 
+                /* Passado: não faz nada */ 
+            } else {
                 el.classList.add('available');
-                if(currentAgendaData[dateStr] && currentAgendaData[dateStr].length > 0) el.classList.add('has-schedule');
+                
+                // --- AJUSTE VISUAL DA BORDA AQUI ---
+                if(currentAgendaData[dateStr] && currentAgendaData[dateStr].length > 0) {
+                    el.classList.add('has-schedule');
+                    el.style.border = '2px solid var(--primary-color)'; // Borda vermelha
+                    el.style.backgroundColor = 'rgba(255, 0, 0, 0.1)';  // Fundo bem transparente
+                    el.style.color = '#fff'; // Número branco visível
+                    el.style.fontWeight = 'bold';
+                }
+                
                 if(editingDateStr === dateStr) el.classList.add('selected');
                 el.onclick = () => openSingleDayEditor(dateStr);
             }
@@ -1745,12 +1899,22 @@ window.updateTimerPreview = () => {
         document.getElementById('add-single-time-btn').onclick = () => {
             const v = document.getElementById('single-time-input').value;
             if(v) { 
+                // --- VALIDAÇÃO DE TEMPO NO PASSADO ---
+                const selectedDateTime = new Date(`${editingDateStr}T${v}:00`);
+                if (selectedDateTime < new Date()) {
+                    return alert("⚠️ Não é possível adicionar horários no passado!");
+                }
+                // ---------------------------------------
+
                 if(!currentAgendaData[editingDateStr]) currentAgendaData[editingDateStr] = [];
-                if(!currentAgendaData[editingDateStr].includes(v)) { currentAgendaData[editingDateStr].push(v); currentAgendaData[editingDateStr].sort(); renderSlots(); }
+                if(!currentAgendaData[editingDateStr].includes(v)) { 
+                    currentAgendaData[editingDateStr].push(v); 
+                    currentAgendaData[editingDateStr].sort(); 
+                    renderSlots(); 
+                }
             }
         };
     }
-
     if(document.getElementById('save-single-day-btn')) {
         document.getElementById('save-single-day-btn').onclick = async () => {
             if(!currentAgendaGameId) return;
@@ -1779,18 +1943,37 @@ window.updateTimerPreview = () => {
         const s = document.getElementById('bulk-start-date').value;
         const e = document.getElementById('bulk-end-date').value;
         const days = []; document.querySelectorAll('#schedule-view-bulk input:checked').forEach(c=>days.push(parseInt(c.value)));
-        if(!s || !e || !days.length || !bulkTimesArray.length) return alert("Preencha tudo");
+        
+        if(!s || !e || !days.length || !bulkTimesArray.length) return alert("Preencha todos os campos e adicione horários.");
+        
         let loop = new Date(s+'T00:00:00'), end = new Date(e+'T00:00:00');
+        const now = new Date(); // Guarda o momento atual para validação
+        
         while(loop <= end) {
             if(days.includes(loop.getDay())) {
                 const k = `${loop.getFullYear()}-${String(loop.getMonth()+1).padStart(2,'0')}-${String(loop.getDate()).padStart(2,'0')}`;
-                const ex = currentAgendaData[k] || [];
-                currentAgendaData[k] = [...new Set([...ex, ...bulkTimesArray])].sort();
+                
+                // Filtra a lista em massa para remover horários que já passaram se o dia for hoje
+                const validTimesToAdd = bulkTimesArray.filter(timeValue => {
+                    const slotDateTime = new Date(`${k}T${timeValue}:00`);
+                    return slotDateTime > now;
+                });
+
+                if (validTimesToAdd.length > 0) {
+                    const ex = currentAgendaData[k] || [];
+                    currentAgendaData[k] = [...new Set([...ex, ...validTimesToAdd])].sort();
+                }
             }
             loop.setDate(loop.getDate()+1);
         }
-        await db.collection('games').doc(currentAgendaGameId).update({ availability: currentAgendaData });
-        alert("Aplicado!"); document.getElementById('tab-calendar-view').click();
+        
+        try {
+            await db.collection('games').doc(currentAgendaGameId).update({ availability: currentAgendaData });
+            alert("Horários em massa aplicados com sucesso!"); 
+            document.getElementById('tab-calendar-view').click();
+        } catch(err) {
+            alert("Erro ao salvar agenda em massa.");
+        }
     };
 
     const closeMod = (id, mid) => { const e=document.getElementById(id); if(e) e.onclick = () => document.getElementById(mid).classList.add('hidden'); };
