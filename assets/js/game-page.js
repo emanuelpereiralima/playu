@@ -308,8 +308,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // =================================================================
-    // 4. CALENDÁRIO
+// =================================================================
+    // 4. CALENDÁRIO VISUALMENTE DESTACADO
     // =================================================================
     function renderCalendar() {
         if(!dom.calendarGrid) return;
@@ -327,7 +327,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         today.setHours(0,0,0,0);
         
         for(let i=0; i<firstDay; i++) {
-            dom.calendarGrid.appendChild(document.createElement('div'));
+            const empty = document.createElement('div');
+            empty.style.opacity = '0';
+            dom.calendarGrid.appendChild(empty);
         }
 
         for(let d=1; d<=daysInMonth; d++) {
@@ -337,31 +339,65 @@ document.addEventListener('DOMContentLoaded', async () => {
             const el = document.createElement('div');
             el.className = 'calendar-day';
             el.textContent = d;
+            
+            // O SEGREDO: box-sizing e borda transparente por padrão! Altura de 50px e fonte 1.2rem.
+            el.style.cssText = "display: flex; align-items: center; justify-content: center; height: 50px; font-size: 1.2rem; border-radius: 8px; transition: all 0.2s ease; box-sizing: border-box; border: 2px solid transparent;";
 
             const adminSlots = gameData.availability ? (gameData.availability[dateStr] || []) : [];
             
             if (checkDate < today) {
                 el.classList.add('disabled');
+                el.style.opacity = '0.3';
+                el.style.cursor = 'not-allowed';
             } 
             else if (adminSlots.length > 0) {
                 el.classList.add('available');
+                el.style.borderColor = 'var(--secondary-color)'; // Apenas muda a cor da borda
+                el.style.backgroundColor = 'rgba(0, 255, 136, 0.1)';
+                el.style.color = '#fff';
+                el.style.fontWeight = 'bold';
+                el.style.cursor = 'pointer';
+
                 el.onclick = () => selectDate(dateStr, el);
             } 
             else {
                 el.classList.add('disabled');
+                el.style.color = '#666';
+                el.style.cursor = 'default';
             }
 
-            if(selectedDateStr === dateStr) el.classList.add('selected');
+            if(selectedDateStr === dateStr) {
+                el.classList.add('selected');
+                el.style.backgroundColor = 'var(--secondary-color)';
+                el.style.color = '#000';
+                el.style.transform = 'scale(1.05)'; // Efeito suave sem quebrar a tela
+                el.style.boxShadow = '0 5px 15px rgba(0, 255, 136, 0.4)';
+            }
+            
             dom.calendarGrid.appendChild(el);
         }
     }
 
     // =================================================================
-    // 5. SELEÇÃO DE HORÁRIO
+    // 5. SELEÇÃO DE HORÁRIO E BOTÕES MODERNOS
     // =================================================================
     async function selectDate(dateStr, el) {
-        document.querySelectorAll('.calendar-day').forEach(d => d.classList.remove('selected'));
+        // Remove a seleção de todos os dias
+        document.querySelectorAll('.calendar-day.available').forEach(d => {
+            d.classList.remove('selected');
+            d.style.backgroundColor = 'rgba(0, 255, 136, 0.1)';
+            d.style.color = '#fff';
+            d.style.transform = 'scale(1)';
+            d.style.boxShadow = 'none';
+        });
+        
+        // Aplica o visual no dia clicado
         el.classList.add('selected');
+        el.style.backgroundColor = 'var(--secondary-color)';
+        el.style.color = '#000';
+        el.style.transform = 'scale(1.05)';
+        el.style.boxShadow = '0 5px 15px rgba(0, 255, 136, 0.4)';
+        
         selectedDateStr = dateStr;
 
         const parts = dateStr.split('-');
@@ -372,7 +408,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const adminSlots = gameData.availability ? (gameData.availability[dateStr] || []) : [];
         
-        // Filtra passado
+        // Filtra horários que já passaram no dia de hoje
         const now = new Date();
         const validSlots = adminSlots.filter(time => {
             const [h, m] = time.split(':').map(Number);
@@ -382,14 +418,44 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         dom.timeGrid.innerHTML = '';
         if (validSlots.length === 0) {
-            dom.timeGrid.innerHTML = '<p style="color:#aaa;">Sem horários disponíveis.</p>'; 
+            dom.timeGrid.innerHTML = '<p style="color:#aaa; grid-column: 1 / -1; text-align: center; padding: 10px;">Todos os horários esgotados ou já passaram.</p>'; 
             return;
         }
 
+        // Desenha os botões de horário com efeitos de hover
         validSlots.sort().forEach(time => {
             const btn = document.createElement('button');
             btn.className = 'time-slot-btn';
             btn.textContent = time;
+            
+            // Estilo do botão de hora
+            btn.style.cssText = `
+                padding: 12px 5px; 
+                background: #222; 
+                color: #fff; 
+                border: 1px solid #444; 
+                border-radius: 8px; 
+                font-weight: bold; 
+                cursor: pointer; 
+                transition: all 0.2s ease; 
+                font-size: 1.1rem;
+                font-family: 'Orbitron', sans-serif;
+            `;
+            
+            // Efeitos ao passar o rato (Hover)
+            btn.onmouseover = () => {
+                btn.style.background = 'var(--secondary-color)';
+                btn.style.color = '#000';
+                btn.style.transform = 'translateY(-3px)';
+                btn.style.boxShadow = '0 5px 15px rgba(0, 255, 136, 0.4)';
+            };
+            btn.onmouseout = () => {
+                btn.style.background = '#222';
+                btn.style.color = '#fff';
+                btn.style.transform = 'translateY(0)';
+                btn.style.boxShadow = 'none';
+            };
+            
             btn.onclick = () => confirmSharedBooking(time);
             dom.timeGrid.appendChild(btn);
         });

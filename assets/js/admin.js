@@ -1865,24 +1865,7 @@ window.updateTimerPreview = () => {
         modal.classList.remove('hidden');
         const dateParts = dateStr.split('-');
         document.getElementById('editing-date-display').textContent = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
-        renderSlots(); updateTimeSelectOptions(dateStr);
-    }
 
-    function updateTimeSelectOptions(selectedDateStr) {
-        const select = document.getElementById('single-time-input');
-        if(!select) return;
-        select.innerHTML = '<option value="">Selecionar horário...</option>';
-        const now = new Date();
-        const isToday = selectedDateStr === now.toISOString().split('T')[0];
-        const currentHour = now.getHours(); const currentMin = now.getMinutes();
-
-        for(let h = 0; h < 24; h++) {
-            for(let m = 0; m < 60; m += 10) { 
-                if (isToday) { if (h < currentHour || (h === currentHour && m < currentMin)) continue; }
-                const timeStr = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
-                const option = document.createElement('option'); option.value = timeStr; option.textContent = timeStr; select.appendChild(option);
-            }
-        }
     }
 
     function renderSlots() {
@@ -1915,6 +1898,24 @@ window.updateTimerPreview = () => {
             }
         };
     }
+    // =================================================================
+    // MÁSCARA AUTOMÁTICA DE HORÁRIO (HH:MM)
+    // =================================================================
+    const singleTimeInput = document.getElementById('single-time-input');
+    if (singleTimeInput) {
+        singleTimeInput.addEventListener('input', function (e) {
+            // Remove qualquer coisa que não seja número
+            let v = this.value.replace(/\D/g, ''); 
+            
+            // Se já tiver 3 números ou mais, coloca os ":" no meio
+            if (v.length >= 3) {
+                this.value = v.slice(0, 2) + ':' + v.slice(2, 4);
+            } else {
+                this.value = v; // Se tiver só 1 ou 2 números, deixa normal
+            }
+        });
+    }
+
     if(document.getElementById('save-single-day-btn')) {
         document.getElementById('save-single-day-btn').onclick = async () => {
             if(!currentAgendaGameId) return;

@@ -1,204 +1,128 @@
-document.addEventListener('DOMContentLoaded', () => {
-    console.log("💳 Iniciando Checkout com Busca Ativa de Sala...");
-
-    if (typeof firebase === 'undefined') {
-        console.error("Firebase SDK não carregado.");
-        return;
-    }
-
-    const db = firebase.firestore();
-    const auth = firebase.auth();
-
-    // Elementos da Interface
-    const loadingOverlay = document.getElementById('payment-loading');
-    const contentDiv = document.getElementById('payment-content');
-    
-    const gameNameEl = document.getElementById('checkout-game-name');
-    const dateTimeEl = document.getElementById('checkout-datetime');
-    const priceEl = document.getElementById('checkout-total-price');
-    const coverEl = document.getElementById('checkout-cover');
-    const confirmBtn = document.getElementById('confirm-payment-btn');
-    const statusText = document.getElementById('payment-status');
-
-    // Variáveis de Estado
-    let finalPrice = 0;
-    let gameRealData = null;
-
-    // 1. RECUPERAR DADOS DA SESSÃO
-    const sessionData = sessionStorage.getItem('checkoutData');
-    
-    if (!sessionData) {
-        alert("Nenhum agendamento iniciado. Redirecionando para a home.");
+document.addEventListener('DOMContentLoaded', async () => {
+    // 1. Pega os dados básicos que vieram da tela do jogo
+    const checkoutDataStr = sessionStorage.getItem('checkoutData');
+    if (!checkoutDataStr) {
+        alert("Erro: Nenhum jogo selecionado!");
         window.location.href = 'index.html';
         return;
     }
 
-    const checkoutData = JSON.parse(sessionData);
+    const checkoutData = JSON.parse(checkoutDataStr);
+    let selectedPackage = null; // Variável para guardar o pacote escolhido
 
-    // 2. HELPER: GERADOR DE ID DE SALA (Padronizado)
-    function generateDeterministicId(gameId, date, time) {
-        const g = String(gameId).trim().replace(/\s+/g, '');
-        const d = String(date).trim();
-        const t = String(time).trim().replace(/:/g, '-');
-        return `session_${g}_${d}_${t}`;
+    // Preenche o resumo básico na tela (se os elementos existirem)
+    if(document.getElementById('checkout-game-name')) document.getElementById('checkout-game-name').textContent = checkoutData.gameName;
+    if(document.getElementById('checkout-date')) document.getElementById('checkout-date').textContent = checkoutData.date;
+    if(document.getElementById('checkout-time')) document.getElementById('checkout-time').textContent = checkoutData.time;
+    if(document.getElementById('checkout-total-price')) document.getElementById('checkout-total-price').textContent = `R$ ${parseFloat(checkoutData.price).toFixed(2)}`;
+
+    // 2. Busca o jogo no Firebase para verificar se existem pacotes especiais
+    try {
+        const doc = await db.collection('games').doc(checkoutData.gameId).get();
+        if (doc.exists) {
+            const gameData = doc.data();
+            const packages = gameData.pricingCategories || [];
+
+            // Se o jogo TIVER pacotes extras...
+            if (packages.length > 0) {
+                renderPackages(packages, gameData, checkoutData);
+            } else {
+                // Se NÃO tiver pacotes, mostra a área de pagamento direto!
+                document.getElementById('payment-methods-container').style.display = 'block';
+            }
+        }
+    } catch (error) {
+        console.error("Erro ao buscar pacotes do jogo:", error);
+        // Em caso de erro, libera o pagamento padrão por segurança
+        document.getElementById('payment-methods-container').style.display = 'block';
     }
 
-    // 3. VERIFICAR AUTENTICAÇÃO E CARREGAR DADOS
-    auth.onAuthStateChanged(async (user) => {
-        if (!user) {
-            sessionStorage.setItem('pendingCheckout', sessionData);
-            alert("Sessão expirada. Faça login novamente.");
-            window.location.href = 'login.html';
-            return;
-        }
+    // =======================================================
+    // FUNÇÕES DE PACOTE
+    // =======================================================
+    function renderPackages(packages, gameData, checkoutData) {
+        document.getElementById('package-selection-container').style.display = 'block';
+        const list = document.getElementById('packages-list');
+        list.innerHTML = '';
 
-        try {
-            // Busca dados atualizados do jogo (preço, nome, etc)
-            const doc = await db.collection('games').doc(checkoutData.gameId).get();
+        // Cria a opção Padrão (Base do Jogo)
+        const basePrice = gameData.price || checkoutData.price;
+        const baseDuration = gameData.sessionDuration || 60;
+        
+        const baseOption = createPackageCard('Sessão Padrão', basePrice, baseDuration, true);
+        baseOption.onclick = () => selectPackage(baseOption, 'Sessão Padrão', basePrice, baseDuration);
+        list.appendChild(baseOption);
 
-            if (!doc.exists) {
-                alert("Erro: Jogo não encontrado no sistema.");
-                window.location.href = 'index.html';
-                return;
-            }
+        // Define a opção padrão como a primeira selecionada
+        selectedPackage = { name: 'Sessão Padrão', price: basePrice, duration: baseDuration };
 
-            gameRealData = doc.data();
-            finalPrice = parseFloat(gameRealData.price || 0);
-
-            // Preencher Tela
-            if(gameNameEl) gameNameEl.textContent = gameRealData.name;
+        // Cria os cards para as opções extras (Pacotes Especiais)
+        packages.forEach(pkg => {
+            const pkgName = pkg.name || pkg.title;
+            const pkgPrice = pkg.price;
+            const pkgDuration = pkg.duration;
             
-            const coverUrl = gameRealData.coverImage || checkoutData.cover || 'assets/images/logo.png';
-            if(coverEl) coverEl.src = coverUrl;
-            
-            const dateParts = checkoutData.date.split('-'); 
-            const dateFormatted = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
-            if(dateTimeEl) dateTimeEl.textContent = `${dateFormatted} às ${checkoutData.time}`;
+            const pkgOption = createPackageCard(pkgName, pkgPrice, pkgDuration, false);
+            pkgOption.onclick = () => selectPackage(pkgOption, pkgName, pkgPrice, pkgDuration);
+            list.appendChild(pkgOption);
+        });
+    }
 
-            if(priceEl) priceEl.textContent = finalPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    function createPackageCard(name, price, duration, isActive) {
+        const card = document.createElement('div');
+        card.className = 'package-card';
+        // Estilo dinâmico: Se for o ativo, fica verde neon. Se não, fica cinza.
+        card.style.cssText = isActive 
+            ? "padding: 15px; border: 2px solid var(--secondary-color); border-radius: 8px; cursor: pointer; background: rgba(0, 255, 136, 0.1); transition: 0.2s;" 
+            : "padding: 15px; border: 2px solid #333; border-radius: 8px; cursor: pointer; background: #222; transition: 0.2s;";
+        
+        card.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <strong style="color: #fff; font-size: 1.1rem;">${name}</strong>
+                <span style="font-weight: bold; color: var(--secondary-color); font-size: 1.1rem;">R$ ${parseFloat(price).toFixed(2)}</span>
+            </div>
+            <div style="font-size: 0.9rem; color: #aaa; margin-top: 5px;">
+                <ion-icon name="time-outline" style="vertical-align: -2px;"></ion-icon> Duração: ${duration} minutos
+            </div>
+        `;
+        return card;
+    }
 
-            if(loadingOverlay) loadingOverlay.classList.add('hidden');
-            if(contentDiv) contentDiv.classList.remove('hidden');
+    function selectPackage(element, name, price, duration) {
+        // Remove o estilo ativo de todos os cards
+        document.querySelectorAll('.package-card').forEach(el => {
+            el.style.border = '2px solid #333';
+            el.style.background = '#222';
+        });
 
-        } catch (error) {
-            console.error("Erro ao carregar dados:", error);
-            alert("Erro de conexão.");
-        }
-    });
+        // Aplica o estilo ativo no card clicado
+        element.style.border = '2px solid var(--secondary-color)';
+        element.style.background = 'rgba(0, 255, 136, 0.1)';
 
-    // 4. PROCESSAR PAGAMENTO E CRIAR/ENTRAR NA SALA
-    if(confirmBtn) confirmBtn.onclick = async () => {
-        const user = auth.currentUser;
-        if (!user) return;
+        // Atualiza a memória
+        selectedPackage = { name, price, duration };
+        
+        // Atualiza o Preço Total no topo da tela (se existir)
+        const priceDisplay = document.getElementById('checkout-total-price');
+        if (priceDisplay) priceDisplay.textContent = `R$ ${parseFloat(price).toFixed(2)}`;
+    }
 
-        // Trava o botão
-        confirmBtn.disabled = true;
-        confirmBtn.innerHTML = '<div class="loader-small"></div> Processando...';
-        if(statusText) statusText.textContent = "Validando pagamento e buscando sala...";
+    window.confirmSelectedPackage = () => {
+        // 1. Atualiza os dados de checkout com o pacote escolhido
+        const data = JSON.parse(sessionStorage.getItem('checkoutData'));
+        data.price = selectedPackage.price;
+        data.duration = selectedPackage.duration;
+        data.packageName = selectedPackage.name; // Salva o nome do pacote escolhido!
+        
+        sessionStorage.setItem('checkoutData', JSON.stringify(data));
 
-        try {
-            // SIMULAÇÃO DE PAGAMENTO (1.5s)
-            await new Promise(r => setTimeout(r, 1500)); 
-
-            // --- LÓGICA DE BUSCA ATIVA (MOVIDA PARA CÁ) ---
-            
-            let finalSessionId = null;
-            let isFirstCreator = false;
-
-            // A. Verifica se já existe uma sessão para este jogo/dia/hora
-            const existingSessionQuery = await db.collection('sessions')
-                .where('gameId', '==', checkoutData.gameId)
-                .where('config.date', '==', checkoutData.date)
-                .where('config.time', '==', checkoutData.time)
-                .limit(1)
-                .get();
-
-            if (!existingSessionQuery.empty) {
-                // Já existe sala! Vamos colocar o usuário nela.
-                finalSessionId = existingSessionQuery.docs[0].id;
-                console.log("✅ Sala existente encontrada:", finalSessionId);
-            } else {
-                // Sala nova! Vamos criar.
-                finalSessionId = generateDeterministicId(checkoutData.gameId, checkoutData.date, checkoutData.time);
-                isFirstCreator = true;
-                console.log("🆕 Criando nova sala:", finalSessionId);
-            }
-
-            // B. Verifica Duplicidade (se o usuário já pagou/agendou essa sala antes)
-            const duplicateCheck = await db.collection('bookings')
-                .where('userId', '==', user.uid)
-                .where('sessionId', '==', finalSessionId)
-                .limit(1)
-                .get();
-
-            if (!duplicateCheck.empty) {
-                alert("Você já possui um agendamento confirmado para esta sessão!");
-                window.location.href = 'dashboard.html';
-                return;
-            }
-
-            // C. Cria o Registro de Pagamento/Agendamento (Booking)
-            await db.collection('bookings').add({
-                userId: user.uid,
-                userEmail: user.email,
-                userName: user.displayName || "Jogador",
-                
-                gameId: checkoutData.gameId,
-                gameName: gameRealData.name,
-                cover: gameRealData.coverImage || '',
-                
-                sessionId: finalSessionId, // Vincula à sala correta
-                date: checkoutData.date,
-                time: checkoutData.time,
-                price: finalPrice,
-                
-                status: 'confirmed', // Pagamento OK
-                paymentMethod: 'simulated',
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
-
-            // D. Cria ou Atualiza a Sala (Session)
-            if (isFirstCreator) {
-                await db.collection('sessions').doc(finalSessionId).set({
-                    gameId: checkoutData.gameId,
-                    hostStatus: 'offline',
-                    config: {
-                        gameName: gameRealData.name,
-                        date: checkoutData.date,
-                        time: checkoutData.time
-                    },
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-            } else {
-                // Se sala já existe, atualiza timestamp para indicar atividade
-                await db.collection('sessions').doc(finalSessionId).update({
-                    lastBookingAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-            }
-
-            // Sucesso Visual
-            if(statusText) {
-                statusText.textContent = "Pagamento Aprovado! Sala Confirmada.";
-                statusText.style.color = "#00ff88";
-            }
-            
-            // Limpa sessão
-            sessionStorage.removeItem('checkoutData');
-            sessionStorage.removeItem('pendingCheckout');
-
-            // Redireciona
-            setTimeout(() => {
-                window.location.href = 'dashboard.html';
-            }, 1000);
-
-        } catch (error) {
-            console.error("Erro no processo:", error);
-            confirmBtn.disabled = false;
-            confirmBtn.textContent = "Tentar Novamente";
-            if(statusText) {
-                statusText.textContent = "Erro ao processar. Tente novamente.";
-                statusText.style.color = "#ff4444";
-            }
+        // 2. Esconde os pacotes e revela os métodos de pagamento (Pix/Cartão)
+        document.getElementById('package-selection-container').style.display = 'none';
+        
+        const paymentMethods = document.getElementById('payment-methods-container');
+        if (paymentMethods) {
+            paymentMethods.style.display = 'block';
+            paymentMethods.scrollIntoView({ behavior: 'smooth' }); // Rola a tela suavemente
         }
     };
 });

@@ -1,64 +1,205 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-br" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finalizar Pagamento - PlayU</title>
-    <link rel="stylesheet" href="assets/css/style.css">
+    <title>Pagamento | PlayU</title>
     
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <script src="assets/js/firebase-config.js"></script>
-    <script src="assets/js/main.js"></script>
+    <link rel="stylesheet" href="/assets/css/style.css">
+    <link rel="icon" href="/assets/images/logo.png" type="image/png">
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
 </head>
 <body>
 
-    <div id="payment-loading" class="loading-overlay">
-        <div class="loader"></div>
-        <p style="margin-top: 15px; color: #fff;">Verificando disponibilidade...</p>
-    </div>
-
-    <div id="payment-content" class="container hidden" style="max-width: 800px; margin: 50px auto; padding: 20px;">
-        <h2>Finalizar Agendamento</h2>
-
-        <div class="checkout-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 20px;">
-            
-            <div class="order-summary" style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 8px;">
-                <h3 style="border-bottom: 1px solid #444; padding-bottom: 10px;">Resumo</h3>
-                
-                <div style="display: flex; gap: 15px; margin-bottom: 20px;">
-                    <img id="checkout-cover" src="" style="width: 80px; height: 80px; object-fit: cover; border-radius: 4px;">
-                    <div>
-                        <h4 id="checkout-game-name" style="margin: 0; color: var(--secondary-color);">Carregando...</h4>
-                        <p id="checkout-datetime" style="font-size: 0.9rem; color: #ccc; margin-top: 5px;">--/--/---- às --:--</p>
-                    </div>
-                </div>
-
-                <div style="display: flex; justify-content: space-between; font-size: 1.1rem; border-top: 1px solid #444; padding-top: 10px;">
-                    <strong>Total:</strong>
-                    <strong id="checkout-total-price" style="color: #00ff88;">R$ 0,00</strong>
+    <header id="header" class="header">
+        <nav class="nav container">
+            <a href="/index.html" class="nav__logo">
+                <img src="/assets/images/logo.png" alt="play.u Logo" style="height: 40px;">
+            </a>
+            <div class="nav__right-group">
+                <div class="nav__controls">
+                    <a href="javascript:history.back()" class="submit-btn small-btn secondary-btn">
+                        <ion-icon name="arrow-back-outline"></ion-icon> Voltar
+                    </a>
                 </div>
             </div>
+        </nav>
+    </header>
 
-            <div class="payment-methods">
-                <h3>Pagamento</h3>
-                <div class="method-selector" style="margin-bottom: 20px;">
-                    <label style="display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 6px; cursor: pointer; border: 1px solid var(--secondary-color);">
-                        <input type="radio" name="payment" checked> 
-                        <span>PIX (Aprovação Imediata)</span>
-                    </label>
-                </div>
+    <main class="container" style="max-width: 600px; margin: 40px auto; padding: 20px;">
+        <h1 style="text-align: center; color: var(--secondary-color); margin-bottom: 30px;">Finalizar Reserva</h1>
 
-                <button id="confirm-payment-btn" class="submit-btn" style="width: 100%; font-size: 1.1rem;">
-                    Pagar e Agendar
-                </button>
-                <p id="payment-status" style="text-align: center; margin-top: 10px; color: #aaa;"></p>
+        <div id="checkout-summary" style="background: #222; padding: 20px; border-radius: 10px; border: 1px solid #333; margin-bottom: 20px; text-align: center;">
+            <h2 id="checkout-game-name" style="color: #fff; margin-bottom: 10px;">Carregando Jogo...</h2>
+            <p style="color: #aaa; font-size: 1.1rem; margin-bottom: 15px;">
+                <ion-icon name="calendar-outline" style="vertical-align: -2px;"></ion-icon> <span id="checkout-date">--/--/----</span> às 
+                <ion-icon name="time-outline" style="vertical-align: -2px; margin-left: 10px;"></ion-icon> <span id="checkout-time">--:--</span>
+            </p>
+            <div style="background: #111; padding: 15px; border-radius: 8px; display: inline-block; min-width: 200px; border: 1px solid #444;">
+                <h3 style="color: var(--secondary-color); margin: 0; font-size: 1.5rem;">Total: <span id="checkout-total-price">R$ 0,00</span></h3>
             </div>
         </div>
-    </div>
 
-    <script src="assets/js/pagamento.js"></script>
+        <div id="package-selection-container" style="display: none; background: #1a1a1a; padding: 20px; border-radius: 10px; border: 1px solid #333; margin-bottom: 20px;">
+            <h3 style="margin-bottom: 15px; color: #fff; text-align: center;">
+                <ion-icon name="star-outline" style="color: var(--secondary-color);"></ion-icon> Escolha o seu Pacote
+            </h3>
+            
+            <div id="packages-list" style="display: flex; flex-direction: column; gap: 12px;">
+                </div>
+            
+            <button type="button" id="confirm-package-btn" class="submit-btn" onclick="window.confirmSelectedPackage()" style="margin-top: 20px; width: 100%; font-size: 1.1rem; padding: 15px;">
+                Confirmar Pacote e Ir para Pagamento
+            </button>
+        </div>
 
+        <div id="payment-methods-container" style="display: none; background: #1a1a1a; padding: 20px; border-radius: 10px; border: 1px solid #333;">
+            <h3 style="margin-bottom: 20px; color: #fff; text-align: center;">Métodos de Pagamento</h3>
+            
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+                <button class="submit-btn" style="background: #32BCAD; color: #fff; padding: 15px; font-size: 1.1rem;" onclick="alert('Integração PIX a ser configurada')">
+                    <ion-icon name="qr-code-outline"></ion-icon> Pagar com PIX
+                </button>
+                
+                <button class="submit-btn secondary-btn" style="padding: 15px; font-size: 1.1rem;" onclick="alert('Integração Cartão a ser configurada')">
+                    <ion-icon name="card-outline"></ion-icon> Cartão de Crédito
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <footer class="main-footer" style="text-align: center; padding: 20px; color: #666; margin-top: 40px;">
+        <p>&copy; 2026 PlayU Live Entertainment. Todos os direitos reservados.</p>
+    </footer>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="/assets/js/firebase-config.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const db = firebase.firestore();
+            
+            // 1. Pega os dados básicos que vieram da tela do jogo
+            const checkoutDataStr = sessionStorage.getItem('checkoutData');
+            if (!checkoutDataStr) {
+                alert("Nenhum jogo selecionado. Redirecionando para a página principal.");
+                window.location.href = 'index.html';
+                return;
+            }
+
+            const checkoutData = JSON.parse(checkoutDataStr);
+            let selectedPackage = null; 
+
+            // Preenche o resumo na tela
+            if(document.getElementById('checkout-game-name')) document.getElementById('checkout-game-name').textContent = checkoutData.gameName;
+            if(document.getElementById('checkout-date')) document.getElementById('checkout-date').textContent = checkoutData.date.split('-').reverse().join('/');
+            if(document.getElementById('checkout-time')) document.getElementById('checkout-time').textContent = checkoutData.time;
+            if(document.getElementById('checkout-total-price')) document.getElementById('checkout-total-price').textContent = `R$ ${parseFloat(checkoutData.price).toFixed(2)}`;
+
+            // 2. Busca o jogo no Firebase para verificar se existem pacotes especiais
+            try {
+                const doc = await db.collection('games').doc(checkoutData.gameId).get();
+                if (doc.exists) {
+                    const gameData = doc.data();
+                    const packages = gameData.pricingCategories || [];
+
+                    // Se o jogo TIVER pacotes extras...
+                    if (packages.length > 0) {
+                        renderPackages(packages, gameData, checkoutData);
+                    } else {
+                        // Se NÃO tiver pacotes, mostra a área de pagamento direto
+                        document.getElementById('payment-methods-container').style.display = 'block';
+                    }
+                }
+            } catch (error) {
+                console.error("Erro ao buscar pacotes do jogo:", error);
+                document.getElementById('payment-methods-container').style.display = 'block';
+            }
+
+            // =======================================================
+            // FUNÇÕES DE PACOTE
+            // =======================================================
+            function renderPackages(packages, gameData, checkoutData) {
+                document.getElementById('package-selection-container').style.display = 'block';
+                const list = document.getElementById('packages-list');
+                list.innerHTML = '';
+
+                // Cria a opção Padrão (Base do Jogo)
+                const basePrice = gameData.price || checkoutData.price;
+                const baseDuration = gameData.sessionDuration || 60;
+                
+                const baseOption = createPackageCard('Sessão Padrão', basePrice, baseDuration, true);
+                baseOption.onclick = () => selectPackage(baseOption, 'Sessão Padrão', basePrice, baseDuration);
+                list.appendChild(baseOption);
+
+                selectedPackage = { name: 'Sessão Padrão', price: basePrice, duration: baseDuration };
+
+                // Cria os cards para os pacotes extras
+                packages.forEach(pkg => {
+                    const pkgName = pkg.name || pkg.title;
+                    const pkgOption = createPackageCard(pkgName, pkg.price, pkg.duration, false);
+                    pkgOption.onclick = () => selectPackage(pkgOption, pkgName, pkg.price, pkg.duration);
+                    list.appendChild(pkgOption);
+                });
+            }
+
+            function createPackageCard(name, price, duration, isActive) {
+                const card = document.createElement('div');
+                card.className = 'package-card';
+                card.style.cssText = isActive 
+                    ? "padding: 15px; border: 2px solid var(--secondary-color); border-radius: 8px; cursor: pointer; background: rgba(0, 255, 136, 0.1); transition: 0.2s;" 
+                    : "padding: 15px; border: 2px solid #333; border-radius: 8px; cursor: pointer; background: #222; transition: 0.2s;";
+                
+                card.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <strong style="color: #fff; font-size: 1.1rem;">${name}</strong>
+                        <span style="font-weight: bold; color: var(--secondary-color); font-size: 1.1rem;">R$ ${parseFloat(price).toFixed(2)}</span>
+                    </div>
+                    <div style="font-size: 0.9rem; color: #aaa; margin-top: 5px;">
+                        <ion-icon name="time-outline" style="vertical-align: -2px;"></ion-icon> Duração: ${duration} minutos
+                    </div>
+                `;
+                return card;
+            }
+
+            function selectPackage(element, name, price, duration) {
+                document.querySelectorAll('.package-card').forEach(el => {
+                    el.style.border = '2px solid #333';
+                    el.style.background = '#222';
+                });
+
+                element.style.border = '2px solid var(--secondary-color)';
+                element.style.background = 'rgba(0, 255, 136, 0.1)';
+
+                selectedPackage = { name, price, duration };
+                
+                const priceDisplay = document.getElementById('checkout-total-price');
+                if (priceDisplay) priceDisplay.textContent = `R$ ${parseFloat(price).toFixed(2)}`;
+            }
+
+            window.confirmSelectedPackage = () => {
+                // Atualiza os dados de checkout com o pacote escolhido
+                const data = JSON.parse(sessionStorage.getItem('checkoutData'));
+                data.price = selectedPackage.price;
+                data.duration = selectedPackage.duration;
+                data.packageName = selectedPackage.name; 
+                
+                sessionStorage.setItem('checkoutData', JSON.stringify(data));
+
+                // Esconde a área de pacotes e revela o pagamento
+                document.getElementById('package-selection-container').style.display = 'none';
+                
+                const paymentMethods = document.getElementById('payment-methods-container');
+                if (paymentMethods) {
+                    paymentMethods.style.display = 'block';
+                    // Faz um scroll suave para a área de pagamento
+                    window.scrollTo({ top: paymentMethods.offsetTop - 20, behavior: 'smooth' });
+                }
+            };
+        });
+    </script>
 </body>
 </html>
