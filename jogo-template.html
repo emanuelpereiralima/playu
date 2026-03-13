@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Carregando Jogo... | PlayU</title>
-    <link rel="stylesheet" href="/assets/css/style.a4fef6d0.css">
+    <link rel="stylesheet" href="/assets/css/style.b1d68193.css">
     <link rel="icon" href="/assets/images/logo.png" type="image/png">
 </head>
 <body>
@@ -64,34 +64,61 @@
                 <div class="trailer-wrapper" id="trailer-embed-wrapper"></div>
             </div>
 
-            <hr class="form-divider" style="margin: 4rem 0;">
-<h2>Agende sua Sessão</h2>
-    <div class="booking-section">
-    <div class="calendar-wrapper">
-        <div id="game-calendar-container">
-            <div class="calendar-header">
-                <button id="prev-month-btn" class="nav-btn"><ion-icon name="chevron-back"></ion-icon></button>
-                <h4 id="calendar-month-display">Janeiro 2026</h4>
-                <button id="next-month-btn" class="nav-btn"><ion-icon name="chevron-forward"></ion-icon></button>
-            </div>
-            <div class="calendar-weekdays">
-                <div>Dom</div><div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div>
-            </div>
-            <div id="calendar-grid" class="calendar-grid"></div>
-        </div>
+<hr class="form-divider" style="margin: 4rem 0;">
+            <h2 style="text-align: center; margin-bottom: 2rem; color: #fff;">Agende sua Sessão</h2>
+            
+            <div class="booking-section" style="width: 100%; overflow: hidden;">
+                
+                <style>
+                    .calendar-layout-grid {
+                        display: grid;
+                        grid-template-columns: 1fr; /* No telemóvel, uma coluna */
+                        gap: 3rem; /* Espaço entre as duas caixas */
+                        max-width: 95%; /* Permite usar 95% da largura da tela toda */
+                        margin: 0 auto;
+                        width: 100%;
+                    }
+                    /* Em computadores, força rigorosamente 50% para cada lado */
+                    @media (min-width: 900px) {
+                        .calendar-layout-grid {
+                            grid-template-columns: 1fr 1fr; /* 50% / 50% */
+                            align-items: start;
+                        }
+                    }
+                </style>
 
-        <div id="time-selection-container" class="hidden" style="margin-top: 20px;">
-        <h4>Horários para <span id="selected-date-display" style="color:var(--secondary-color)"></span></h4>
-        <div id="time-slots-grid" class="time-slots-grid"></div>
-        </div>
-        
-        <div id="calendar-overlay" class="calendar-paused-overlay hidden">
-            <ion-icon name="calendar-outline" style="font-size: 3rem; color: #666; margin-bottom: 1rem;"></ion-icon>
-            <h3>Agenda Indisponível</h3>
-            <p>Não há sessões disponíveis para este jogo no momento. Fique de olho nas próximas datas!</p>
-        </div>
-    </div>
-</div>
+                <div class="calendar-layout-grid">
+                    
+                    <div id="game-calendar-container" style="background: #1a1a1a; padding: 30px; border-radius: 12px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 100%; box-sizing: border-box;">
+                        <div class="calendar-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <button id="prev-month-btn" class="nav-btn" style="padding: 10px; font-size: 1.2rem;"><ion-icon name="chevron-back"></ion-icon></button>
+                            <h4 id="calendar-month-display" style="color: #fff; font-size: 1.4rem; text-transform: capitalize; margin: 0;">Janeiro 2026</h4>
+                            <button id="next-month-btn" class="nav-btn" style="padding: 10px; font-size: 1.2rem;"><ion-icon name="chevron-forward"></ion-icon></button>
+                        </div>
+                        
+                        <div class="calendar-weekdays" style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; margin-bottom: 15px; color: #aaa; font-weight: bold; font-size: 1.1rem;">
+                            <div>Dom</div><div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div>
+                        </div>
+                        
+                        <div id="calendar-grid" class="calendar-grid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px;"></div>
+                    </div>
+
+                    <div id="time-selection-container" class="hidden" style="background: #1a1a1a; padding: 30px; border-radius: 12px; border: 1px solid var(--secondary-color); box-shadow: 0 0 20px rgba(0,255,136,0.15); transition: 0.3s; width: 100%; box-sizing: border-box;">
+                        <h4 style="margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 15px; color: #fff; display: flex; align-items: center; gap: 10px;">
+                            <ion-icon name="time-outline" style="color: var(--secondary-color); font-size: 1.5rem;"></ion-icon> 
+                            <span>Horários para <span id="selected-date-display" style="color:var(--secondary-color)"></span></span>
+                        </h4>
+                        
+                        <div id="time-slots-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 15px;"></div>
+                    </div>
+                    
+                    <div id="calendar-overlay" class="calendar-paused-overlay hidden" style="grid-column: 1 / -1;">
+                        <ion-icon name="calendar-outline" style="font-size: 3rem; color: #666; margin-bottom: 1rem;"></ion-icon>
+                        <h3>Agenda Indisponível</h3>
+                        <p>Não há sessões disponíveis para este jogo no momento. Fique de olho nas próximas datas!</p>
+                    </div>
+                </div>
+            </div>
 
         <div class="container hidden" id="game-not-found" style="text-align: center; margin-top: 8rem;">
             <h1>Jogo não encontrado</h1>
@@ -127,9 +154,9 @@
 
     <script>
         const version = new Date().getTime();
-        document.write(`<script src="/assets/js/data-manager.a4fef6d0.js?v=${version}"><\/script>`);
-        document.write(`<script src="/assets/js/game-page.a4fef6d0.js?v=${version}"><\/script>`);
-        document.write(`<script src="/assets/js/main.a4fef6d0.js?v=${version}"><\/script>`); 
+        document.write(`<script src="/assets/js/data-manager.b1d68193.js?v=${version}"><\/script>`);
+        document.write(`<script src="/assets/js/game-page.b1d68193.js?v=${version}"><\/script>`);
+        document.write(`<script src="/assets/js/main.b1d68193.js?v=${version}"><\/script>`); 
     </script>
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
 </body>
