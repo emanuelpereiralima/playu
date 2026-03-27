@@ -269,11 +269,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const activeBtn = document.querySelector(`.dashboard-tabs .tab-btn[onclick*="${tabId}"]`);
         if (activeBtn) activeBtn.classList.add('active');
 
-        // Carregamento Lazy (sob demanda)
+        // Carregamento Lazy
         if (tabId === 'user-management') loadAllUsers();
         if (tabId === 'game-management') loadAllGames();
         if (tabId === 'content-management') { loadFAQs(); loadAboutText(); }
         if (tabId === 'course-management') loadCourses();
+        if (tabId === 'rewards-management') { loadRewards(); loadRedemptions(); } // <--- ADICIONADO AQUI
     };
 
     // =========================================================================
@@ -647,10 +648,12 @@ window.updateTimerPreview = () => {
                 const user = doc.data();
                 const tr = document.createElement('tr');
                 let roleLabel = user.role === 'admin' ? '👑 Admin' : (user.role === 'host' ? '🎭 Host' : '👤 Jogador');
+                const pts = user.playuPoints || 0; // <--- PUXA OS PONTOS
                 tr.innerHTML = `
                     <td>${user.name || '---'}</td>
                     <td>${user.email || '---'}</td>
                     <td>${roleLabel}</td>
+                    <td style="color: #ffbb00; font-weight: bold;">${pts} Pts</td>
                     <td><button class="submit-btn small-btn edit-user-trigger" data-id="${doc.id}" data-name="${user.name}" data-role="${user.role}"><ion-icon name="create-outline"></ion-icon> Editar</button></td>
                 `;
                 userTableBody.appendChild(tr);
@@ -2007,6 +2010,102 @@ window.updateTimerPreview = () => {
         i.oninput = (e) => { b.disabled = e.target.value!==name; b.style.opacity = e.target.value===name?'1':'0.5'; };
         b.onclick = async () => { await db.collection('games').doc(id).delete(); alert("Excluído!"); m.classList.add('hidden'); loadAllGames(); };
         document.getElementById('cancel-delete-modal-btn').onclick = () => m.classList.add('hidden');
+    };
+
+    // =========================================================================
+    // LÓGICA DE RECOMPENSAS
+    // =========================================================================
+    let currentRewards = [];
+
+    window.loadRewards = async () => {
+        const list = document.getElementById('rewards-list-admin');
+        if(!list) return;
+        try {
+            const snap = await db.collection('rewards').get();
+            list.innerHTML = '';
+            currentRewards = [];
+            if(snap.empty) { list.innerHTML = '<p>Nenhuma recompensa cadastrada.</p>'; return; }
+            snap.forEach(doc => {
+                const r = {id: doc.id, ...doc.data()};
+                currentRewards.push(r);
+                list.innerHTML += `
+                <div class="game-card" style="padding:15px; border-top: 3px solid #ffbb00;">
+                    <h3 style="color:#ffbb00; margin-bottom:10px;"><ion-icon name="star"></ion-icon> ${r.cost} Pts</h3>
+                    <h4>${r.title}</h4>
+                    <p style="font-size:0.85rem; color:#aaa;">${r.description}</p>
+                    <button class="submit-btn small-btn" style="margin-top:15px; width:100%;" onclick="window.openRewardModal('${r.id}')">Editar</button>
+                </div>`;
+            });
+        } catch(e) { console.error(e); }
+    };
+
+    window.openRewardModal = (id = null) => {
+        const modal = document.getElementById('reward-modal');
+        const form = document.getElementById('reward-form');
+        const delBtn = document.getElementById('delete-reward-btn');
+        form.reset(); document.getElementById('reward-id').value = '';
+        
+        if(id) {
+            const r = currentRewards.find(x => x.id === id);
+            if(r) {
+                document.getElementById('reward-id').value = r.id;
+                document.getElementById('reward-title').value = r.title;
+                document.getElementById('reward-desc').value = r.description;
+                document.getElementById('reward-cost').value = r.cost;
+                delBtn.classList.remove('hidden');
+                delBtn.onclick = async () => { if(confirm("Excluir recompensa?")) { await db.collection('rewards').doc(id).delete(); modal.classList.add('hidden'); window.loadRewards(); } };
+            }
+        } else { delBtn.classList.add('hidden'); }
+        modal.classList.remove('hidden');
+    };
+
+    const rewardForm = document.getElementById('reward-form');
+    if(rewardForm) rewardForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('reward-id').value;
+        const data = {
+            title: document.getElementById('reward-title').value,
+            description: document.getElementById('reward-desc').value,
+            cost: parseInt(document.getElementById('reward-cost').value)
+        };
+        try {
+            if(id) await db.collection('rewards').doc(id).update(data);
+            else await db.collection('rewards').add(data);
+            document.getElementById('reward-modal').classList.add('hidden');
+            window.loadRewards();
+        } catch(e) { alert("Erro ao salvar."); }
+    };
+
+    window.loadRedemptions = async () => {
+        const tbody = document.getElementById('redemptions-table-body');
+        if(!tbody) return;
+        try {
+            const snap = await db.collection('redemptions').orderBy('date', 'desc').get();
+            tbody.innerHTML = '';
+            if(snap.empty) { tbody.innerHTML = '<tr><td colspan="5">Nenhum resgate.</td></tr>'; return; }
+            snap.forEach(doc => {
+                const r = doc.data();
+                const dObj = r.date ? r.date.toDate() : new Date();
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${r.userName || 'Usuário'}</td>
+                        <td>${r.rewardTitle}</td>
+                        <td>${dObj.toLocaleDateString('pt-BR')}</td>
+                        <td style="color:${r.status==='Pendente'?'#ffbb00':'#00ff88'}">${r.status}</td>
+                        <td>
+                            ${r.status === 'Pendente' ? `<button class="submit-btn small-btn" onclick="approveRedemption('${doc.id}')">Concluir</button>` : '---'}
+                        </td>
+                    </tr>
+                `;
+            });
+        } catch(e) { console.error(e); }
+    };
+
+    window.approveRedemption = async (id) => {
+        if(confirm("Marcar como concluído/entregue?")) {
+            await db.collection('redemptions').doc(id).update({status: 'Concluído'});
+            window.loadRedemptions();
+        }
     };
 
     // Init

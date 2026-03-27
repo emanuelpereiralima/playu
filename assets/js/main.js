@@ -60,48 +60,28 @@ async function updateNavbar(user) {
     if (user) {
         // --- USUÁRIO LOGADO ---
         let isAdmin = false;
+        let playuPoints = 0; // Variável para os pontos
+
         try {
             const userDoc = await db.collection('users').doc(user.uid).get();
             if (userDoc.exists) {
                 const userData = userDoc.data();
-                if (userData.role === 'admin' || userData.isAdmin === true) {
-                    isAdmin = true;
-                }
+                if (userData.role === 'admin' || userData.isAdmin === true) isAdmin = true;
+                if (userData.playuPoints) playuPoints = userData.playuPoints; // Puxa os pontos!
             }
-        } catch (error) {
-            console.error("Erro ao verificar permissões:", error);
-        }
+        } catch (error) { console.error(error); }
 
-        // HTML do botão Admin (Apenas se for admin)
-        const adminBtnHtml = isAdmin 
-            ? `<a href="admin.html" class="submit-btn small-btn" style="background: var(--secondary-color); color: #fff; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; padding: 8px 15px;">
-                    <ion-icon name="settings-outline" style="margin-right: 5px;"></ion-icon> Admin
-               </a>` 
-            : '';
+        const adminBtnHtml = isAdmin ? `<a href="admin.html" class="submit-btn small-btn" style="background: var(--secondary-color); color: #fff; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; padding: 8px 15px;"><ion-icon name="settings-outline" style="margin-right: 5px;"></ion-icon> Admin</a>` : '';
 
         navControls.innerHTML = `
             ${adminBtnHtml}
             
-            <a href="dashboard.html" class="submit-btn small-btn danger-btn" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center; padding: 8px 15px;">
-                Perfil
-            </a>
-            
-            <button onclick="logout()" style="
-                background: transparent; 
-                border: 1px solid var(--text-muted); 
-                color: var(--text-color); 
-                font-weight: 500; 
-                padding: 8px 15px; 
-                border-radius: 4px; 
-                cursor: pointer; 
-                transition: all 0.3s ease;
-                font-size: 0.9rem;
-            " 
-            onmouseover="this.style.borderColor='var(--primary-color)'; this.style.color='var(--primary-color)'"
-            onmouseout="this.style.borderColor='var(--text-muted)'; this.style.color='var(--text-color)'">
-                Sair
+            <button onclick="window.openPointsModal()" class="submit-btn small-btn" style="background: linear-gradient(45deg, #ffbb00, #ff8800); border: none; color: #000; font-weight: bold; padding: 8px 15px; display:flex; align-items:center; gap:5px; box-shadow: 0 0 10px rgba(255, 187, 0, 0.4);">
+                <ion-icon name="star"></ion-icon> ${playuPoints} Pts
             </button>
             
+            <a href="dashboard.html" class="submit-btn small-btn danger-btn" style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center; padding: 8px 15px;">Perfil</a>
+            <button onclick="logout()" style="background: transparent; border: 1px solid var(--text-muted); color: var(--text-color); font-weight: 500; padding: 8px 15px; border-radius: 4px; cursor: pointer; transition: all 0.3s ease;">Sair</button>
             ${themeHtml} 
         `;
     } else {
@@ -469,3 +449,7 @@ function inferTagsFromText(name, short, long) {
     if (text.includes('rpg') || text.includes('roleplay')) tags.push('rpg');
     return tags;
 }
+
+window.openPointsModal = () => {
+    window.location.href = 'dashboard.html?view=points';
+};

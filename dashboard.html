@@ -112,6 +112,48 @@
 
         </div>
 
+        <div class="dashboard-card" id="points-section" style="background: linear-gradient(135deg, #1a1a1a, #2a2a2a); border-left: 4px solid #ffbb00;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; color: #ffbb00; display:flex; align-items:center; gap:10px;">
+                    <ion-icon name="star"></ion-icon> PlayU Points
+                </h2>
+                <h1 id="dash-points-display" style="margin: 0; font-size: 2.5rem; color: #fff;">0 <span style="font-size: 1rem; color: #aaa;">Pts</span></h1>
+            </div>
+
+            <div class="tab-buttons" style="margin-bottom: 15px;">
+                <button class="tab-btn active" onclick="switchPointsTab('missions', this)">Missões</button>
+                <button class="tab-btn" onclick="switchPointsTab('rewards', this)">Resgate</button>
+                <button class="tab-btn" onclick="switchPointsTab('history', this)">Histórico</button>
+            </div>
+
+            <div id="tab-missions" class="points-tab-content">
+                <p style="color:#aaa; font-size:0.9rem; margin-bottom:15px;">Complete estas ações para ganhar mais PlayU Points!</p>
+                <div style="display:grid; gap:10px;">
+                    <div style="background:#222; padding:15px; border-radius:8px; border:1px solid #333; display:flex; justify-content:space-between; align-items:center;">
+                        <div><strong style="color:#fff;">Agendar e Jogar uma Sessão</strong><br><span style="font-size:0.8rem; color:#aaa;">Participe de qualquer jogo.</span></div>
+                        <span style="color:#00ff88; font-weight:bold;">+ 50 Pts</span>
+                    </div>
+                    <div style="background:#222; padding:15px; border-radius:8px; border:1px solid #333; display:flex; justify-content:space-between; align-items:center;">
+                        <div><strong style="color:#fff;">Criar seu primeiro Jogo</strong><br><span style="font-size:0.8rem; color:#aaa;">Torne-se um criador.</span></div>
+                        <span style="color:#00ff88; font-weight:bold;">+ 200 Pts</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-rewards" class="points-tab-content hidden" style="display:none;">
+                <p style="color:#aaa; font-size:0.9rem; margin-bottom:15px;">Troque seus pontos por vantagens exclusivas.</p>
+                <div id="dash-rewards-list" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:15px;">
+                    <div class="loader-small"></div>
+                </div>
+            </div>
+
+            <div id="tab-history" class="points-tab-content hidden" style="display:none;">
+                <div id="dash-points-history" style="max-height: 250px; overflow-y: auto;">
+                    <p style="color:#666; text-align:center;">Nenhum histórico disponível.</p>
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <div id="edit-modal" class="modal-overlay">
