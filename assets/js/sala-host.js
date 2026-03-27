@@ -581,7 +581,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if(roomRef) roomRef.update({ timerCurrent: currentTimer, timerStatus: 'paused' });
         };
         
-        const copyBtn = document.getElementById('copy-invite-btn');
+        // Controles de Link de Convite
+        const copyBtn = document.getElementById('floating-copy-btn');
         const inviteInput = document.getElementById('floating-invite-link');
         if (copyBtn && inviteInput) {
             copyBtn.onclick = async () => {
@@ -589,7 +590,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     await navigator.clipboard.writeText(inviteInput.value);
                     copyBtn.innerHTML = '<ion-icon name="checkmark-outline"></ion-icon>';
                     copyBtn.style.color = '#00ff88';
-                    setTimeout(() => { copyBtn.innerHTML = '<ion-icon name="copy-outline"></ion-icon>'; copyBtn.style.color = ''; }, 2000);
+                    setTimeout(() => { copyBtn.innerHTML = '<ion-icon name="copy-outline"></ion-icon>'; copyBtn.style.color = 'var(--secondary-color)'; }, 2000);
                 } catch (err) { inviteInput.select(); document.execCommand('copy'); }
             };
         }
@@ -671,12 +672,17 @@ document.addEventListener('DOMContentLoaded', () => {
             if(roomRef) await roomRef.update({ offer: { type: offer.type, sdp: offer.sdp } });
         });
         
-        // Host escuta a resposta
+        // Host escuta a resposta E a lista de jogadores em tempo real
         roomRef.onSnapshot(async snapshot => {
             const data = snapshot.data();
+            
+            // Lógica do Vídeo (WebRTC)
             if (data?.answer && !peerConnection.currentRemoteDescription) {
                 await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
             }
+
+            // Lógica de Presença (Jogadores Conectados)
+            renderConnectedPlayers(data?.connectedPlayers || {});
         });
 
         // Host coleta os candidatos de resposta do jogador
@@ -688,5 +694,49 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
     }
+
+    // Função para desenhar a lista de jogadores na tela
+    function renderConnectedPlayers(playersMap) {
+        const list = document.getElementById('connected-players-list');
+        if (!list) return;
+        
+        list.innerHTML = '';
+        const playerIds = Object.keys(playersMap);
+        
+        if(playerIds.length === 0) {
+            list.innerHTML = '<p style="text-align:center; color:#aaa; font-size: 0.85rem;">Nenhum jogador na sala.</p>';
+            return;
+        }
+
+        playerIds.forEach(pId => {
+            const pName = playersMap[pId];
+            const item = document.createElement('div');
+            item.style.cssText = "display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.05); padding:8px 12px; border-radius:6px; border:1px solid #333;";
+            item.innerHTML = `
+                <span style="color:#fff; font-size:0.9rem; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${pName}</span>
+                <button class="submit-btn danger-btn small-btn" style="padding:4px 8px;" onclick="window.kickPlayer('${pId}', '${pName}')" title="Remover da Sala">
+                    <ion-icon name="exit-outline"></ion-icon>
+                </button>
+            `;
+            list.appendChild(item);
+        });
+    }
+
+    // Função que chuta o jogador da sala
+    window.kickPlayer = async (pId, pName) => {
+        if(confirm(`Tem a certeza que deseja remover [${pName}] da sala? A conexão do jogador será encerrada.`)) {
+            try {
+                await roomRef.update({
+                    // Remove o jogador da lista de ativos
+                    [`connectedPlayers.${pId}`]: firebase.firestore.FieldValue.delete(),
+                    // Coloca o ID dele na lista negra de expulsos
+                    kickedPlayers: firebase.firestore.FieldValue.arrayUnion(pId)
+                });
+            } catch(e) {
+                console.error("Erro ao remover jogador:", e);
+                alert("Ocorreu um erro ao tentar remover o jogador.");
+            }
+        }
+    };
 
 });
