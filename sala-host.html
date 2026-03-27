@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sala do Host - PlayU</title>
     
-    <link rel="stylesheet" href="assets/css/style.b1d68193.css">
+    <link rel="stylesheet" href="assets/css/style.1210c394.css">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
     
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
@@ -17,7 +17,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
 
     <script src="assets/js/firebase-config.js"></script>
-    <script src="assets/js/main.b1d68193.js"></script>
+    <script src="assets/js/main.1210c394.js"></script>
 </head>
 <body class="host-room-body">
 
@@ -71,9 +71,15 @@
             <div class="sidebar-header" style="flex-direction: column; align-items: flex-start; gap: 10px;">
                 <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
                     <h3 style="margin:0;">Painel Mestre</h3>
-                    <button id="copy-invite-btn" class="sidebar-icon-btn" title="Ver Link de Convite">
-                        <ion-icon name="link-outline"></ion-icon>
-                    </button>
+                    
+                    <div style="display: flex; gap: 8px;">
+                        <button id="view-players-btn" class="sidebar-icon-btn" title="Ver Jogadores Conectados" onclick="document.getElementById('players-floating-modal').classList.toggle('hidden'); document.getElementById('invite-floating-modal').classList.add('hidden');">
+                            <ion-icon name="people-outline"></ion-icon>
+                        </button>
+                        <button id="show-invite-modal-btn" class="sidebar-icon-btn" title="Ver Link de Convite" onclick="document.getElementById('invite-floating-modal').classList.toggle('hidden'); document.getElementById('players-floating-modal').classList.add('hidden');">
+                            <ion-icon name="link-outline"></ion-icon>
+                        </button>
+                    </div>
                 </div>
                 
                 <div id="session-timer-container" style="width: 100%; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; text-align: center; border: 1px solid #333;">
@@ -82,17 +88,27 @@
                 </div>
             </div>
 
-            <div id="invite-floating-modal" class="invite-floating-modal hidden">
-                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                    <h3 style="margin:0 auto;">Link do Jogador</h3>
+            <div id="players-floating-modal" class="invite-floating-modal hidden" style="top: 60px; right: 20px; width: 260px; z-index: 1000;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px;">
+                    <h3 style="margin:0; font-size: 1rem; color: var(--secondary-color);">Jogadores</h3>
+                    <button onclick="document.getElementById('players-floating-modal').classList.add('hidden')" style="background:none; border:none; color:#666; cursor:pointer; font-size:1.2rem;">✕</button>
+                </div>
+                <div id="connected-players-list" style="max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+                    <p style="text-align:center; color:#aaa; font-size: 0.85rem;">Nenhum jogador na sala.</p>
+                </div>
+            </div>
+
+            <div id="invite-floating-modal" class="invite-floating-modal hidden" style="top: 60px; right: 20px; z-index: 1000;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 10px;">
+                    <h3 style="margin:0; font-size: 1rem;">Link do Jogador</h3>
                     <button onclick="document.getElementById('invite-floating-modal').classList.add('hidden')" style="background:none; border:none; color:#666; cursor:pointer; font-size:1.2rem;">✕</button>
                 </div>
-                <p>Copie este link para o jogador:</p>
-                <div class="invite-input-group" style="background: rgba(255,255,255,0.1); padding: 5px; border-radius: 6px;">
-                    <input type="text" id="floating-invite-link" class="invite-link-input" readonly value="Gerando..." style="background:transparent;">
-                    <button id="floating-copy-btn" class="copy-btn"><ion-icon name="copy-outline"></ion-icon></button>
+                <p style="font-size: 0.85rem; margin-bottom: 5px;">Copie este link para o jogador:</p>
+                <div class="invite-input-group" style="background: rgba(255,255,255,0.1); padding: 5px; border-radius: 6px; display: flex;">
+                    <input type="text" id="floating-invite-link" class="invite-link-input" readonly value="Gerando..." style="background:transparent; flex: 1; border: none; color: #fff; font-size: 0.8rem;">
+                    <button id="floating-copy-btn" class="copy-btn" style="background: transparent; border: none; color: var(--secondary-color); cursor: pointer; font-size: 1.2rem;"><ion-icon name="copy-outline"></ion-icon></button>
                 </div>
-            </div>       
+            </div>     
 
             <div class="sidebar-tabs">
                 <button class="tab-btn active" onclick="switchTab('media')">Mídia</button>
@@ -201,7 +217,7 @@
         <div id="media-content-area" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;"></div>
     </div>
 
-    <script src="assets/js/sala-host.b1d68193.js"></script>
+    <script src="assets/js/sala-host.1210c394.js"></script>
 </body>
 <div id="rotate-device-overlay">
     <div class="rotate-content">
