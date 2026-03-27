@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel Admin - PlayU</title>
-    <script src="assets/js/version.1210c394.js"></script>
+    <script src="assets/js/version.c1642659.js"></script>
     <script>
         function loadAsset(path) {
             const version = typeof SITE_VERSION !== 'undefined' ? SITE_VERSION : new Date().getTime();
@@ -32,6 +32,7 @@
             <button class="tab-btn active" onclick="switchAdminTab('game-management')">Jogos</button>
             <button class="tab-btn" onclick="switchAdminTab('content-management')">Conteúdo</button>
             <button class="tab-btn" onclick="switchAdminTab('course-management')">Cursos</button>
+            <button class="tab-btn" onclick="switchAdminTab('rewards-management')">Recompensas</button>
         </div>
     </header>
 
@@ -47,7 +48,7 @@
             </div>
             <div class="table-container">
                 <table class="admin-table">
-                    <thead><tr><th>Nome</th><th>Email</th><th>Cargo</th><th>Ações</th></tr></thead>
+                    <thead><tr><th>Nome</th><th>Email</th><th>Cargo</th><th>Pontos</th><th>Ações</th></tr></thead>
                     <tbody id="user-table-body"><tr><td colspan="4"><div class="loader"></div></td></tr></tbody>
                 </table>
             </div>
@@ -87,6 +88,24 @@
                 <button id="add-course-btn" class="submit-btn"><ion-icon name="school-outline"></ion-icon> Criar Curso</button>
             </div>
             <div id="course-list-admin" class="game-grid"></div>
+        </section>
+
+        <section id="rewards-management" class="dashboard-section hidden-section">
+            <div class="section-header">
+                <h2>PlayU Points & Recompensas</h2>
+                <button onclick="window.openRewardModal()" class="submit-btn"><ion-icon name="add-circle-outline"></ion-icon> Nova Recompensa</button>
+            </div>
+            
+            <h3 style="margin-top: 20px; color: var(--secondary-color);">Catálogo de Recompensas</h3>
+            <div id="rewards-list-admin" class="games-grid" style="margin-top: 15px;"></div>
+            
+            <h3 style="margin-top: 40px; color: #ffbb00;">Resgates Solicitados</h3>
+            <div class="table-container" style="margin-top: 15px;">
+                <table class="admin-table">
+                    <thead><tr><th>Usuário</th><th>Recompensa</th><th>Data</th><th>Status</th><th>Ações</th></tr></thead>
+                    <tbody id="redemptions-table-body"><tr><td colspan="5">Carregando resgates...</td></tr></tbody>
+                </table>
+            </div>
         </section>
 
     </main>
@@ -499,6 +518,8 @@
         </div>
     </div>
 
+    <div id="reward-modal" class="modal-overlay hidden"><div class="modal-content"><button onclick="document.getElementById('reward-modal').classList.add('hidden')" class="close-overlay-btn">&times;</button><h3 id="reward-modal-title">Nova Recompensa</h3><form id="reward-form"><input type="hidden" id="reward-id"><div class="form-group"><label>Título da Recompensa</label><input type="text" id="reward-title" placeholder="Ex: 1 Sessão Gratuita" required></div><div class="form-group"><label>Descrição</label><textarea id="reward-desc" rows="3" required></textarea></div><div class="form-group"><label>Custo (PlayU Points)</label><input type="number" id="reward-cost" required></div><div class="modal-footer"><button type="button" id="delete-reward-btn" class="submit-btn danger-btn hidden">Excluir</button><div class="right-buttons"><button type="button" onclick="document.getElementById('reward-modal').classList.add('hidden')" class="submit-btn secondary-btn">Cancelar</button><button type="submit" class="submit-btn">Salvar</button></div></div></form></div></div>
+
     <div id="category-modal" class="modal-overlay hidden" style="z-index: 4000;">
     <div class="modal-box" style="max-width: 400px; padding: 25px;">
         <h3 style="color: var(--secondary-color); margin-bottom: 15px;">Novo Pacote de Jogo</h3>
@@ -534,8 +555,8 @@
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
     <script>
-        loadAsset('assets/css/style.1210c394.css');
-        loadAsset('assets/js/admin.1210c394.js');
+        loadAsset('assets/css/style.c1642659.css');
+        loadAsset('assets/js/admin.c1642659.js');
     </script>
 </body>
 </html>

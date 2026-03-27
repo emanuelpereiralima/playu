@@ -29,19 +29,106 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// =================================================================
 // A. PERFIL DO USUÁRIO (COM UPDATE)
 // =================================================================
-function loadUserProfile(user) {
+async function loadUserProfile(user) {
     const nameEl = document.getElementById('user-name-display');
     const emailEl = document.getElementById('user-email-display');
     const avatarEl = document.getElementById('user-avatar-display');
 
-    // Se o nome estiver vazio (null), usa "Aventureiro"
     if (nameEl) nameEl.textContent = user.displayName || "Aventureiro";
     if (emailEl) emailEl.textContent = user.email;
     if (avatarEl && user.photoURL) avatarEl.src = user.photoURL;
+
+    // Busca os pontos e histórico
+    try {
+        const doc = await firebase.firestore().collection('users').doc(user.uid).get();
+        if(doc.exists) {
+            const data = doc.data();
+            document.getElementById('dash-points-display').innerHTML = `${data.playuPoints || 0} <span style="font-size: 1rem; color: #aaa;">Pts</span>`;
+            window.currentUserPoints = data.playuPoints || 0;
+            
+            // Histórico
+            const histList = document.getElementById('dash-points-history');
+            if(data.pointsHistory && data.pointsHistory.length > 0) {
+                histList.innerHTML = '';
+                // Ordena do mais recente
+                data.pointsHistory.reverse().forEach(h => {
+                    histList.innerHTML += `<div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #333;">
+                        <span style="color:#ccc;">${h.desc}</span>
+                        <strong style="${h.amount > 0 ? 'color:#00ff88;' : 'color:#ff4444;'}">${h.amount > 0 ? '+' : ''}${h.amount}</strong>
+                    </div>`;
+                });
+            }
+        }
+    } catch(e) { console.error("Erro ao buscar pontos:", e); }
+
+    // Carrega a lista de recompensas na aba Resgate
+    loadAvailableRewards();
 }
+
+async function loadAvailableRewards() {
+    const list = document.getElementById('dash-rewards-list');
+    if(!list) return;
+    try {
+        const snap = await firebase.firestore().collection('rewards').get();
+        list.innerHTML = '';
+        if(snap.empty) { list.innerHTML = '<p>Nenhuma recompensa disponível.</p>'; return; }
+        
+        snap.forEach(doc => {
+            const r = doc.data();
+            const canAfford = window.currentUserPoints >= r.cost;
+            list.innerHTML += `
+            <div style="background:#222; border:1px solid ${canAfford ? 'var(--secondary-color)' : '#444'}; padding:15px; border-radius:8px; text-align:center;">
+                <h3 style="color:#ffbb00; margin-bottom:5px;">${r.cost} Pts</h3>
+                <h4 style="color:#fff;">${r.title}</h4>
+                <p style="font-size:0.8rem; color:#aaa; margin-bottom:15px; height:40px; overflow:hidden;">${r.description}</p>
+                <button onclick="redeemReward('${doc.id}', '${r.title}', ${r.cost})" class="submit-btn small-btn" style="${canAfford ? '' : 'background:#444; color:#666; cursor:not-allowed;'}" ${canAfford ? '' : 'disabled'}>
+                    Resgatar
+                </button>
+            </div>`;
+        });
+    } catch(e) { console.error(e); }
+}
+
+window.redeemReward = async (id, title, cost) => {
+    if(!confirm(`Deseja gastar ${cost} pontos para resgatar: ${title}?`)) return;
+    
+    const user = firebase.auth().currentUser;
+    const db = firebase.firestore();
+    
+    try {
+        const userRef = db.collection('users').doc(user.uid);
+        const doc = await userRef.get();
+        const pts = doc.data().playuPoints || 0;
+        
+        if(pts < cost) return alert("Pontos insuficientes!");
+        
+        // Deduz pontos e registra no histórico
+        const historyArr = doc.data().pointsHistory || [];
+        historyArr.push({ desc: `Resgate: ${title}`, amount: -cost, date: new Date().toISOString() });
+        
+        await userRef.update({
+            playuPoints: pts - cost,
+            pointsHistory: historyArr
+        });
+        
+        // Registra o pedido para o Admin ver
+        await db.collection('redemptions').add({
+            userId: user.uid,
+            userName: user.displayName || user.email,
+            rewardId: id,
+            rewardTitle: title,
+            cost: cost,
+            status: 'Pendente',
+            date: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        alert("Resgate solicitado com sucesso! O Admin processará seu prêmio em breve.");
+        window.location.reload(); // Recarrega para atualizar pontos
+        
+    } catch(e) { console.error("Erro no resgate:", e); alert("Erro ao resgatar."); }
+};
 
 // --- LÓGICA DO MODAL ---
 window.openEditModal = () => {
